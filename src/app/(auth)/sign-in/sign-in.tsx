@@ -44,6 +44,8 @@ export const SignIn = () => {
       toast.success(
         "We've emailed you a link for authentication. Please use it to log in.",
       );
+
+      form.reset();
     } catch (err) {
       if (err instanceof Error) {
         toast.error(err.message);
