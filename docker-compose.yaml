@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  db:
+    image: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=6003
+      - POSTGRES_USER=root
+      - POSTGRES_DB=yerapos
+
+volumes:
+  pg_data:
