@@ -4,7 +4,7 @@ import { sendMail } from "./mailer";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "../db";
 import { env } from "@/common/env.mjs";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { users } from "../db/schema";
 
 export const authOptions: AuthOptions = {
@@ -30,21 +30,30 @@ export const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    jwt: async ({ token, user }) => {
-      if (user?.id) {
-        const dbUser = await db.query.users.findFirst({
-          where: and(eq(users.id, user.id)),
-        });
+    jwt: async ({ user, token }) => {
+      let id: string = "";
 
-        if (dbUser) {
-          token = dbUser;
-        }
+      if (user?.id) {
+        id = user.id as string;
       }
 
-      return token;
+      if (token?.id) {
+        id = token.id as string;
+      }
+
+      const u = await db.query.users.findFirst({
+        where: eq(users.id, id),
+      });
+
+      if (!u) {
+        throw new Error("User not found");
+      }
+
+      return u;
     },
     session: ({ session, token }) => {
       session.user = token;
+
       return session;
     },
   },

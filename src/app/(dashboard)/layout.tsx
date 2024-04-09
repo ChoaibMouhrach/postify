@@ -11,7 +11,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="w-60 shrink-0 hidden lg:block" />
       <MobileSideBar />
       <SideBar />
-      <section className="flex-1 bg-secondary border p-4 lg:mt-4 lg:rounded-tl-md">
+      <section className="flex-1 bg-secondary border p-4 lg:mt-4 lg:rounded-tl-md flex flex-col gap-4">
         {children}
       </section>
     </main>
