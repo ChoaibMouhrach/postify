@@ -11,12 +11,38 @@ import {
 import { Button } from "@/client/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { restoreCustomerAction } from "./actions";
 
 interface ActionsProps {
   customer: TCustomer;
 }
 
+type RestoreActionReturnType = Awaited<
+  ReturnType<typeof restoreCustomerAction>
+>;
+
 const Actions: React.FC<ActionsProps> = ({ customer }) => {
+  const onRestore = async () => {
+    const promise = new Promise<RestoreActionReturnType>(async (res, rej) => {
+      const response = await restoreCustomerAction({ id: customer.id });
+
+      if (response.data) {
+        res(response);
+      }
+
+      rej(response);
+    });
+
+    toast.promise(promise, {
+      loading: "Restoring...",
+      success: "Customer restored successfully",
+      error: (error: RestoreActionReturnType) => {
+        return error.serverError || "Something went wrong";
+      },
+    });
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -25,6 +51,7 @@ const Actions: React.FC<ActionsProps> = ({ customer }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <DropdownMenuItem onClick={onRestore}>Restore</DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href={`/customers/${customer.id}/edit`}>Edit</Link>
         </DropdownMenuItem>
