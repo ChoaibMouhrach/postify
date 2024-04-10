@@ -133,6 +133,7 @@ export const customers = pgTable("customers", {
 });
 
 export type TCustomer = typeof customers.$inferSelect;
+export type TCustomerInsert = typeof customers.$inferInsert;
 
 export const suppliers = pgTable("suppliers", {
   id: id(),

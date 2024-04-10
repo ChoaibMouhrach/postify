@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/client/components/ui/card";
 import { Suspense } from "react";
+import { DataTableSkeleton } from "@/client/components/data-table";
 
 interface PageProps {
   searchParams: SearchParams;
@@ -23,7 +24,7 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Suspense fallback="loading...">
+        <Suspense fallback={<DataTableSkeleton />}>
           <Customers searchParams={searchParams} />
         </Suspense>
       </CardContent>

@@ -32,6 +32,7 @@ import {
 import { Toggle } from "@/client/components/ui/toggle";
 import debounce from "debounce";
 import { useUpdateSearchParams } from "../hooks/search-params";
+import { Skeleton } from "./ui/skeleton";
 
 interface DataTableProps<TData> {
   children?: React.ReactNode;
@@ -249,3 +250,30 @@ export function DataTable<TData>({
     </div>
   );
 }
+
+export const DataTableSkeleton = () => {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center">
+        <Skeleton className="h-9 w-full max-w-md" />
+
+        <div className="ml-auto flex items-center gap-2">
+          <Skeleton className="h-9 w-[120px]" />
+          <Skeleton className="h-9 w-[100px]" />
+          <Skeleton className="h-9 w-[100px]" />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {[...Array(8)].map((_, index) => (
+          <Skeleton className="h-9" key={index} />
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 w-full max-w-sm" />
+        <Skeleton className="h-9 w-[100px] ml-auto" />
+        <Skeleton className="h-9 w-[100px]" />
+      </div>
+    </div>
+  );
+};

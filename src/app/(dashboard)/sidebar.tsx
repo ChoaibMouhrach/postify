@@ -127,7 +127,7 @@ export const SideBar: React.FC<SideBarProps> = ({ className, onNavigate }) => {
     >
       <div className="pt-4 px-7 flex items-center gap-1">
         <Logo className="fill-foreground w-6 h-6" />
-        <h1 className="text-2xl font-bold">Yerapos</h1>
+        <h1 className="text-2xl font-bold">YeraPos</h1>
       </div>
       <ScrollArea className="gap-1 flex-1">
         <div className="p-4 flex flex-col gap-1">
