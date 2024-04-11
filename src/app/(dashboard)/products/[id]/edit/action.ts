@@ -1,15 +1,10 @@
 "use server";
 
-import {
-  action,
-  NotfoundError,
-  UnauthenticatedError,
-} from "@/server/lib/action";
-import { authOptions } from "@/server/lib/auth";
+import { action, auth } from "@/server/lib/action";
 import { productRepository } from "@/server/repositories/product";
-import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { updateProductSchema } from "./schema";
 
 const deleteProductSchema = z.object({
   id: z.string().uuid(),
@@ -18,19 +13,30 @@ const deleteProductSchema = z.object({
 export const deleteProductAction = action(
   deleteProductSchema,
   async (input) => {
-    const session = await getServerSession(authOptions);
+    const user = await auth();
 
-    if (!session?.user) {
-      throw new UnauthenticatedError();
-    }
+    const product = await productRepository.findOrThrow(input.id, user.id);
 
-    const product = await productRepository.find(input.id, session.user.id);
+    await productRepository.remove(product.id, user.id);
 
-    if (!product) {
-      throw new NotfoundError("Product");
-    }
+    revalidatePath("/products");
+    revalidatePath(`/products/${input.id}/edit`);
+  },
+);
 
-    await productRepository.remove(product.id, session.user.id);
+export const updateProductAction = action(
+  updateProductSchema,
+  async (input) => {
+    const user = await auth();
+
+    await productRepository.findOrThrow(input.id, user.id);
+
+    await productRepository.update(input.id, user.id, {
+      name: input.name,
+      price: input.price,
+      description: input.description || null,
+      userId: user.id,
+    });
 
     revalidatePath("/products");
     revalidatePath(`/products/${input.id}/edit`);

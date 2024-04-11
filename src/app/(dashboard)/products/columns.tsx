@@ -12,19 +12,42 @@ import {
 } from "@/client/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import { restoreProductAction } from "./actions";
-import React from "react";
+import React, { useState } from "react";
 import { toast } from "sonner";
 
 interface ActionsProps {
   product: TProduct;
 }
 
+type RestoreProductActionReturnType = ReturnType<typeof restoreProductAction>;
+
 const Actions: React.FC<ActionsProps> = ({ product }) => {
+  const [restorePending, setRestorePending] = useState(false);
+
   const onRestore = () => {
-    toast.promise(restoreProductAction({ id: product.id }), {
+    const promise = new Promise<Awaited<RestoreProductActionReturnType>>(
+      async (res, rej) => {
+        const response = await restoreProductAction({ id: product.id });
+
+        if ("data" in response) {
+          res(response);
+          return;
+        }
+
+        rej(response);
+      },
+    );
+
+    setRestorePending(true);
+    toast.promise(promise, {
       loading: "Please wait while we restore this product",
       success: "Product restored successfully",
-      error: (err) => err.message,
+      error: (err: Awaited<RestoreProductActionReturnType>) => {
+        return err.serverError || "Something went wrong";
+      },
+      finally: () => {
+        setRestorePending(false);
+      },
     });
   };
 
@@ -36,7 +59,11 @@ const Actions: React.FC<ActionsProps> = ({ product }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={onRestore}>Restore</DropdownMenuItem>
+        {product.deletedAt && (
+          <DropdownMenuItem disabled={restorePending} onClick={onRestore}>
+            Restore
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link href={`/products/${product.id}/edit`}>Edit</Link>
         </DropdownMenuItem>

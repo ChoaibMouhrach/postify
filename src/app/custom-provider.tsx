@@ -12,7 +12,7 @@ export const CustomProvider: React.FC<CustomProviderProps> = ({ children }) => {
   return (
     <>
       <SessionProvider>{children}</SessionProvider>
-      <Toaster />
+      <Toaster expand />
       <ProgressBar
         height="4px"
         color="hsl(var(--primary))"

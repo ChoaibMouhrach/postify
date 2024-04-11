@@ -27,8 +27,9 @@ const Actions: React.FC<ActionsProps> = ({ customer }) => {
     const promise = new Promise<RestoreActionReturnType>(async (res, rej) => {
       const response = await restoreCustomerAction({ id: customer.id });
 
-      if (response.data) {
+      if ("data" in response) {
         res(response);
+        return;
       }
 
       rej(response);
@@ -51,7 +52,9 @@ const Actions: React.FC<ActionsProps> = ({ customer }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={onRestore}>Restore</DropdownMenuItem>
+        {customer.deletedAt && (
+          <DropdownMenuItem onClick={onRestore}>Restore</DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link href={`/customers/${customer.id}/edit`}>Edit</Link>
         </DropdownMenuItem>

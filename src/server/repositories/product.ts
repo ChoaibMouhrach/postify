@@ -42,8 +42,11 @@ const create = async (input: TProductInsert) => {
   return ps[0];
 };
 
-const update = (input: TProductInsert, where?: SQL<unknown>) => {
-  return db.update(products).set(input).where(where);
+const update = (id: string, userId: string, input: TProductInsert) => {
+  return db
+    .update(products)
+    .set(input)
+    .where(and(eq(products.id, id), eq(products.userId, userId)));
 };
 
 const remove = (id: string, userId: string) => {

@@ -39,7 +39,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
             You can update your product from here.
           </CardDescription>
         </CardHeader>
-        <Edit />
+        <Edit product={product} />
       </Card>
       <Card>
         <CardHeader>
