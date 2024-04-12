@@ -154,6 +154,9 @@ export const suppliers = pgTable("suppliers", {
   deletedAt: deletedAt(),
 });
 
+export type TSupplier = typeof suppliers.$inferSelect;
+export type TSupplierInsert = typeof suppliers.$inferInsert;
+
 export const orders = pgTable("orders", {
   id: id(),
 

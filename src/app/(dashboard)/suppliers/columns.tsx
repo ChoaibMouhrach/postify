@@ -1,33 +1,33 @@
 "use client";
 
-import { Button } from "@/client/components/ui/button";
-import { TProduct } from "@/server/db/schema";
+import { TSupplier } from "@/server/db/schema";
 import { ColumnDef } from "@tanstack/react-table";
-import Link from "next/link";
+import { useState } from "react";
+import { restoreSupplierAction } from "./actions";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/client/components/ui/dropdown-menu";
+import { Button } from "@/client/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
-import { restoreProductAction } from "./actions";
-import React, { useState } from "react";
-import { toast } from "sonner";
+import Link from "next/link";
 
 interface ActionsProps {
-  product: TProduct;
+  supplier: TSupplier;
 }
 
-type RestoreProductActionReturnType = ReturnType<typeof restoreProductAction>;
+type RestoreSupplierActionReturnType = ReturnType<typeof restoreSupplierAction>;
 
-const Actions: React.FC<ActionsProps> = ({ product }) => {
+const Actions: React.FC<ActionsProps> = ({ supplier }) => {
   const [restorePending, setRestorePending] = useState(false);
 
   const onRestore = () => {
-    const promise = new Promise<Awaited<RestoreProductActionReturnType>>(
+    const promise = new Promise<Awaited<RestoreSupplierActionReturnType>>(
       async (res, rej) => {
-        const response = await restoreProductAction({ id: product.id });
+        const response = await restoreSupplierAction({ id: supplier.id });
 
         if ("data" in response) {
           res(response);
@@ -40,9 +40,9 @@ const Actions: React.FC<ActionsProps> = ({ product }) => {
 
     setRestorePending(true);
     toast.promise(promise, {
-      loading: "Please wait while we restore this product",
-      success: "Product restored successfully",
-      error: (err: Awaited<RestoreProductActionReturnType>) => {
+      loading: "Please wait while we restore this supplier",
+      success: "Supplier restored successfully",
+      error: (err: Awaited<RestoreSupplierActionReturnType>) => {
         return err.serverError || "Something went wrong";
       },
       finally: () => {
@@ -59,34 +59,34 @@ const Actions: React.FC<ActionsProps> = ({ product }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        {product.deletedAt && (
+        {supplier.deletedAt && (
           <DropdownMenuItem disabled={restorePending} onClick={onRestore}>
             Restore
           </DropdownMenuItem>
         )}
         <DropdownMenuItem asChild>
-          <Link href={`/products/${product.id}/edit`}>Edit</Link>
+          <Link href={`/suppliers/${supplier.id}/edit`}>Edit</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
 
-export const columns: ColumnDef<TProduct>[] = [
+export const columns: ColumnDef<TSupplier>[] = [
   {
     header: "Name",
     accessorKey: "name",
   },
   {
-    header: "Price",
-    accessorKey: "price",
+    header: "Email address",
+    cell: ({ row }) => row.original.email || "N/A",
   },
   {
-    header: "Created At",
-    cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+    header: "Phone number",
+    accessorKey: "phone",
   },
   {
-    id: "Options",
-    cell: ({ row }) => <Actions product={row.original} />,
+    id: "Actions",
+    cell: ({ row }) => <Actions supplier={row.original} />,
   },
 ];
