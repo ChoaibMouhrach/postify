@@ -12,7 +12,7 @@ export const useUpdateSearchParams = () => {
 
     if (input instanceof Array) {
       for (let { key, value } of input) {
-        if (!input) {
+        if (!value) {
           urlSearchParams.delete(key);
         } else {
           urlSearchParams.set(key, value);

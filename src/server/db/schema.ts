@@ -113,6 +113,9 @@ export const categories = pgTable("categories", {
   deletedAt: deletedAt(),
 });
 
+export type TCategory = typeof categories.$inferSelect;
+export type TCategoryInsert = typeof categories.$inferInsert;
+
 export const customers = pgTable("customers", {
   id: id(),
 

@@ -11,27 +11,62 @@ import {
   FormLabel,
   FormMessage,
 } from "@/client/components/ui/form";
+import { Input } from "@/client/components/ui/input";
+import { useAction } from "next-safe-action/hooks";
 import { useForm } from "react-hook-form";
+import { updateCategorySchema } from "./schema";
+import { updateCategoryAction } from "./actions";
+import React, { useMemo } from "react";
+import { toast } from "sonner";
+import { TCategory } from "@/server/db/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
-export const Edit = () => {
-  const pending = false;
-  const form = useForm();
+interface EditProps {
+  category: TCategory;
+}
 
-  const onSubmit = () => {
-    //
+type Payload = z.infer<typeof updateCategorySchema>;
+
+export const Edit: React.FC<EditProps> = ({ category }) => {
+  const { execute, status } = useAction(updateCategoryAction, {
+    onSuccess: () => {
+      toast.success("Category updated successfully");
+    },
+    onError: (err) => {
+      toast.error(err.serverError);
+    },
+  });
+
+  const pending = useMemo(() => {
+    return status === "executing";
+  }, [status]);
+
+  const form = useForm<Payload>({
+    resolver: zodResolver(updateCategorySchema),
+    values: {
+      id: category.id,
+      name: category.name,
+    },
+  });
+
+  const onSubmit = (payload: Payload) => {
+    execute(payload);
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <CardContent className="grid lg:grid-cols-3 gap-4">
+        <CardContent>
           <FormField
-            name=""
-            render={() => (
+            name="name"
+            render={({ field }) => (
               <FormItem>
-                <FormLabel></FormLabel>
-                <FormControl></FormControl>
-                <FormDescription></FormDescription>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Iron" />
+                </FormControl>
+                <FormDescription>The name of the category.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

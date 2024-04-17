@@ -7,8 +7,30 @@ import {
 } from "@/client/components/ui/card";
 import { Delete } from "./delete";
 import { Edit } from "./edit";
+import React from "react";
+import { db } from "@/server/db";
+import { and, eq } from "drizzle-orm";
+import { categories } from "@/server/db/schema";
+import { rscAuth } from "@/server/lib/action";
+import { redirect } from "next/navigation";
 
-const Page = async () => {
+interface PageProps {
+  params: {
+    id: string;
+  };
+}
+
+const Page: React.FC<PageProps> = async ({ params }) => {
+  const user = await rscAuth();
+
+  const category = await db.query.categories.findFirst({
+    where: and(eq(categories.id, params.id), eq(categories.userId, user.id)),
+  });
+
+  if (!category) {
+    redirect("/categories");
+  }
+
   return (
     <>
       <Card>
@@ -18,9 +40,7 @@ const Page = async () => {
             You can edit your category from here.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Edit />
-        </CardContent>
+        <Edit category={category} />
       </Card>
       <Card>
         <CardHeader>
@@ -30,7 +50,7 @@ const Page = async () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Delete />
+          <Delete id={category.id} />
         </CardContent>
       </Card>
     </>
