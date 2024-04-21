@@ -10,7 +10,6 @@ import {
 import { TCategory } from "@/server/db/schema";
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
-import { useAction } from "next-safe-action/hooks";
 import Link from "next/link";
 import React from "react";
 import { restoreCategoryAction } from "./actions";
@@ -21,18 +20,22 @@ interface ActionsProps {
 }
 
 const Actions: React.FC<ActionsProps> = ({ category }) => {
-  const { execute } = useAction(restoreCategoryAction, {
-    onSuccess: () => {
-      toast.success("Category restored successfully");
-    },
-    onError: (err) => {
-      toast.error(err.serverError);
-    },
-  });
+  const onRestore = async () => {
+    const promise = new Promise(async (res, rej) => {
+      const response = await restoreCategoryAction({ id: category.id });
 
-  const onRestore = () => {
-    execute({
-      id: category.id,
+      if ("data" in response) {
+        res(response);
+        return;
+      }
+
+      rej(response);
+    });
+
+    toast.promise(promise, {
+      loading: "Please wait while we restore this category",
+      success: "Category restored successfully",
+      error: (err) => err.serverError || "Something went wrong",
     });
   };
 

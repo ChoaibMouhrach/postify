@@ -17,10 +17,10 @@ import { Textarea } from "@/client/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { createProductSchema } from "./schema";
-import { createProductAction } from "./action";
 import { useMemo } from "react";
 import { toast } from "sonner";
+import { createProductAction } from "@/server/controllers/product";
+import { createProductSchema } from "@/common/schemas/product";
 
 type Payload = z.infer<typeof createProductSchema>;
 

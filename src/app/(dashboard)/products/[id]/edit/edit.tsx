@@ -16,10 +16,10 @@ import { Textarea } from "@/client/components/ui/textarea";
 import { TProduct } from "@/server/db/schema";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { updateProductSchema } from "./schema";
+import { updateProductSchema } from "@/common/schemas/product";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAction } from "next-safe-action/hooks";
-import { updateProductAction } from "./action";
+import { updateProductAction } from "@/server/controllers/product";
 import { useMemo } from "react";
 import { toast } from "sonner";
 

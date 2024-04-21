@@ -9,22 +9,17 @@ import { Edit } from "./edit";
 import { Delete } from "./delete";
 import { Params } from "@/types/nav";
 import { productRepository } from "@/server/repositories/product";
-import { authOptions } from "@/server/lib/auth";
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { rscAuth } from "@/server/lib/action";
 
 interface PageProps {
   params: Params & { id: string };
 }
 
 const Page: React.FC<PageProps> = async ({ params }) => {
-  const session = await getServerSession(authOptions);
+  const user = await rscAuth();
 
-  if (!session?.user) {
-    redirect("/products");
-  }
-
-  const product = await productRepository.find(params.id, session.user.id);
+  const product = await productRepository.find(params.id, user.id);
 
   if (!product) {
     redirect("/products");

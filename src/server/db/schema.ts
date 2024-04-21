@@ -88,17 +88,6 @@ export const products = pgTable("products", {
 export type TProduct = typeof products.$inferSelect;
 export type TProductInsert = typeof products.$inferInsert;
 
-export const productRelations = relations(products, ({ one }) => ({
-  user: one(users, {
-    fields: [products.userId],
-    references: [users.id],
-  }),
-}));
-
-export const userRelations = relations(users, ({ many }) => ({
-  user: many(products),
-}));
-
 export const categories = pgTable("categories", {
   id: id(),
 
@@ -177,6 +166,9 @@ export const orders = pgTable("orders", {
   deletedAt: deletedAt(),
 });
 
+export type TOrder = typeof orders.$inferSelect;
+export type TOrderInsert = typeof orders.$inferInsert;
+
 export const ordersItems = pgTable("ordersItems", {
   id: id(),
 
@@ -208,6 +200,9 @@ export const purchases = pgTable("purchases", {
   deletedAt: deletedAt(),
 });
 
+export type TPurchase = typeof purchases.$inferSelect;
+export type TPurchaseInsert = typeof purchases.$inferInsert;
+
 export const purchasesItems = pgTable("purchasesItems", {
   id: id(),
 
@@ -237,3 +232,33 @@ export const notifications = pgTable("notifications", {
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
+
+export const purchasesRelations = relations(purchases, ({ one }) => ({
+  supplier: one(suppliers, {
+    fields: [purchases.supplierId],
+    references: [suppliers.id],
+  }),
+}));
+
+export const purchasesItemsRelations = relations(purchasesItems, ({ one }) => ({
+  product: one(products, {
+    fields: [purchasesItems.productId],
+    references: [products.id],
+  }),
+}));
+
+export const suppliersRelations = relations(suppliers, ({ many }) => ({
+  purchases: many(purchases),
+}));
+
+export const productRelations = relations(products, ({ one, many }) => ({
+  user: one(users, {
+    fields: [products.userId],
+    references: [users.id],
+  }),
+  purchasesItems: many(purchasesItems),
+}));
+
+export const userRelations = relations(users, ({ many }) => ({
+  user: many(products),
+}));

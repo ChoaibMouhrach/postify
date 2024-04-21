@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/client/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
-import { restoreProductAction } from "./actions";
+import { restoreProductAction } from "@/server/controllers/product";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
