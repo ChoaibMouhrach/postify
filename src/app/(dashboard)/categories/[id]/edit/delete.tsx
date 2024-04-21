@@ -3,7 +3,7 @@
 import { Button } from "@/client/components/ui/button";
 import { useAction } from "next-safe-action/hooks";
 import React, { useMemo } from "react";
-import { deleteCategoryAction } from "./actions";
+import { deleteCategoryAction } from "@/server/controllers/category";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 

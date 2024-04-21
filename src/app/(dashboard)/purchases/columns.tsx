@@ -13,7 +13,7 @@ import React from "react";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { restorePurchaseAction } from "./action";
+import { restorePurchaseAction } from "@/server/controllers/purchase";
 
 interface ActionsProps {
   purchase: TPurchase;

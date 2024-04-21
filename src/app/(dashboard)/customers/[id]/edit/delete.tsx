@@ -2,7 +2,7 @@
 
 import { useAction } from "next-safe-action/hooks";
 import { Button } from "@/client/components/ui/button";
-import { deleteCustomerAction } from "./action";
+import { deleteCustomerAction } from "@/server/controllers/customer";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { toast } from "sonner";

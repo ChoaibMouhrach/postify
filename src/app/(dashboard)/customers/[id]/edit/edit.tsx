@@ -16,11 +16,11 @@ import {
 import { Input } from "@/client/components/ui/input";
 import { Textarea } from "@/client/components/ui/textarea";
 import { z } from "zod";
-import { updateCustomerSchema } from "./schema";
 import { useAction } from "next-safe-action/hooks";
-import { updateCustomerAction } from "./action";
 import { useMemo } from "react";
 import { toast } from "sonner";
+import { updateCustomerAction } from "@/server/controllers/customer";
+import { updateCustomerSchema } from "@/common/schemas/customer";
 
 interface EditProps {
   customer: TCustomer;

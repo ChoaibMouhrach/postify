@@ -1,13 +1,70 @@
 "use server";
 
-import { TakenError, action, auth } from "@/server/lib/action";
+import {
+  createCustomerSchema,
+  updateCustomerSchema,
+} from "@/common/schemas/customer";
+import { CustomError, TakenError, action, auth } from "@/server/lib/action";
 import { customerRepository } from "@/server/repositories/customer";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { updateCustomerSchema } from "./schema";
-import { db } from "@/server/db";
 import { and, eq } from "drizzle-orm";
-import { customers } from "@/server/db/schema";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { db } from "../db";
+import { customers } from "../db/schema";
+
+const restoreCustomerSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const restoreCustomerAction = action(
+  restoreCustomerSchema,
+  async (input) => {
+    const user = await auth();
+
+    const customer = await customerRepository.findOrThrow(input.id, user.id);
+
+    if (!customer.deletedAt) {
+      throw new CustomError("Customer is not deleted");
+    }
+
+    await customerRepository.restore(input.id, user.id);
+
+    revalidatePath("/customers");
+    revalidatePath(`/customers/${input.id}/edit`);
+  },
+);
+
+export const createCustomerAction = action(
+  createCustomerSchema,
+  async (input) => {
+    const user = await auth();
+
+    if (input.email) {
+      const customer = await db.query.customers.findFirst({
+        where: and(
+          eq(customers.userId, user.id),
+          eq(customers.email, input.email),
+        ),
+      });
+
+      if (customer) {
+        throw new TakenError("Customer");
+      }
+    }
+
+    await customerRepository.create({
+      name: input.name,
+      email: input.email || undefined,
+      phone: input.phone,
+      address: input.address || undefined,
+      userId: user.id,
+    });
+
+    revalidatePath("/customers");
+    redirect("/customers");
+  },
+);
 
 const deleteCustomerSchema = z.object({
   id: z.string().uuid(),

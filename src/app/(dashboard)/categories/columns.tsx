@@ -12,7 +12,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import React from "react";
-import { restoreCategoryAction } from "./actions";
+import { restoreCategoryAction } from "@/server/controllers/category";
 import { toast } from "sonner";
 
 interface ActionsProps {

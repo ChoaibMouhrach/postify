@@ -14,14 +14,14 @@ import {
 import { TSupplier } from "@/server/db/schema";
 import { useAction } from "next-safe-action/hooks";
 import { useForm } from "react-hook-form";
-import { updateSupplierAction } from "./actions";
 import { useMemo } from "react";
 import { z } from "zod";
-import { updateSupplierSchema } from "./schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/client/components/ui/input";
 import { Textarea } from "@/client/components/ui/textarea";
 import { toast } from "sonner";
+import { updateSupplierSchema } from "@/common/schemas/supplier";
+import { updateSupplierAction } from "@/server/controllers/supplier";
 
 type Payload = z.infer<typeof updateSupplierSchema>;
 

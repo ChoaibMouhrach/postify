@@ -2,10 +2,10 @@
 
 import { Button } from "@/client/components/ui/button";
 import { useAction } from "next-safe-action/hooks";
-import { deleteSupplierAction } from "./actions";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { deleteSupplierAction } from "@/server/controllers/supplier";
 
 interface DeleteProps {
   id: string;

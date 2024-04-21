@@ -3,9 +3,9 @@
 import { Button } from "@/client/components/ui/button";
 import { useAction } from "next-safe-action/hooks";
 import React, { useMemo } from "react";
-import { deletePurchaseAction } from "./action";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { deletePurchaseAction } from "@/server/controllers/purchase";
 
 interface DeleteProps {
   id: string;

@@ -7,12 +7,12 @@ import { useForm } from "react-hook-form";
 import { ProductsInput } from "./products-input";
 import { SupplierInput } from "./supplier-input";
 import { z } from "zod";
-import { updatePurchaseSchema } from "./schema";
 import { TPurchase } from "@/server/db/schema";
 import { useAction } from "next-safe-action/hooks";
-import { updatePurchaseAction } from "./action";
 import { toast } from "sonner";
 import { useMemo } from "react";
+import { updatePurchaseSchema } from "@/common/schemas/purchase";
+import { updatePurchaseAction } from "@/server/controllers/purchase";
 
 type RawPayload = z.infer<typeof updatePurchaseSchema>;
 export interface Payload extends RawPayload {

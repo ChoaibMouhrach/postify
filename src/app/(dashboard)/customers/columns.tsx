@@ -12,7 +12,7 @@ import { Button } from "@/client/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { restoreCustomerAction } from "./actions";
+import { restoreCustomerAction } from "@/server/controllers/customer";
 
 interface ActionsProps {
   customer: TCustomer;

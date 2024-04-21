@@ -16,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAction } from "next-safe-action/hooks";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { createCategoryAction } from "./actions";
+import { createCategoryAction } from "@/server/controllers/category";
 import { useMemo } from "react";
 import { toast } from "sonner";
 

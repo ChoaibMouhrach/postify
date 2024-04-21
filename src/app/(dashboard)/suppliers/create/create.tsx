@@ -15,12 +15,12 @@ import { Input } from "@/client/components/ui/input";
 import { Textarea } from "@/client/components/ui/textarea";
 import { useAction } from "next-safe-action/hooks";
 import { useForm } from "react-hook-form";
-import { createSupplierAction } from "./action";
 import { toast } from "sonner";
-import { createSupplierSchema } from "./schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMemo } from "react";
+import { createSupplierSchema } from "@/common/schemas/supplier";
+import { createSupplierAction } from "@/server/controllers/supplier";
 
 type Payload = z.infer<typeof createSupplierSchema>;
 

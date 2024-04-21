@@ -14,8 +14,8 @@ import {
 import { Input } from "@/client/components/ui/input";
 import { useAction } from "next-safe-action/hooks";
 import { useForm } from "react-hook-form";
-import { updateCategorySchema } from "./schema";
-import { updateCategoryAction } from "./actions";
+import { updateCategorySchema } from "@/common/schemas/category";
+import { updateCategoryAction } from "@/server/controllers/category";
 import React, { useMemo } from "react";
 import { toast } from "sonner";
 import { TCategory } from "@/server/db/schema";

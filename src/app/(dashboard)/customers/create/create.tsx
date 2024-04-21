@@ -11,7 +11,7 @@ import {
 } from "@/client/components/ui/form";
 import { Input } from "@/client/components/ui/input";
 import { useForm } from "react-hook-form";
-import { createCustomerSchema } from "./schema";
+import { createCustomerSchema } from "@/common/schemas/customer";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Textarea } from "@/client/components/ui/textarea";
@@ -19,7 +19,7 @@ import { CardContent, CardFooter } from "@/client/components/ui/card";
 import { Button } from "@/client/components/ui/button";
 import { useMemo } from "react";
 import { useAction } from "next-safe-action/hooks";
-import { createCustomerAction } from "./action";
+import { createCustomerAction } from "@/server/controllers/customer";
 import { toast } from "sonner";
 
 type Payload = z.infer<typeof createCustomerSchema>;

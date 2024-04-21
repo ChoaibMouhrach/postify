@@ -3,7 +3,6 @@
 import { TSupplier } from "@/server/db/schema";
 import { ColumnDef } from "@tanstack/react-table";
 import { useState } from "react";
-import { restoreSupplierAction } from "./actions";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -14,6 +13,7 @@ import {
 import { Button } from "@/client/components/ui/button";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import { restoreSupplierAction } from "@/server/controllers/supplier";
 
 interface ActionsProps {
   supplier: TSupplier;
