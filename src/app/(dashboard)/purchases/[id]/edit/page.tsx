@@ -66,7 +66,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Delete id={purchase.id} />
+          <Delete id={purchase.id} deleted={!!purchase.deletedAt} />
         </CardContent>
       </Card>
     </>

@@ -9,9 +9,10 @@ import { useRouter } from "next/navigation";
 
 interface DeleteProps {
   id: string;
+  deleted: boolean;
 }
 
-export const Delete: React.FC<DeleteProps> = ({ id }) => {
+export const Delete: React.FC<DeleteProps> = ({ id, deleted }) => {
   const router = useRouter();
   const { execute, status } = useAction(deleteCategoryAction, {
     onSuccess: () => {
@@ -33,7 +34,7 @@ export const Delete: React.FC<DeleteProps> = ({ id }) => {
 
   return (
     <Button pending={pending} onClick={onDelete} variant="destructive">
-      Delete
+      {deleted ? "Permanent deletion" : "Delete"}
     </Button>
   );
 };

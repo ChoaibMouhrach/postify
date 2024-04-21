@@ -1,15 +1,11 @@
-import { and, eq, isNull, SQL, sql } from "drizzle-orm";
+import { and, eq, SQL, sql } from "drizzle-orm";
 import { db } from "../db";
 import { products, TProductInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
 
 const find = (id: string, userId: string) => {
   return db.query.products.findFirst({
-    where: and(
-      eq(products.id, id),
-      eq(products.userId, userId),
-      isNull(products.deletedAt),
-    ),
+    where: and(eq(products.id, id), eq(products.userId, userId)),
   });
 };
 

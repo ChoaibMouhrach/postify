@@ -101,8 +101,13 @@ export const deleteCategoryAction = action(
   async (input) => {
     const user = await auth();
 
-    await categoryRepository.findOrThrow(input.id, user.id);
-    await categoryRepository.remove(input.id, user.id);
+    const category = await categoryRepository.findOrThrow(input.id, user.id);
+
+    if (!category.deletedAt) {
+      await categoryRepository.remove(input.id, user.id);
+    } else {
+      await categoryRepository.permRemove(input.id, user.id);
+    }
 
     revalidatePath("/categories");
   },

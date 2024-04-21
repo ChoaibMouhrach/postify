@@ -9,9 +9,10 @@ import { toast } from "sonner";
 
 interface DeleteProps {
   id: string;
+  deleted: boolean;
 }
 
-export const Delete: React.FC<DeleteProps> = ({ id }) => {
+export const Delete: React.FC<DeleteProps> = ({ id, deleted }) => {
   const router = useRouter();
   const { execute, status } = useAction(deleteCustomerAction, {
     onSuccess: () => {
@@ -33,7 +34,7 @@ export const Delete: React.FC<DeleteProps> = ({ id }) => {
 
   return (
     <Button onClick={onDelete} pending={pending} variant="destructive">
-      Delete
+      {deleted ? "Permanent deletion" : "Delete"}
     </Button>
   );
 };

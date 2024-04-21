@@ -9,10 +9,10 @@ import { deleteSupplierAction } from "@/server/controllers/supplier";
 
 interface DeleteProps {
   id: string;
-  permDelete: boolean;
+  deleted: boolean;
 }
 
-export const Delete: React.FC<DeleteProps> = ({ id, permDelete }) => {
+export const Delete: React.FC<DeleteProps> = ({ id, deleted }) => {
   const router = useRouter();
   const { execute, status } = useAction(deleteSupplierAction, {
     onSuccess: () => {
@@ -34,7 +34,7 @@ export const Delete: React.FC<DeleteProps> = ({ id, permDelete }) => {
 
   return (
     <Button pending={pending} onClick={onDelete} variant="destructive">
-      {permDelete ? "Permanent deletion" : "Delete"}
+      {deleted ? "Permanent deletion" : "Delete"}
     </Button>
   );
 };

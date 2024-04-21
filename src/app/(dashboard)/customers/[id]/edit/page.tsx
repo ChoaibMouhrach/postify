@@ -49,7 +49,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Delete id={customer.id} />
+          <Delete id={customer.id} deleted={!!customer.deletedAt} />
         </CardContent>
       </Card>
     </>

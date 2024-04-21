@@ -9,9 +9,10 @@ import { deletePurchaseAction } from "@/server/controllers/purchase";
 
 interface DeleteProps {
   id: string;
+  deleted: boolean;
 }
 
-export const Delete: React.FC<DeleteProps> = ({ id }) => {
+export const Delete: React.FC<DeleteProps> = ({ id, deleted }) => {
   const router = useRouter();
 
   const { execute, status } = useAction(deletePurchaseAction, {
@@ -36,7 +37,7 @@ export const Delete: React.FC<DeleteProps> = ({ id }) => {
 
   return (
     <Button pending={pending} onClick={onDelete} variant="destructive">
-      Delete
+      {deleted ? "Permanent deletion" : "Delete"}
     </Button>
   );
 };

@@ -50,7 +50,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Delete id={category.id} />
+          <Delete id={category.id} deleted={!!category.deletedAt} />
         </CardContent>
       </Card>
     </>
