@@ -63,12 +63,13 @@ export const createPurchaseAction = action(
           return {
             ...p,
             quantity: product.quantity,
+            cost: product.cost,
           };
         }),
       );
 
     const totalCost = ps
-      .map((p) => p.quantity * p.price)
+      .map((p) => p.quantity * p.cost)
       .reduce((a, b) => a + b);
 
     const purchaseId = await purchaseRepository
@@ -84,7 +85,7 @@ export const createPurchaseAction = action(
       ps.map((p) => {
         return {
           purchaseId,
-          cost: p.price,
+          cost: p.cost,
           productId: p.id,
           quantity: p.quantity,
         };
@@ -123,23 +124,28 @@ export const updatePurchaseAction = action(
       return {
         ...item,
         quantity: product.quantity,
+        cost: product.cost,
       };
     });
 
     await db.insert(purchasesItems).values(
       ps.map((p) => ({
-        cost: p.price,
+        cost: p.cost,
         productId: p.id,
         quantity: p.quantity,
         purchaseId: purchase.id,
       })),
     );
 
+    const totalCost = ps
+      .map((p) => p.cost * p.quantity)
+      .reduce((a, b) => a + b);
+
     await db
       .update(purchases)
       .set({
         supplierId: input.supplierId,
-        totalCost: ps.map((p) => p.price * p.quantity).reduce((a, b) => a + b),
+        totalCost,
       })
       .where(eq(purchases.id, input.id));
 

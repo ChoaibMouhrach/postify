@@ -70,6 +70,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
             id,
             name: product.name,
             quantity: 1,
+            cost: 1,
           },
         ]);
 
@@ -87,20 +88,39 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
     );
   };
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateProduct = (
+    type: "cost" | "quantity",
+    id: string,
+    value: number,
+  ) => {
     form.setValue(
       "products",
       form.getValues("products").map((product) => {
         if (product.id == id) {
-          return {
+          const body = {
             ...product,
-            quantity,
           };
+
+          if (type === "quantity") {
+            body["quantity"] = value;
+          } else {
+            body["cost"] = value;
+          }
+
+          return body;
         }
 
         return product;
       }),
     );
+  };
+
+  const updateQuantity = (id: string, quantity: number) => {
+    updateProduct("quantity", id, quantity);
+  };
+
+  const updateCost = (id: string, cost: number) => {
+    updateProduct("cost", id, cost);
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -166,6 +186,17 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
                       }
                     />
                   </TableCell>
+                  <TableCell>
+                    <Input
+                      value={String(product.cost)}
+                      type="number"
+                      step="1"
+                      onChange={(e) =>
+                        updateCost(product.id, parseFloat(e.target.value) || 1)
+                      }
+                    />
+                  </TableCell>
+
                   <TableCell className="text-right">
                     <Button
                       variant="destructive"
