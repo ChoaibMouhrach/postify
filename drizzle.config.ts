@@ -8,5 +8,5 @@ export default defineConfig({
     connectionString: env.DATABASE_URL,
   },
   verbose: true,
-  strict: true,
+  strict: false,
 });
