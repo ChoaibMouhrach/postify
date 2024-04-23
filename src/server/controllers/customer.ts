@@ -4,14 +4,72 @@ import {
   createCustomerSchema,
   updateCustomerSchema,
 } from "@/common/schemas/customer";
-import { CustomError, TakenError, action, auth } from "@/server/lib/action";
+import {
+  CustomError,
+  TakenError,
+  action,
+  auth,
+  rscAuth,
+} from "@/server/lib/action";
 import { customerRepository } from "@/server/repositories/customer";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "../db";
 import { customers } from "../db/schema";
+import { SearchParams } from "@/types/nav";
+import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
+import { RECORDS_LIMIT } from "@/common/constants";
+
+const indexSchema = z.object({
+  page: pageSchema,
+  query: querySchema,
+  trash: trashSchema,
+});
+
+export const getCustomersAction = async (searchParams: SearchParams) => {
+  const { page, query, trash } = indexSchema.parse(searchParams);
+
+  const user = await rscAuth();
+
+  const where = and(
+    eq(customers.userId, user.id),
+    trash ? isNotNull(customers.deletedAt) : isNull(customers.deletedAt),
+    query
+      ? or(
+          ilike(customers.name, `%${query}%`),
+          ilike(customers.address, `%${query}%`),
+          ilike(customers.email, `%${query}%`),
+          ilike(customers.phone, `%${query}%`),
+        )
+      : undefined,
+  );
+
+  const data = await db.query.customers.findMany({
+    where,
+    orderBy: desc(customers.createdAt),
+    limit: RECORDS_LIMIT,
+    offset: (page - 1) * RECORDS_LIMIT,
+  });
+
+  const count = await db
+    .select({
+      count: sql<string>`COUNT(*)`,
+    })
+    .from(customers)
+    .then((recs) => parseInt(recs[0].count));
+
+  const lastPage = Math.ceil(count / 8);
+
+  return {
+    data,
+    page,
+    lastPage,
+    trash,
+    query,
+  };
+};
 
 const restoreCustomerSchema = z.object({
   id: z.string().uuid(),

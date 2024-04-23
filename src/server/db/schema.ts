@@ -156,6 +156,7 @@ export const orders = pgTable("orders", {
   customerId: text("customerId").references(() => customers.id, {
     onDelete: "cascade",
   }),
+
   totalPrice: real("totalPrice").notNull(),
 
   // meta
@@ -233,17 +234,22 @@ export const notifications = pgTable("notifications", {
   deletedAt: deletedAt(),
 });
 
-export const purchasesRelations = relations(purchases, ({ one }) => ({
+export const purchasesRelations = relations(purchases, ({ one, many }) => ({
   supplier: one(suppliers, {
     fields: [purchases.supplierId],
     references: [suppliers.id],
   }),
+  items: many(purchasesItems),
 }));
 
 export const purchasesItemsRelations = relations(purchasesItems, ({ one }) => ({
   product: one(products, {
     fields: [purchasesItems.productId],
     references: [products.id],
+  }),
+  purchase: one(purchases, {
+    fields: [purchasesItems.purchaseId],
+    references: [purchases.id],
   }),
 }));
 
@@ -261,4 +267,27 @@ export const productRelations = relations(products, ({ one, many }) => ({
 
 export const userRelations = relations(users, ({ many }) => ({
   user: many(products),
+}));
+
+export const customersRelations = relations(customers, ({ many }) => ({
+  orders: many(orders),
+}));
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  items: many(ordersItems),
+  customer: one(customers, {
+    fields: [orders.customerId],
+    references: [customers.id],
+  }),
+}));
+
+export const ordersItemsRelations = relations(ordersItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [ordersItems.orderId],
+    references: [orders.id],
+  }),
+  product: one(products, {
+    fields: [ordersItems.productId],
+    references: [products.id],
+  }),
 }));

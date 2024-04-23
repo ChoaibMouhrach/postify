@@ -70,7 +70,6 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
             id,
             name: product.name,
             quantity: 1,
-            cost: 1,
           },
         ]);
 
@@ -88,14 +87,14 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
     );
   };
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = (id: string, value: number) => {
     form.setValue(
       "products",
       form.getValues("products").map((product) => {
         if (product.id == id) {
           return {
             ...product,
-            quantity,
+            quantity: value,
           };
         }
 

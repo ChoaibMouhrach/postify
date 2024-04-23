@@ -3,20 +3,20 @@ import { db } from "../db";
 import { customers, TCustomerInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
 
-const find = (id: string, userId: string) => {
+const find = async (id: string, userId: string) => {
   return db.query.customers.findFirst({
     where: and(eq(customers.id, id), eq(customers.userId, userId)),
   });
 };
 
 const findOrThrow = async (id: string, userId: string) => {
-  const product = await find(id, userId);
+  const customer = await find(id, userId);
 
-  if (!product) {
-    throw new NotfoundError("Product");
+  if (!customer) {
+    throw new NotfoundError("Customer");
   }
 
-  return product;
+  return customer;
 };
 
 const count = async (where?: SQL<unknown>) => {

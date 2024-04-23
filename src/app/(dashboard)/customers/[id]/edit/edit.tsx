@@ -21,6 +21,7 @@ import { useMemo } from "react";
 import { toast } from "sonner";
 import { updateCustomerAction } from "@/server/controllers/customer";
 import { updateCustomerSchema } from "@/common/schemas/customer";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface EditProps {
   customer: TCustomer;
@@ -30,6 +31,7 @@ type Payload = z.infer<typeof updateCustomerSchema>;
 
 export const Edit: React.FC<EditProps> = ({ customer }) => {
   const form = useForm<Payload>({
+    resolver: zodResolver(updateCustomerSchema),
     values: {
       id: customer.id,
       name: customer.name,

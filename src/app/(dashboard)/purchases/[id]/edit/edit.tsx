@@ -7,12 +7,13 @@ import { useForm } from "react-hook-form";
 import { ProductsInput } from "./products-input";
 import { SupplierInput } from "./supplier-input";
 import { z } from "zod";
-import { TPurchase } from "@/server/db/schema";
+import { TProduct, TPurchase } from "@/server/db/schema";
 import { useAction } from "next-safe-action/hooks";
 import { toast } from "sonner";
 import { useMemo } from "react";
 import { updatePurchaseSchema } from "@/common/schemas/purchase";
 import { updatePurchaseAction } from "@/server/controllers/purchase";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 type RawPayload = z.infer<typeof updatePurchaseSchema>;
 export interface Payload extends RawPayload {
@@ -23,10 +24,10 @@ export interface Payload extends RawPayload {
 
 interface EditProps {
   purchase: TPurchase & {
-    products: {
-      id: string;
-      name: string;
+    items: {
+      product: TProduct;
       quantity: number;
+      cost: number;
     }[];
   };
 }
@@ -46,10 +47,16 @@ export const Edit: React.FC<EditProps> = ({ purchase }) => {
   }, [status]);
 
   const form = useForm<Payload>({
+    resolver: zodResolver(updatePurchaseSchema),
     values: {
       id: purchase.id,
       supplierId: purchase.supplierId,
-      products: purchase.products,
+      products: purchase.items.map((item) => ({
+        id: item.product.id,
+        name: item.product.name,
+        quantity: item.quantity,
+        cost: item.cost,
+      })),
     },
   });
 

@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from "@/client/components/ui/card";
 import { db } from "@/server/db";
-import { purchases, purchasesItems } from "@/server/db/schema";
+import { purchases } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import React from "react";
@@ -25,27 +25,18 @@ const Page: React.FC<PageProps> = async ({ params }) => {
 
   const purchase = await db.query.purchases.findFirst({
     where: and(eq(purchases.userId, user.id), eq(purchases.id, params.id)),
+    with: {
+      items: {
+        with: {
+          product: true,
+        },
+      },
+    },
   });
 
   if (!purchase) {
     redirect("/purchases");
   }
-
-  const items = await db.query.purchasesItems.findMany({
-    where: eq(purchasesItems.purchaseId, purchase.id),
-    with: {
-      product: true,
-    },
-  });
-
-  const data = {
-    ...purchase,
-    products: items.map((item) => ({
-      id: item.productId,
-      name: item.product.name,
-      quantity: item.quantity,
-    })),
-  };
 
   return (
     <>
@@ -56,7 +47,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
             You can edit your purchase from here.
           </CardDescription>
         </CardHeader>
-        <Edit purchase={data} />
+        <Edit purchase={purchase} />
       </Card>
       <Card>
         <CardHeader>
