@@ -67,20 +67,8 @@ const Actions: React.FC<ActionsProps> = ({ order }) => {
 };
 
 export const columns: ColumnDef<TOrder & { customer: TCustomer }>[] = [
-  {
-    header: "Customer",
-    cell: ({ row }) => row.original.customer?.name || "" 
-  },
-  {
+ {
     header: "Total price",
     accessorKey: "totalPrice",
-  },
-  {
-    header: "Created At",
-    cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
-  },
-  {
-    id: "Actions",
-    cell: ({ row }) => <Actions order={row.original} />,
-  },
+  }
 ];
