@@ -5,6 +5,7 @@ import { SearchParams } from "@/types/nav";
 import Link from "next/link";
 import React from "react";
 import { columns } from "./columns";
+import { TCustomer, TOrder } from "@/server/db/schema";
 
 interface OrdersProps {
   searchParams: SearchParams;
@@ -15,7 +16,7 @@ export const Orders: React.FC<OrdersProps> = async ({ searchParams }) => {
     await getOrdersAction(searchParams);
 
   return (
-    <DataTable
+    <DataTable<TOrder & { customer: TCustomer | null }>
       data={data}
       columns={columns}
       trash={trash}

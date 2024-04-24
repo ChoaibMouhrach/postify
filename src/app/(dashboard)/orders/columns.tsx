@@ -66,9 +66,17 @@ const Actions: React.FC<ActionsProps> = ({ order }) => {
   );
 };
 
-export const columns: ColumnDef<TOrder & { customer: TCustomer }>[] = [
- {
+export const columns: ColumnDef<TOrder & { customer: TCustomer | null }>[] = [
+  {
+    header: "Customer",
+    cell: ({ row }) => row.original.customer?.name,
+  },
+  {
     header: "Total price",
     accessorKey: "totalPrice",
-  }
+  },
+  {
+    id: "Actions",
+    cell: ({ row }) => <Actions order={row.original} />,
+  },
 ];
