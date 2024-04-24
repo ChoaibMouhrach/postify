@@ -69,7 +69,7 @@ const Actions: React.FC<ActionsProps> = ({ order }) => {
 export const columns: ColumnDef<TOrder & { customer: TCustomer }>[] = [
   {
     header: "Customer",
-    accessorKey: "customer.name",
+    cell: ({ row }) => row.original.customer?.name || "" 
   },
   {
     header: "Total price",
