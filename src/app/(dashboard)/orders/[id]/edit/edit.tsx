@@ -18,7 +18,7 @@ import { toast } from "sonner";
 type RawPayload = z.infer<typeof updateOrderSchema>;
 export interface Payload extends RawPayload {
   products: (RawPayload["products"][number] & {
-    quantity: number;
+    name: string;
   })[];
 }
 
