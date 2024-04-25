@@ -81,8 +81,7 @@ export const Create: React.FC<CreateProps> = ({ types }) => {
                     <SelectContent>
                       {types.map((type) => (
                         <SelectItem key={type.id} value={type.id}>
-                          {type.name.charAt(0).toUpperCase() +
-                            type.name.slice(1)}
+                          {type.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

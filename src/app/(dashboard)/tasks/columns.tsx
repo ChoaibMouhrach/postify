@@ -73,11 +73,7 @@ export const columns: ColumnDef<TTask & { type: TTaskType }>[] = [
   },
   {
     header: "Type",
-    cell: ({ row }) => {
-      const name = row.original.type.name;
-
-      return <Badge>{name.charAt(0).toUpperCase() + name.slice(1)}</Badge>;
-    },
+    cell: ({ row }) => <Badge>{row.original.type.name}</Badge>,
   },
   {
     header: "Created At",

@@ -80,7 +80,7 @@ export const products = pgTable("products", {
   // meta
   userId: text("userId")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
@@ -247,10 +247,10 @@ export const tasks = pgTable("tasks", {
   description: text("description"),
   typeId: text("typeId")
     .notNull()
-    .references(() => taskTypes.id),
+    .references(() => taskTypes.id, { onDelete: "cascade" }),
   userId: text("userId")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "cascade" }),
 
   deletedAt: deletedAt(),
   createdAt: createdAt(),
