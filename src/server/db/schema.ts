@@ -234,6 +234,31 @@ export const notifications = pgTable("notifications", {
   deletedAt: deletedAt(),
 });
 
+export const taskTypes = pgTable("taskTypes", {
+  id: id(),
+  name: text("name").notNull(),
+});
+
+export type TTaskType = typeof taskTypes.$inferSelect;
+
+export const tasks = pgTable("tasks", {
+  id: id(),
+  title: text("title").notNull(),
+  description: text("description"),
+  typeId: text("typeId")
+    .notNull()
+    .references(() => taskTypes.id),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id),
+
+  deletedAt: deletedAt(),
+  createdAt: createdAt(),
+});
+
+export type TTask = typeof tasks.$inferSelect;
+export type TTaskInsert = typeof tasks.$inferInsert;
+
 export const purchasesRelations = relations(purchases, ({ one, many }) => ({
   supplier: one(suppliers, {
     fields: [purchases.supplierId],
@@ -289,5 +314,16 @@ export const ordersItemsRelations = relations(ordersItems, ({ one }) => ({
   product: one(products, {
     fields: [ordersItems.productId],
     references: [products.id],
+  }),
+}));
+
+export const taskTypesRelations = relations(taskTypes, ({ many }) => ({
+  tasks: many(tasks),
+}));
+
+export const tasksRelations = relations(tasks, ({ one }) => ({
+  type: one(taskTypes, {
+    fields: [tasks.typeId],
+    references: [taskTypes.id],
   }),
 }));

@@ -10,6 +10,7 @@ import { cn } from "@/client/lib/utils";
 import {
   Box,
   ChevronUp,
+  ClipboardList,
   Home,
   Menu,
   Shapes,
@@ -66,6 +67,11 @@ const links = [
     name: "Suppliers",
     icon: Truck,
     href: "/suppliers",
+  },
+  {
+    name: "Tasks",
+    icon: ClipboardList,
+    href: "/tasks",
   },
 ];
 
