@@ -106,7 +106,7 @@ export const Edit: React.FC<EditProps> = ({ supplier }) => {
           <FormField
             name="address"
             render={({ field }) => (
-              <FormItem className="col-start-1 col-end-4">
+              <FormItem className="md:col-start-1 md:col-end-4">
                 <FormLabel>Address</FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} placeholder="21 Jump St..." />
