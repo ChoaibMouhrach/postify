@@ -60,7 +60,7 @@ export const Edit: React.FC<EditProps> = ({ product }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <CardContent className="grid grid-cols-3 gap-4">
+        <CardContent className="grid md:grid-cols-3 gap-4">
           <FormField
             name="name"
             render={({ field }) => (
