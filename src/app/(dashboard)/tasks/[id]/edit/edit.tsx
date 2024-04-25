@@ -125,7 +125,7 @@ export const Edit: React.FC<EditProps> = ({ types, task }) => {
           />
         </CardContent>
         <CardFooter>
-          <Button pending={pending}>Add</Button>
+          <Button pending={pending}>Save</Button>
         </CardFooter>
       </form>
     </Form>
