@@ -134,14 +134,14 @@ export function DataTable<TData>({
 
   return (
     <div className="w-full">
-      <div className="flex items-center py-4">
+      <div className="flex flex-wrao items-center py-4">
         <Input
           onChange={(e) => onQuery(e.target.value)}
           defaultValue={query}
           placeholder="Search..."
           className="max-w-sm"
         />
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="ml-auto">
