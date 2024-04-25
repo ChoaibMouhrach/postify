@@ -96,7 +96,7 @@ export const Create = () => {
           <FormField
             name="description"
             render={({ field }) => (
-              <FormItem className="col-start-1 col-end-4">
+              <FormItem className="md:col-start-1 md:col-end-4">
                 <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Textarea
