@@ -32,6 +32,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
   }
 
   const types = await db.query.taskTypes.findMany();
+  const statuses = await db.query.taskStatuses.findMany();
 
   return (
     <>
@@ -40,7 +41,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
           <CardTitle>Edit task</CardTitle>
           <CardDescription>You can update this task from here.</CardDescription>
         </CardHeader>
-        <Edit task={task} types={types} />
+        <Edit task={task} types={types} statuses={statuses} />
       </Card>
 
       <Card>

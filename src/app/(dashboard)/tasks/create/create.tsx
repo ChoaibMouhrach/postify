@@ -21,7 +21,7 @@ import {
 import { Input } from "@/client/components/ui/input";
 import { Textarea } from "@/client/components/ui/textarea";
 import { useForm } from "react-hook-form";
-import { TTaskType } from "@/server/db/schema";
+import { TTaskStatus, TTaskType } from "@/server/db/schema";
 import React, { useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -32,17 +32,19 @@ import { toast } from "sonner";
 
 interface CreateProps {
   types: TTaskType[];
+  statuses: TTaskStatus[];
 }
 
 type Payload = z.infer<typeof createTaskSchema>;
 
-export const Create: React.FC<CreateProps> = ({ types }) => {
+export const Create: React.FC<CreateProps> = ({ types, statuses }) => {
   const form = useForm<Payload>({
     resolver: zodResolver(createTaskSchema),
     values: {
       title: "",
       description: "",
       typeId: types[0].id,
+      statusId: statuses[0].id,
     },
   });
 
@@ -92,6 +94,32 @@ export const Create: React.FC<CreateProps> = ({ types }) => {
               </FormItem>
             )}
           />
+
+          <FormField
+            name="statusId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormDescription>The status of this task.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             name="title"
             render={({ field }) => (

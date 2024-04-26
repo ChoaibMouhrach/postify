@@ -21,7 +21,7 @@ import {
 import { Input } from "@/client/components/ui/input";
 import { Textarea } from "@/client/components/ui/textarea";
 import { useForm } from "react-hook-form";
-import { TTask, TTaskType } from "@/server/db/schema";
+import { TTask, TTaskStatus, TTaskType } from "@/server/db/schema";
 import React, { useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,13 +31,14 @@ import { toast } from "sonner";
 import { updateTaskAction } from "@/server/controllers/task";
 
 interface EditProps {
+  statuses: TTaskStatus[];
   types: TTaskType[];
   task: TTask;
 }
 
 type Payload = z.infer<typeof updateTaskSchema>;
 
-export const Edit: React.FC<EditProps> = ({ types, task }) => {
+export const Edit: React.FC<EditProps> = ({ types, statuses, task }) => {
   const form = useForm<Payload>({
     resolver: zodResolver(updateTaskSchema),
     values: {
@@ -45,6 +46,7 @@ export const Edit: React.FC<EditProps> = ({ types, task }) => {
       title: task.title,
       description: task.description || "",
       typeId: task.typeId,
+      statusId: task.statusId,
     },
   });
 
@@ -90,6 +92,30 @@ export const Edit: React.FC<EditProps> = ({ types, task }) => {
                   </Select>
                 </FormControl>
                 <FormDescription>The type of this task.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="statusId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormDescription>The status of this task.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

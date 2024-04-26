@@ -241,13 +241,28 @@ export const taskTypes = pgTable("taskTypes", {
 
 export type TTaskType = typeof taskTypes.$inferSelect;
 
+export const taskStatuses = pgTable("taskStatuses", {
+  id: id(),
+  name: text("name").notNull(),
+});
+
+export type TTaskStatus = typeof taskStatuses.$inferSelect;
+
 export const tasks = pgTable("tasks", {
   id: id(),
   title: text("title").notNull(),
   description: text("description"),
+
   typeId: text("typeId")
     .notNull()
     .references(() => taskTypes.id, { onDelete: "cascade" }),
+
+  statusId: text("statusId")
+    .notNull()
+    .references(() => taskStatuses.id, {
+      onDelete: "cascade",
+    }),
+
   userId: text("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -321,7 +336,15 @@ export const taskTypesRelations = relations(taskTypes, ({ many }) => ({
   tasks: many(tasks),
 }));
 
+export const taskStatusesRelations = relations(taskStatuses, ({ many }) => ({
+  tasks: many(tasks),
+}));
+
 export const tasksRelations = relations(tasks, ({ one }) => ({
+  status: one(taskStatuses, {
+    fields: [tasks.statusId],
+    references: [taskStatuses.id],
+  }),
   type: one(taskTypes, {
     fields: [tasks.typeId],
     references: [taskTypes.id],

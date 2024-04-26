@@ -3,7 +3,7 @@ import { Button } from "@/client/components/ui/button";
 import { RECORDS_LIMIT } from "@/common/constants";
 import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
 import { db } from "@/server/db";
-import { tasks, TTask, TTaskType } from "@/server/db/schema";
+import { tasks, TTask, TTaskStatus, TTaskType } from "@/server/db/schema";
 import { rscAuth } from "@/server/lib/action";
 import { SearchParams } from "@/types/nav";
 import { and, desc, eq, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
@@ -42,6 +42,7 @@ export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
     where,
     with: {
       type: true,
+      status: true,
     },
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
@@ -60,7 +61,7 @@ export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
   const lastPage = Math.ceil(count / RECORDS_LIMIT);
 
   return (
-    <DataTable<TTask & { type: TTaskType }>
+    <DataTable<TTask & { type: TTaskType; status: TTaskStatus }>
       //
       data={data}
       columns={columns}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/client/components/ui/badge";
-import { TTask, TTaskType } from "@/server/db/schema";
+import { TTask, TTaskStatus, TTaskType } from "@/server/db/schema";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   DropdownMenu,
@@ -66,7 +66,9 @@ const Actions: React.FC<ActionsProps> = ({ task }) => {
   );
 };
 
-export const columns: ColumnDef<TTask & { type: TTaskType }>[] = [
+export const columns: ColumnDef<
+  TTask & { type: TTaskType; status: TTaskStatus }
+>[] = [
   {
     header: "Title",
     accessorKey: "title",
@@ -74,6 +76,10 @@ export const columns: ColumnDef<TTask & { type: TTaskType }>[] = [
   {
     header: "Type",
     cell: ({ row }) => <Badge>{row.original.type.name}</Badge>,
+  },
+  {
+    header: "Status",
+    cell: ({ row }) => <Badge>{row.original.status.name}</Badge>,
   },
   {
     header: "Created At",
