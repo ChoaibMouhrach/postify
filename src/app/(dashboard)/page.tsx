@@ -9,36 +9,39 @@ import {
   SupplierCard,
   TaskCard,
 } from "./cards";
+import { rscAuth } from "@/server/lib/action";
 
-const Home = () => {
+const Home = async () => {
+  const user = await rscAuth();
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <Suspense fallback={<CardSkeleton />}>
-        <OrderCard />
+        <OrderCard userId={user.id} />
       </Suspense>
 
       <Suspense fallback={<CardSkeleton />}>
-        <PurchaseCard />
+        <PurchaseCard userId={user.id} />
       </Suspense>
 
       <Suspense fallback={<CardSkeleton />}>
-        <CustomerCard />
+        <CustomerCard userId={user.id} />
       </Suspense>
 
       <Suspense fallback={<CardSkeleton />}>
-        <SupplierCard />
+        <SupplierCard userId={user.id} />
       </Suspense>
 
       <Suspense fallback={<CardSkeleton />}>
-        <ProductCard />
+        <ProductCard userId={user.id} />
       </Suspense>
 
       <Suspense fallback={<CardSkeleton />}>
-        <CategoryCard />
+        <CategoryCard userId={user.id} />
       </Suspense>
 
       <Suspense fallback={<CardSkeleton />}>
-        <TaskCard />
+        <TaskCard userId={user.id} />
       </Suspense>
     </div>
   );
