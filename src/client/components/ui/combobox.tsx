@@ -26,22 +26,34 @@ interface ComboboxProps {
   onQueryChange?: (value: string) => unknown;
   className?: string;
   value?: string;
+  query?: string;
 }
 
 export const Combobox: React.FC<ComboboxProps> = ({
   reset,
   items,
   value,
+  query,
   className,
   onValueChange,
   onQueryChange,
 }) => {
-  const [open, setOpen] = React.useState(false);
   const [v, setV] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
 
   React.useEffect(() => {
     if (value !== undefined) setV(value);
   }, [value]);
+
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    onQueryChange?.(value);
+  };
+
+  React.useEffect(() => {
+    if (query !== undefined) setSearch(query);
+  }, [query]);
 
   return (
     <div className={cn("", className)}>
@@ -60,8 +72,9 @@ export const Combobox: React.FC<ComboboxProps> = ({
         <PopoverContent className="p-0 !PopoverContent">
           <Command shouldFilter={false}>
             <CommandInput
-              onValueChange={onQueryChange}
+              value={search}
               placeholder="Search..."
+              onValueChange={handleSearch}
             />
             <CommandGroup>
               {items.length ? (

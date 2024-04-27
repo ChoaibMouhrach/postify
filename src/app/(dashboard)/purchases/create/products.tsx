@@ -77,8 +77,6 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
         break;
       }
     }
-
-    setQuery("");
   };
 
   const removeProduct = (id: string) => {
@@ -142,6 +140,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
               {isSuccess ? (
                 <Combobox
                   reset
+                  query={query}
                   onQueryChange={changeQuery}
                   onValueChange={addProduct}
                   items={data.data.map((product) => ({

@@ -50,6 +50,7 @@ export const CustomerInput: React.FC<CustomerInputProps> = ({ form }) => {
           <FormControl>
             {isSuccess ? (
               <Combobox
+                query={query}
                 value={form.getValues("customerId")}
                 onQueryChange={changeQuery}
                 onValueChange={onValueChange}

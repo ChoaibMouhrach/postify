@@ -51,6 +51,7 @@ export const SupplierInput: React.FC<SupplierInputProps> = ({ form }) => {
             {isSuccess ? (
               <Combobox
                 value={form.getValues("supplierId")}
+                query={query}
                 onQueryChange={changeQuery}
                 onValueChange={onValueChange}
                 items={data.data.map((supplier) => ({

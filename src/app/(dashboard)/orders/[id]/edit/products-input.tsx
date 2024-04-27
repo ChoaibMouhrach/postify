@@ -122,6 +122,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
               {isSuccess ? (
                 <Combobox
                   reset
+                  query={query}
                   onQueryChange={changeQuery}
                   onValueChange={addProduct}
                   items={data.data.map((product) => ({
