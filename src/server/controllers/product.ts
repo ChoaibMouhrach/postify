@@ -12,6 +12,7 @@ import { productRepository } from "@/server/repositories/product";
 import { SearchParams } from "@/types/nav";
 import { and, desc, eq, ilike, isNotNull, isNull, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 const schema = z.object({
@@ -115,6 +116,8 @@ export const deleteProductAction = action(
     revalidatePath("/products");
     revalidatePath(`/dashboard`);
     revalidatePath(`/products/${input.id}/edit`);
+
+    redirect("/products");
   },
 );
 

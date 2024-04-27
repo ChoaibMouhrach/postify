@@ -17,10 +17,11 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { orders, ordersItems, products } from "../db/schema";
+import { customers, orders, ordersItems, products } from "../db/schema";
 import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 const indexSchema = z.object({
   page: pageSchema,
@@ -33,10 +34,24 @@ export const getOrdersAction = async (input: unknown) => {
 
   const { page, trash, query } = indexSchema.parse(input);
 
+  const customersRequest = db
+    .select({
+      id: customers.id,
+    })
+    .from(customers)
+    .where(
+      and(eq(customers.userId, user.id), ilike(customers.name, `%${query}%`)),
+    );
+
   const where = and(
     eq(orders.userId, user.id),
-    query ? or(ilike(orders.id, query)) : undefined,
     trash ? isNotNull(orders.deletedAt) : isNull(orders.deletedAt),
+    query
+      ? or(
+          ilike(orders.id, query),
+          inArray(orders.customerId, customersRequest),
+        )
+      : undefined,
   );
 
   const dataPromise = db.query.orders.findMany({
@@ -195,6 +210,7 @@ export const deleteOrderAction = action(schema, async (input) => {
   revalidatePath(`/orders`);
   revalidatePath(`/dashboard`);
   revalidatePath(`/orders/${order.id}/edit`);
+  redirect("/orders");
 });
 
 export const restoreOrderAction = action(schema, async (input) => {

@@ -4,7 +4,6 @@ import { Button } from "@/client/components/ui/button";
 import { useAction } from "next-safe-action/hooks";
 import React, { useMemo } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { deletePurchaseAction } from "@/server/controllers/purchase";
 
 interface DeleteProps {
@@ -13,12 +12,9 @@ interface DeleteProps {
 }
 
 export const Delete: React.FC<DeleteProps> = ({ id, deleted }) => {
-  const router = useRouter();
-
   const { execute, status } = useAction(deletePurchaseAction, {
     onSuccess: () => {
       toast.success("Purchase deleted successfully");
-      router.push("/purchases");
     },
     onError: (err) => {
       toast.error(err.serverError || "Something went wrong");

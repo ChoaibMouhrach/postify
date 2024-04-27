@@ -43,48 +43,63 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
     if (!isSuccess) return;
 
     for (let product of data.data) {
-      if (product.id === id) {
-        const p = form.getValues("products").find((p) => p.id === id);
+      if (product.id !== id) {
+        continue;
+      }
+      const p = form.getValues("products").find((p) => p.id === id);
 
-        if (p) {
-          form.setValue(
-            "products",
-            form.getValues("products").map((product) => {
-              if (product.id === id) {
-                return {
-                  ...product,
-                  quantity: product.quantity + 1,
-                };
-              }
+      if (p) {
+        form.setValue(
+          "products",
+          form.getValues("products").map((product) => {
+            if (product.id === id) {
+              return {
+                ...product,
+                quantity: product.quantity + 1,
+              };
+            }
 
-              return product;
-            }),
-          );
-
-          break;
-        }
-
-        form.setValue("products", [
-          ...form.getValues("products"),
-          {
-            id,
-            name: product.name,
-            quantity: 1,
-            cost: 1,
-          },
-        ]);
+            return product;
+          }),
+        );
 
         break;
       }
-    }
 
-    setQuery("");
+      form.setValue("products", [
+        ...form.getValues("products"),
+        {
+          id,
+          name: product.name,
+          quantity: 1,
+          cost: 1,
+        },
+      ]);
+
+      break;
+    }
   };
 
   const removeProduct = (id: string) => {
     form.setValue(
       "products",
       form.getValues("products").filter((product) => product.id !== id),
+    );
+  };
+
+  const updateCost = (id: string, cost: number) => {
+    form.setValue(
+      "products",
+      form.getValues("products").map((product) => {
+        if (product.id == id) {
+          return {
+            ...product,
+            cost,
+          };
+        }
+
+        return product;
+      }),
     );
   };
 
@@ -147,6 +162,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Quantity</TableHead>
+              <TableHead>Cost</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -165,6 +181,16 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({ form }) => {
                           product.id,
                           parseInt(e.target.value) || 1,
                         )
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={String(product.cost)}
+                      type="number"
+                      step="1"
+                      onChange={(e) =>
+                        updateCost(product.id, parseInt(e.target.value) || 1)
                       }
                     />
                   </TableCell>

@@ -10,6 +10,7 @@ import { action, auth } from "@/server/lib/action";
 import { purchaseRepository } from "@/server/repositories/purchase";
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 const restorePurchaseSchema = z.object({
@@ -175,5 +176,6 @@ export const deletePurchaseAction = action(
     revalidatePath(`/purchases`);
     revalidatePath(`/dashboard`);
     revalidatePath(`/purchases/${purchase.id}/edit`);
+    redirect("/purchases");
   },
 );

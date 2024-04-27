@@ -20,6 +20,7 @@ import { customers } from "../db/schema";
 import { SearchParams } from "@/types/nav";
 import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
+import { redirect } from "next/navigation";
 
 const indexSchema = z.object({
   page: pageSchema,
@@ -140,6 +141,7 @@ export const deleteCustomerAction = action(
     revalidatePath("/customers");
     revalidatePath("/dashboard");
     revalidatePath(`/customers/${input.id}/edit`);
+    redirect("/customers");
   },
 );
 

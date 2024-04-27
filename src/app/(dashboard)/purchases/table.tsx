@@ -2,10 +2,19 @@ import { DataTable } from "@/client/components/data-table";
 import { RECORDS_LIMIT } from "@/common/constants";
 import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
 import { db } from "@/server/db";
-import { TPurchase, TSupplier, purchases } from "@/server/db/schema";
+import { TPurchase, TSupplier, purchases, suppliers } from "@/server/db/schema";
 import { rscAuth } from "@/server/lib/action";
 import { SearchParams } from "@/types/nav";
-import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { columns } from "./columns";
 import { Button } from "@/client/components/ui/button";
@@ -26,9 +35,19 @@ export const Purchases: React.FC<purchasesProps> = async ({ searchParams }) => {
 
   const { page, query, trash } = schema.parse(searchParams);
 
+  const suppliersReauest = db
+    .select({
+      id: suppliers.id,
+    })
+    .from(suppliers)
+    .where(
+      and(eq(suppliers.userId, user.id), ilike(suppliers.name, `%${query}%`)),
+    );
+
   const where = and(
     eq(purchases.userId, user.id),
     trash ? isNotNull(purchases.deletedAt) : isNull(purchases.deletedAt),
+    query ? inArray(purchases.supplierId, suppliersReauest) : undefined,
   );
 
   const dataPromise = db.query.purchases.findMany({

@@ -5,6 +5,7 @@ import { action, auth } from "../lib/action";
 import { taskRepository } from "../repositories/task";
 import { revalidatePath } from "next/cache";
 import { createTaskSchema, updateTaskSchema } from "@/common/schemas/task";
+import { redirect } from "next/navigation";
 
 export const createTaskAction = action(createTaskSchema, async (input) => {
   const user = await auth();
@@ -54,6 +55,7 @@ export const removeTaskAction = action(schema, async (input) => {
   revalidatePath("/tasks");
   revalidatePath("/dashboard");
   revalidatePath(`/tasks/${task.id}/edit`);
+  redirect("/tasks");
 });
 
 export const restoreTaskAction = action(schema, async (input) => {

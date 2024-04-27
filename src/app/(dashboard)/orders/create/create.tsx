@@ -22,9 +22,18 @@ export interface Payload extends RawPayload {
 }
 
 export const Create = () => {
+  const form = useForm<Payload>({
+    resolver: zodResolver(createOrderSchema),
+    values: {
+      customerId: "",
+      products: [],
+    },
+  });
+
   const { execute, status } = useAction(createOrderAction, {
     onSuccess: () => {
       toast.success("Order created successfully");
+      form.reset();
     },
     onError: (err) => {
       toast.error(err.serverError || "Something went wrong");
@@ -34,14 +43,6 @@ export const Create = () => {
   const pending = useMemo(() => {
     return status === "executing";
   }, [status]);
-
-  const form = useForm<Payload>({
-    resolver: zodResolver(createOrderSchema),
-    values: {
-      customerId: "",
-      products: [],
-    },
-  });
 
   const onSubmit = (payload: Payload) => {
     execute(payload);
