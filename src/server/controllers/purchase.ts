@@ -168,10 +168,9 @@ export const deletePurchaseAction = action(
 
     if (purchase.deletedAt) {
       await purchaseRepository.permRemove(input.id, user.id);
-      return;
+    } else {
+      await purchaseRepository.remove(input.id, user.id);
     }
-
-    await purchaseRepository.remove(input.id, user.id);
 
     revalidatePath(`/purchases`);
     revalidatePath(`/dashboard`);
