@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Filter } from "lucide-react";
 import { Button } from "@/client/components/ui/button";
 import {
   DropdownMenu,
@@ -33,6 +33,13 @@ import { Toggle } from "@/client/components/ui/toggle";
 import debounce from "debounce";
 import { useUpdateSearchParams } from "../hooks/search-params";
 import { Skeleton } from "./ui/skeleton";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/client/components/ui/sheet";
 
 interface DataTableProps<TData> {
   children?: React.ReactNode;
@@ -134,45 +141,70 @@ export function DataTable<TData>({
 
   return (
     <div className="w-full">
-      <div className="flex flex-wrao items-center py-4">
+      <div className="flex justify-between gap-4 items-center pb-4">
         <Input
           onChange={(e) => onQuery(e.target.value)}
           defaultValue={query}
           placeholder="Search..."
           className="max-w-sm"
         />
-        <div className="flex flex-wrap items-center gap-2 ml-auto">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Toggle variant="outline" onPressedChange={onTrash} pressed={trash}>
-            Trash
-          </Toggle>
-          {children}
-        </div>
+
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button>
+              <Filter className="w-4 h-4" />
+              Filter
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="flex flex-col gap-4">
+            <SheetHeader>
+              <SheetTitle>Filter</SheetTitle>
+            </SheetHeader>
+
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      Columns <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="DropdownMenuContent"
+                  >
+                    {table
+                      .getAllColumns()
+                      .filter((column) => column.getCanHide())
+                      .map((column) => {
+                        return (
+                          <DropdownMenuCheckboxItem
+                            key={column.id}
+                            className="capitalize"
+                            checked={column.getIsVisible()}
+                            onCheckedChange={(value) =>
+                              column.toggleVisibility(!!value)
+                            }
+                          >
+                            {column.id}
+                          </DropdownMenuCheckboxItem>
+                        );
+                      })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Toggle
+                  variant="outline"
+                  onPressedChange={onTrash}
+                  pressed={trash}
+                >
+                  Trash
+                </Toggle>
+              </div>
+
+              {children}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
       <div className="rounded-md border">
         <Table>

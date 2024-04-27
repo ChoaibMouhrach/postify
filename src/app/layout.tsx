@@ -14,7 +14,7 @@ interface RootLayoutProps {
 
 const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body className={GeistSans.className}>
         <CustomProvider>{children}</CustomProvider>
       </body>

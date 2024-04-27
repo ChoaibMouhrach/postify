@@ -10,7 +10,7 @@ services:
     environment:
       - POSTGRES_PASSWORD=6003
       - POSTGRES_USER=root
-      - POSTGRES_DB=yerapos
+      - POSTGRES_DB=pos
 
 volumes:
   pg_data:
