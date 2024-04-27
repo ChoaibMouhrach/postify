@@ -135,7 +135,7 @@ export function DataTable<TData>({
 
   return (
     <div className="w-full">
-      <div className="flex justify-between gap-4 items-center pb-4">
+      <div className="flex justify-between gap-2 items-center pb-4">
         <Input
           onChange={(e) => onQuery(e.target.value)}
           defaultValue={query}
@@ -145,12 +145,12 @@ export function DataTable<TData>({
 
         <Sheet>
           <SheetTrigger asChild>
-            <Button>
+            <Button variant="outline" className="ml-auto">
               <Filter className="w-4 h-4" />
               Filter
             </Button>
           </SheetTrigger>
-          <SheetContent className="flex flex-col gap-4">
+          <SheetContent className="flex flex-col gap-4 p-4">
             <SheetHeader>
               <SheetTitle>Filter</SheetTitle>
             </SheetHeader>
@@ -163,10 +163,10 @@ export function DataTable<TData>({
               >
                 Trash
               </Toggle>
-
-              {children}
             </div>
           </SheetContent>
+
+          {children}
         </Sheet>
       </div>
       <div className="rounded-md border">
@@ -197,7 +197,7 @@ export function DataTable<TData>({
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell className=" whitespace-nowrap" key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
