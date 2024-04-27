@@ -12,14 +12,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronDown, Filter } from "lucide-react";
+import { Filter } from "lucide-react";
 import { Button } from "@/client/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/client/components/ui/dropdown-menu";
 import { Input } from "@/client/components/ui/input";
 import {
   Table,
@@ -161,45 +155,14 @@ export function DataTable<TData>({
               <SheetTitle>Filter</SheetTitle>
             </SheetHeader>
 
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
-                      Columns <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="DropdownMenuContent"
-                  >
-                    {table
-                      .getAllColumns()
-                      .filter((column) => column.getCanHide())
-                      .map((column) => {
-                        return (
-                          <DropdownMenuCheckboxItem
-                            key={column.id}
-                            className="capitalize"
-                            checked={column.getIsVisible()}
-                            onCheckedChange={(value) =>
-                              column.toggleVisibility(!!value)
-                            }
-                          >
-                            {column.id}
-                          </DropdownMenuCheckboxItem>
-                        );
-                      })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Toggle
-                  variant="outline"
-                  onPressedChange={onTrash}
-                  pressed={trash}
-                >
-                  Trash
-                </Toggle>
-              </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Toggle
+                variant="outline"
+                onPressedChange={onTrash}
+                pressed={trash}
+              >
+                Trash
+              </Toggle>
 
               {children}
             </div>
