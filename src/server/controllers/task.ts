@@ -17,6 +17,7 @@ export const createTaskAction = action(createTaskSchema, async (input) => {
   });
 
   revalidatePath("/tasks");
+  revalidatePath("/dashboard");
   revalidatePath(`/tasks/${task.id}/edit`);
 });
 
@@ -51,6 +52,7 @@ export const removeTaskAction = action(schema, async (input) => {
   }
 
   revalidatePath("/tasks");
+  revalidatePath("/dashboard");
   revalidatePath(`/tasks/${task.id}/edit`);
 });
 

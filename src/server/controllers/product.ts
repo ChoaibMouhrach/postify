@@ -61,7 +61,7 @@ export const createProductAction = action(
   async (input) => {
     const user = await auth();
 
-    await productRepository.create({
+    const product = await productRepository.create({
       name: input.name,
       price: input.price,
       description: input.description,
@@ -71,6 +71,8 @@ export const createProductAction = action(
     });
 
     revalidatePath("/products");
+    revalidatePath(`/dashboard`);
+    revalidatePath(`/products/${product.id}/edit`);
   },
 );
 
@@ -107,6 +109,7 @@ export const deleteProductAction = action(
     await productRepository.remove(product.id, user.id);
 
     revalidatePath("/products");
+    revalidatePath(`/dashboard`);
     revalidatePath(`/products/${input.id}/edit`);
   },
 );

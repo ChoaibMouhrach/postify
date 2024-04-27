@@ -4,7 +4,7 @@ import { SearchParams } from "@/types/nav";
 import { columns } from "./columns";
 import { Button } from "@/client/components/ui/button";
 import Link from "next/link";
-import { getSuppliersAction } from "@/server/controllers/suppliers";
+import { getSuppliersAction } from "@/server/controllers/supplier";
 
 interface SuppliersProps {
   searchParams: SearchParams;

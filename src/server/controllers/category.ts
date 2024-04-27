@@ -57,6 +57,7 @@ export const createCategoryAction = action(
       .then((cats) => cats[0]);
 
     revalidatePath("/categories");
+    revalidatePath("/dashboard");
     revalidatePath(`/categories/${newCategory.id}/edit`);
   },
 );
@@ -109,6 +110,8 @@ export const deleteCategoryAction = action(
       await categoryRepository.permRemove(input.id, user.id);
     }
 
+    revalidatePath("/dashboard");
     revalidatePath("/categories");
+    revalidatePath(`/categories/${category.id}/edit`);
   },
 );

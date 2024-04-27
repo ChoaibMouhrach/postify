@@ -119,6 +119,7 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
   );
 
   revalidatePath(`/orders`);
+  revalidatePath(`/dashboard`);
   revalidatePath(`/orders/${order.id}/edit`);
 });
 
@@ -192,6 +193,7 @@ export const deleteOrderAction = action(schema, async (input) => {
   }
 
   revalidatePath(`/orders`);
+  revalidatePath(`/dashboard`);
   revalidatePath(`/orders/${order.id}/edit`);
 });
 

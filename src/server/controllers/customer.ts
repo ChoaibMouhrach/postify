@@ -14,7 +14,6 @@ import {
 import { customerRepository } from "@/server/repositories/customer";
 import { and, desc, eq, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "../db";
 import { customers } from "../db/schema";
@@ -111,7 +110,7 @@ export const createCustomerAction = action(
       }
     }
 
-    await customerRepository.create({
+    const customer = await customerRepository.create({
       name: input.name,
       email: input.email || undefined,
       phone: input.phone,
@@ -120,7 +119,8 @@ export const createCustomerAction = action(
     });
 
     revalidatePath("/customers");
-    redirect("/customers");
+    revalidatePath("/dashboard");
+    revalidatePath(`/customers/${customer.id}/edit`);
   },
 );
 
@@ -138,7 +138,8 @@ export const deleteCustomerAction = action(
     await customerRepository.update(input.id, user.id, { deletedAt: `NOW()` });
 
     revalidatePath("/customers");
-    revalidatePath(`/customers/${input.id}/edit`, "page");
+    revalidatePath("/dashboard");
+    revalidatePath(`/customers/${input.id}/edit`);
   },
 );
 

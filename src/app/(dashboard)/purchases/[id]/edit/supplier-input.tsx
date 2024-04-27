@@ -10,7 +10,7 @@ import {
 } from "@/client/components/ui/form";
 import { UseFormReturn } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
-import { getSuppliersAction } from "@/server/controllers/suppliers";
+import { getSuppliersAction } from "@/server/controllers/supplier";
 import { Combobox } from "@/client/components/ui/combobox";
 import { Skeleton } from "@/client/components/ui/skeleton";
 import { useCallback, useState } from "react";

@@ -93,6 +93,7 @@ export const createPurchaseAction = action(
     );
 
     revalidatePath("/purchases");
+    revalidatePath(`/dashboard`);
     revalidatePath(`/purchases/${purchaseId}/edit`);
   },
 );
@@ -173,6 +174,7 @@ export const deletePurchaseAction = action(
     await purchaseRepository.remove(input.id, user.id);
 
     revalidatePath(`/purchases`);
+    revalidatePath(`/dashboard`);
     revalidatePath(`/purchases/${purchase.id}/edit`);
   },
 );
