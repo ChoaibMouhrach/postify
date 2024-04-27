@@ -7,6 +7,6 @@ export const TASK_STATUSES = {
 };
 
 export const TASK_TYPES = {
-  BUG: "bug",
-  FEATURE: "feature",
+  BUG: "Bug",
+  FEATURE: "Feature",
 };

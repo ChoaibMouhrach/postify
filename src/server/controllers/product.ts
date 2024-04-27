@@ -106,7 +106,11 @@ export const deleteProductAction = action(
 
     const product = await productRepository.findOrThrow(input.id, user.id);
 
-    await productRepository.remove(product.id, user.id);
+    if (product.deletedAt) {
+      await productRepository.permRemove(product.id, user.id);
+    } else {
+      await productRepository.remove(product.id, user.id);
+    }
 
     revalidatePath("/products");
     revalidatePath(`/dashboard`);
@@ -136,6 +140,7 @@ export const restoreProductAction = action(
     }
 
     await productRepository.restore(input.id, user.id);
+
     revalidatePath("/products");
     revalidatePath(`/products/${product.id}/edit`);
   },
