@@ -135,39 +135,40 @@ export function DataTable<TData>({
 
   return (
     <div className="w-full">
-      <div className="flex justify-between gap-2 items-center pb-4">
+      <div className="flex flex-col md:flex-row-reverse justify-between gap-2 pb-4">
+        <div className="flex justify-end items-center gap-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline">
+                <Filter className="w-4 h-4" />
+                Filter
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="flex flex-col gap-4 p-4">
+              <SheetHeader>
+                <SheetTitle>Filter</SheetTitle>
+              </SheetHeader>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Toggle
+                  variant="outline"
+                  onPressedChange={onTrash}
+                  pressed={trash}
+                >
+                  Trash
+                </Toggle>
+              </div>
+            </SheetContent>
+          </Sheet>
+          {children}
+        </div>
+
         <Input
           onChange={(e) => onQuery(e.target.value)}
           defaultValue={query}
           placeholder="Search..."
-          className="max-w-sm"
+          className="md:max-w-sm"
         />
-
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              <Filter className="w-4 h-4" />
-              Filter
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="flex flex-col gap-4 p-4">
-            <SheetHeader>
-              <SheetTitle>Filter</SheetTitle>
-            </SheetHeader>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Toggle
-                variant="outline"
-                onPressedChange={onTrash}
-                pressed={trash}
-              >
-                Trash
-              </Toggle>
-            </div>
-          </SheetContent>
-
-          {children}
-        </Sheet>
       </div>
       <div className="rounded-md border">
         <Table>
