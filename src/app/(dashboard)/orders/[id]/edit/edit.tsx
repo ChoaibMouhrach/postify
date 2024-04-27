@@ -65,7 +65,7 @@ export const Edit: React.FC<EditProps> = ({ order }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <CardContent className="grid gap-4">
+        <CardContent className="flex flex-col gap-4">
           <CustomerInput form={form} />
           <ProductsInput form={form} />
         </CardContent>

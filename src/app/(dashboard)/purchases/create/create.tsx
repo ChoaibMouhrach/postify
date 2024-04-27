@@ -51,7 +51,7 @@ export const Create = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <CardContent className="grid gap-4">
+        <CardContent className="flex flex-col gap-4">
           <SupplierInput form={form} />
           <ProductsInput form={form} />
         </CardContent>
