@@ -11,17 +11,22 @@ interface SuppliersProps {
 }
 
 export const Suppliers: React.FC<SuppliersProps> = async ({ searchParams }) => {
-  const { data, trash, query, page, lastPage } =
+  const { data, trash, query, page, lastPage, from, to } =
     await getSuppliersAction(searchParams);
 
   return (
     <DataTable<TSupplier>
+      // data
       data={data}
       columns={columns}
-      lastPage={lastPage}
-      page={page}
+      // meta
       query={query}
       trash={trash}
+      from={from}
+      to={to}
+      // pagination
+      page={page}
+      lastPage={lastPage}
     >
       <Button asChild>
         <Link href="/suppliers/create">New supplier</Link>

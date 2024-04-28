@@ -10,9 +10,26 @@ import { revalidatePath } from "next/cache";
 import { db } from "../db";
 import { suppliers } from "../db/schema";
 import { RECORDS_LIMIT } from "@/common/constants";
-import { and, eq, isNotNull, isNull, or, ilike, desc, sql } from "drizzle-orm";
+import {
+  and,
+  eq,
+  isNotNull,
+  isNull,
+  or,
+  ilike,
+  desc,
+  sql,
+  lte,
+  gte,
+} from "drizzle-orm";
 import { rscAuth } from "../lib/action";
-import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
+import {
+  fromSchema,
+  pageSchema,
+  querySchema,
+  toSchema,
+  trashSchema,
+} from "@/common/schemas";
 import { z } from "zod";
 import { SearchParams } from "@/types/nav";
 import { redirect } from "next/navigation";
@@ -21,16 +38,29 @@ const schema = z.object({
   page: pageSchema,
   query: querySchema,
   trash: trashSchema,
+  from: fromSchema,
+  to: toSchema,
 });
 
 export const getSuppliersAction = async (searchParams: SearchParams) => {
   const user = await rscAuth();
 
-  const { page, query, trash } = schema.parse(searchParams);
+  const { page, query, trash, from, to } = schema.parse(searchParams);
 
   const where = and(
     eq(suppliers.userId, user.id),
     trash ? isNotNull(suppliers.deletedAt) : isNull(suppliers.deletedAt),
+    from || to
+      ? and(
+          from
+            ? gte(suppliers.createdAt, new Date(parseInt(from)).toDateString())
+            : undefined,
+          lte(
+            suppliers.createdAt,
+            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
+          ),
+        )
+      : undefined,
     query
       ? or(
           ilike(suppliers.name, `%${query}%`),
@@ -62,10 +92,14 @@ export const getSuppliersAction = async (searchParams: SearchParams) => {
 
   return {
     data,
-    page,
-    lastPage,
+    // meta
     trash,
     query,
+    from,
+    to,
+    // pagination
+    page,
+    lastPage,
   };
 };
 

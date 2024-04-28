@@ -1,11 +1,27 @@
 import { DataTable } from "@/client/components/data-table";
 import { RECORDS_LIMIT } from "@/common/constants";
-import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
+import {
+  fromSchema,
+  pageSchema,
+  querySchema,
+  toSchema,
+  trashSchema,
+} from "@/common/schemas";
 import { db } from "@/server/db";
 import { categories, TCategory } from "@/server/db/schema";
 import { rscAuth } from "@/server/lib/action";
 import { SearchParams } from "@/types/nav";
-import { and, eq, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  eq,
+  gte,
+  ilike,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import React from "react";
 import { z } from "zod";
 import { columns } from "./columns";
@@ -20,6 +36,8 @@ const schema = z.object({
   page: pageSchema,
   trash: trashSchema,
   query: querySchema,
+  from: fromSchema,
+  to: toSchema,
 });
 
 export const Categories: React.FC<CategoriesProps> = async ({
@@ -27,11 +45,22 @@ export const Categories: React.FC<CategoriesProps> = async ({
 }) => {
   const user = await rscAuth();
 
-  const { page, query, trash } = schema.parse(searchParams);
+  const { page, query, trash, from, to } = schema.parse(searchParams);
 
   const where = and(
     eq(categories.userId, user.id),
     trash ? isNotNull(categories.deletedAt) : isNull(categories.deletedAt),
+    from || to
+      ? and(
+          from
+            ? gte(categories.createdAt, new Date(parseInt(from)).toDateString())
+            : undefined,
+          lte(
+            categories.createdAt,
+            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
+          ),
+        )
+      : undefined,
     query ? or(ilike(categories.name, `%${query}%`)) : undefined,
   );
 
@@ -58,9 +87,12 @@ export const Categories: React.FC<CategoriesProps> = async ({
       data={data}
       columns={columns}
       // meta
-      page={page}
       trash={trash}
       query={query}
+      from={from}
+      to={to}
+      // pagination
+      page={page}
       lastPage={lastPage}
     >
       <Button asChild>

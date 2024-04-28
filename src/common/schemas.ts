@@ -17,3 +17,15 @@ export const querySchema = z.union([
   z.string(),
   z.array(z.string()).transform((vs) => vs[0]),
 ]);
+
+export const fromSchema = z.union([
+  z.undefined(),
+  z.literal("").transform(() => undefined),
+  z.string(),
+]);
+
+export const toSchema = z.union([
+  z.undefined(),
+  z.literal("").transform(() => undefined),
+  z.string(),
+]);

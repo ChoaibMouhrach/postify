@@ -12,15 +12,20 @@ interface OrdersProps {
 }
 
 export const Orders: React.FC<OrdersProps> = async ({ searchParams }) => {
-  const { data, lastPage, page, query, trash } =
+  const { data, lastPage, page, query, trash, from, to } =
     await getOrdersAction(searchParams);
 
   return (
     <DataTable<TOrder & { customer: TCustomer | null }>
+      // data
       data={data}
       columns={columns}
+      // meta
       trash={trash}
       query={query}
+      from={from}
+      to={to}
+      // pagination
       page={page}
       lastPage={lastPage}
     >

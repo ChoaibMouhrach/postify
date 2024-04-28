@@ -12,13 +12,30 @@ import {
   rscAuth,
 } from "@/server/lib/action";
 import { customerRepository } from "@/server/repositories/customer";
-import { and, desc, eq, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  ilike,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "../db";
 import { customers } from "../db/schema";
 import { SearchParams } from "@/types/nav";
-import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
+import {
+  fromSchema,
+  pageSchema,
+  querySchema,
+  toSchema,
+  trashSchema,
+} from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
 import { redirect } from "next/navigation";
 
@@ -26,16 +43,29 @@ const indexSchema = z.object({
   page: pageSchema,
   query: querySchema,
   trash: trashSchema,
+  from: fromSchema,
+  to: toSchema,
 });
 
 export const getCustomersAction = async (searchParams: SearchParams) => {
-  const { page, query, trash } = indexSchema.parse(searchParams);
+  const { page, query, trash, from, to } = indexSchema.parse(searchParams);
 
   const user = await rscAuth();
 
   const where = and(
     eq(customers.userId, user.id),
     trash ? isNotNull(customers.deletedAt) : isNull(customers.deletedAt),
+    from || to
+      ? and(
+          from
+            ? gte(customers.createdAt, new Date(parseInt(from)).toDateString())
+            : undefined,
+          lte(
+            customers.createdAt,
+            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
+          ),
+        )
+      : undefined,
     query
       ? or(
           ilike(customers.name, `%${query}%`),
@@ -68,6 +98,8 @@ export const getCustomersAction = async (searchParams: SearchParams) => {
     lastPage,
     trash,
     query,
+    from,
+    to,
   };
 };
 

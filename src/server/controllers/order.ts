@@ -10,15 +10,23 @@ import {
   and,
   desc,
   eq,
+  gte,
   ilike,
   inArray,
   isNotNull,
   isNull,
+  lte,
   or,
   sql,
 } from "drizzle-orm";
 import { customers, orders, ordersItems, products } from "../db/schema";
-import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
+import {
+  fromSchema,
+  pageSchema,
+  querySchema,
+  toSchema,
+  trashSchema,
+} from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -27,12 +35,14 @@ const indexSchema = z.object({
   page: pageSchema,
   query: querySchema,
   trash: trashSchema,
+  from: fromSchema,
+  to: toSchema,
 });
 
 export const getOrdersAction = async (input: unknown) => {
   const user = await rscAuth();
 
-  const { page, trash, query } = indexSchema.parse(input);
+  const { page, trash, query, from, to } = indexSchema.parse(input);
 
   const customersRequest = db
     .select({
@@ -46,6 +56,18 @@ export const getOrdersAction = async (input: unknown) => {
   const where = and(
     eq(orders.userId, user.id),
     trash ? isNotNull(orders.deletedAt) : isNull(orders.deletedAt),
+    from || to
+      ? and(
+          from
+            ? gte(orders.createdAt, new Date(parseInt(from)).toDateString())
+            : undefined,
+          lte(
+            orders.createdAt,
+            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
+          ),
+        )
+      : undefined,
+
     query
       ? or(
           ilike(orders.id, query),
@@ -77,11 +99,16 @@ export const getOrdersAction = async (input: unknown) => {
   const lastPage = Math.ceil(count / RECORDS_LIMIT);
 
   return {
+    // data
     data,
-    lastPage,
-    page,
+    // meta
     trash,
     query,
+    from,
+    to,
+    // pagination
+    page,
+    lastPage,
   };
 };
 

@@ -1,6 +1,12 @@
 import { DataTable } from "@/client/components/data-table";
 import { RECORDS_LIMIT } from "@/common/constants";
-import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
+import {
+  fromSchema,
+  pageSchema,
+  querySchema,
+  toSchema,
+  trashSchema,
+} from "@/common/schemas";
 import { db } from "@/server/db";
 import { TPurchase, TSupplier, purchases, suppliers } from "@/server/db/schema";
 import { rscAuth } from "@/server/lib/action";
@@ -9,10 +15,12 @@ import {
   and,
   desc,
   eq,
+  gte,
   ilike,
   inArray,
   isNotNull,
   isNull,
+  lte,
   sql,
 } from "drizzle-orm";
 import { z } from "zod";
@@ -28,12 +36,14 @@ const schema = z.object({
   page: pageSchema,
   trash: trashSchema,
   query: querySchema,
+  from: fromSchema,
+  to: toSchema,
 });
 
 export const Purchases: React.FC<purchasesProps> = async ({ searchParams }) => {
   const user = await rscAuth();
 
-  const { page, query, trash } = schema.parse(searchParams);
+  const { page, query, trash, from, to } = schema.parse(searchParams);
 
   const suppliersReauest = db
     .select({
@@ -47,6 +57,17 @@ export const Purchases: React.FC<purchasesProps> = async ({ searchParams }) => {
   const where = and(
     eq(purchases.userId, user.id),
     trash ? isNotNull(purchases.deletedAt) : isNull(purchases.deletedAt),
+    from || to
+      ? and(
+          from
+            ? gte(purchases.createdAt, new Date(parseInt(from)).toDateString())
+            : undefined,
+          lte(
+            purchases.createdAt,
+            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
+          ),
+        )
+      : undefined,
     query ? inArray(purchases.supplierId, suppliersReauest) : undefined,
   );
 

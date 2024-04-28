@@ -13,7 +13,7 @@ interface ProductsTableProps {
 export const ProductsTable: React.FC<ProductsTableProps> = async ({
   searchParams,
 }) => {
-  const { data, lastPage, page, trash, query } =
+  const { data, lastPage, page, trash, query, from, to } =
     await getProductsAction(searchParams);
 
   return (
@@ -24,6 +24,8 @@ export const ProductsTable: React.FC<ProductsTableProps> = async ({
       // meta
       trash={trash}
       query={query}
+      from={from}
+      to={to}
       // pagination
       page={page}
       lastPage={lastPage}

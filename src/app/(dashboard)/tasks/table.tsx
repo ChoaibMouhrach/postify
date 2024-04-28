@@ -1,12 +1,29 @@
 import { DataTable } from "@/client/components/data-table";
 import { Button } from "@/client/components/ui/button";
 import { RECORDS_LIMIT } from "@/common/constants";
-import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
+import {
+  fromSchema,
+  pageSchema,
+  querySchema,
+  toSchema,
+  trashSchema,
+} from "@/common/schemas";
 import { db } from "@/server/db";
 import { tasks, TTask, TTaskStatus, TTaskType } from "@/server/db/schema";
 import { rscAuth } from "@/server/lib/action";
 import { SearchParams } from "@/types/nav";
-import { and, desc, eq, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  ilike,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import Link from "next/link";
 import React from "react";
 import { z } from "zod";
@@ -20,16 +37,30 @@ const indexSchema = z.object({
   page: pageSchema,
   query: querySchema,
   trash: trashSchema,
+  from: fromSchema,
+  to: toSchema,
 });
 
 export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
-  const { page, query, trash } = await indexSchema.parse(searchParams);
+  const { page, query, trash, to, from } =
+    await indexSchema.parse(searchParams);
 
   const user = await rscAuth();
 
   const where = and(
     eq(tasks.userId, user.id),
     trash ? isNotNull(tasks.deletedAt) : isNull(tasks.deletedAt),
+    from || to
+      ? and(
+          from
+            ? gte(tasks.createdAt, new Date(parseInt(from)).toDateString())
+            : undefined,
+          lte(
+            tasks.createdAt,
+            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
+          ),
+        )
+      : undefined,
     query
       ? or(
           ilike(tasks.title, `%${query}%`),
@@ -62,14 +93,17 @@ export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
 
   return (
     <DataTable<TTask & { type: TTaskType; status: TTaskStatus }>
-      //
+      // data
       data={data}
       columns={columns}
-      lastPage={lastPage}
-      //
+      // meta
       trash={trash}
       query={query}
+      from={from}
+      to={to}
+      // pagination
       page={page}
+      lastPage={lastPage}
     >
       <Button asChild>
         <Link href="/tasks/create">Add task</Link>

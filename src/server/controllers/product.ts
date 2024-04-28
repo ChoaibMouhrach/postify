@@ -1,6 +1,12 @@
 "use server";
 
-import { pageSchema, querySchema, trashSchema } from "@/common/schemas";
+import {
+  fromSchema,
+  pageSchema,
+  querySchema,
+  toSchema,
+  trashSchema,
+} from "@/common/schemas";
 import {
   createProductSchema,
   updateProductSchema,
@@ -10,7 +16,17 @@ import { products } from "@/server/db/schema";
 import { action, auth, NotfoundError, rscAuth } from "@/server/lib/action";
 import { productRepository } from "@/server/repositories/product";
 import { SearchParams } from "@/types/nav";
-import { and, desc, eq, ilike, isNotNull, isNull, or } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  ilike,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -19,16 +35,29 @@ const schema = z.object({
   page: pageSchema,
   trash: trashSchema,
   query: querySchema,
+  from: fromSchema,
+  to: toSchema,
 });
 
 export const getProductsAction = async (searchParams: SearchParams) => {
   const user = await rscAuth();
 
-  const { page, trash, query } = schema.parse(searchParams);
+  const { page, trash, query, from, to } = schema.parse(searchParams);
 
   const where = and(
     eq(products.userId, user.id),
     trash ? isNotNull(products.deletedAt) : isNull(products.deletedAt),
+    from || to
+      ? and(
+          from
+            ? gte(products.createdAt, new Date(parseInt(from)).toDateString())
+            : undefined,
+          lte(
+            products.createdAt,
+            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
+          ),
+        )
+      : undefined,
     query
       ? or(
           ilike(products.name, `%${query}%`),
@@ -54,6 +83,8 @@ export const getProductsAction = async (searchParams: SearchParams) => {
     query,
     trash,
     lastPage,
+    from,
+    to,
   };
 };
 

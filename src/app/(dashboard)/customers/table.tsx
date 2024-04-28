@@ -10,7 +10,7 @@ interface CustomersProps {
 }
 
 export const Customers: React.FC<CustomersProps> = async ({ searchParams }) => {
-  const { data, lastPage, page, query, trash } =
+  const { data, lastPage, page, query, trash, from, to } =
     await getCustomersAction(searchParams);
 
   return (
@@ -20,6 +20,8 @@ export const Customers: React.FC<CustomersProps> = async ({ searchParams }) => {
       // meta
       query={query}
       trash={trash}
+      from={from}
+      to={to}
       // pagination
       lastPage={lastPage}
       page={page}

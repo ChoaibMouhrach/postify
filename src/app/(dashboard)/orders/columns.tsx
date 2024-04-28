@@ -76,6 +76,10 @@ export const columns: ColumnDef<TOrder & { customer: TCustomer | null }>[] = [
     accessorKey: "totalPrice",
   },
   {
+    header: "Created at",
+    cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+  },
+  {
     id: "Actions",
     cell: ({ row }) => <Actions order={row.original} />,
   },

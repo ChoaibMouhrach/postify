@@ -34,6 +34,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/client/components/ui/sheet";
+import { DatePickerWithRange } from "./date-picker";
+import { Label } from "./ui/label";
+import { DateRange } from "react-day-picker";
 
 interface DataTableProps<TData> {
   children?: React.ReactNode;
@@ -45,11 +48,39 @@ interface DataTableProps<TData> {
   // meta
   trash: boolean;
   query: string;
+  from?: string;
+  to?: string;
 
   // pagination
   lastPage: number;
   page: number;
 }
+
+const startOfDayTimestamp = (date: Date) => {
+  const startOfDay = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    0,
+    0,
+    0,
+  );
+
+  return startOfDay.getTime();
+};
+
+const endOfDayTimestamp = (date: Date) => {
+  const endOfDay = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    23,
+    59,
+    59,
+  );
+
+  return endOfDay.getTime();
+};
 
 export function DataTable<TData>({
   children,
@@ -61,6 +92,8 @@ export function DataTable<TData>({
   // meta
   trash,
   query,
+  from,
+  to,
 
   // pagination
   lastPage,
@@ -94,6 +127,37 @@ export function DataTable<TData>({
       rowSelection,
     },
   });
+
+  const handleDate = (d?: DateRange) => {
+    if (!d) {
+      update([
+        {
+          key: "from",
+          value: "",
+        },
+        {
+          key: "to",
+          value: "",
+        },
+      ]);
+
+      return;
+    }
+
+    if (d.from) {
+      update({
+        key: "from",
+        value: startOfDayTimestamp(d.from).toString(),
+      });
+    }
+
+    if (d.to) {
+      update({
+        key: "to",
+        value: endOfDayTimestamp(d.to).toString(),
+      });
+    }
+  };
 
   const onNext = () => {
     update({
@@ -149,14 +213,33 @@ export function DataTable<TData>({
                 <SheetTitle>Filter</SheetTitle>
               </SheetHeader>
 
-              <div className="grid grid-cols-2 gap-2">
-                <Toggle
-                  variant="outline"
-                  onPressedChange={onTrash}
-                  pressed={trash}
-                >
-                  Trash
-                </Toggle>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
+                  <Label>Trash</Label>
+                  <Toggle
+                    variant="outline"
+                    onPressedChange={onTrash}
+                    pressed={trash}
+                  >
+                    Trash
+                  </Toggle>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <label>Date</label>
+                  <DatePickerWithRange
+                    value={{
+                      from:
+                        from && parseInt(from)
+                          ? new Date(parseInt(from))
+                          : undefined,
+                      to:
+                        to && parseInt(to) ? new Date(parseInt(to)) : undefined,
+                    }}
+                    onValueChange={handleDate}
+                    className="col-start-1 col-end-3"
+                  />
+                </div>
               </div>
             </SheetContent>
           </Sheet>
