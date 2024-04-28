@@ -208,12 +208,12 @@ export function DataTable<TData>({
                 Filter
               </Button>
             </SheetTrigger>
-            <SheetContent className="flex flex-col gap-4 p-4">
+            <SheetContent>
               <SheetHeader>
                 <SheetTitle>Filter</SheetTitle>
               </SheetHeader>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 mt-8">
                 <div className="flex flex-col gap-3">
                   <Label>Trash</Label>
                   <Toggle
