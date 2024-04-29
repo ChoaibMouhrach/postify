@@ -47,9 +47,21 @@ const restore = (id: string, userId: string) => {
     .where(and(eq(purchases.id, id), eq(purchases.userId, userId)));
 };
 
+const update = (
+  id: string,
+  userId: string,
+  input: Partial<TPurchaseInsert>,
+) => {
+  return db
+    .update(purchases)
+    .set(input)
+    .where(and(eq(purchases.id, id), eq(purchases.userId, userId)));
+};
+
 export const purchaseRepository = {
   find,
   findOrThrow,
+  update,
   create,
   remove,
   permRemove,

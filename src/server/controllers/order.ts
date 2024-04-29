@@ -160,6 +160,17 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
     }),
   );
 
+  await Promise.all(
+    items.map((item) => {
+      return db
+        .update(products)
+        .set({
+          stock: sql`${products.stock} - ${item.quantity}`,
+        })
+        .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+    }),
+  );
+
   revalidatePath(`/orders`);
   revalidatePath(`/dashboard`);
   revalidatePath(`/orders/${order.id}/edit`);
@@ -171,12 +182,23 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
   const order = await orderRepository.findOrThrow(input.id, user.id);
 
   if (order.customerId !== input.customerId) {
-    await customerRepository.findOrThrow(input.customerId, user.id);
+    const customer = await customerRepository.findOrThrow(
+      input.customerId,
+      user.id,
+    );
+
+    await orderRepository.update(customer.id, user.id, {
+      customerId: input.customerId,
+    });
   }
+
+  const oldItems = await db.query.ordersItems.findMany({
+    where: eq(ordersItems.orderId, order.id),
+  });
 
   await db.delete(ordersItems).where(eq(ordersItems.orderId, order.id));
 
-  const ps = await db.query.products.findMany({
+  const newItems = await db.query.products.findMany({
     where: and(
       eq(products.userId, user.id),
       inArray(
@@ -186,37 +208,92 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
     ),
   });
 
-  const items = ps.map((product) => {
-    const p = input.products.find((p) => p.id === product.id)!;
+  const items = newItems.map((item) => {
+    const product = input.products.find((product) => product.id === item.id)!;
+    const old = oldItems.find((old) => old.productId === item.id);
+
+    if (old) {
+      return {
+        ...item,
+        new: product,
+        old,
+      };
+    }
 
     return {
-      ...product,
-      quantity: p.quantity,
+      ...item,
+      new: product,
     };
   });
 
   await db.insert(ordersItems).values(
-    items.map((item) => {
+    items.map((product) => {
       return {
         orderId: order.id,
-        price: item.price,
-        productId: item.id,
-        quantity: item.quantity,
+        productId: product.id,
+        price: product.price,
+        quantity: product.new.quantity,
       };
     }),
   );
 
-  const totalPrice = items
-    .map((item) => item.price * item.quantity)
-    .reduce((a, b) => a + b);
+  await Promise.all([
+    ...items.map((item) => {
+      if ("old" in item) {
+        if (item.old.quantity === item.new.quantity) {
+          return;
+        }
 
-  await orderRepository.update(input.id, user.id, {
-    customerId: input.customerId,
-    totalPrice,
-  });
+        const q = Math.abs(item.old.quantity - item.new.quantity);
 
-  revalidatePath(`/orders`);
-  revalidatePath(`/orders/${order.id}/edit`);
+        if (item.old.quantity > item.new.quantity) {
+          return db
+            .update(products)
+            .set({
+              stock: sql<string>`${products.stock} + ${q}`,
+            })
+            .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+        }
+
+        return db
+          .update(products)
+          .set({
+            stock: sql<string>`${products.stock} - ${q}`,
+          })
+          .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+      }
+
+      return db
+        .update(products)
+        .set({
+          stock: sql<string>`${products.stock} - ${item.new.quantity}`,
+        })
+        .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+    }),
+    ...oldItems.map((item) => {
+      const product = input.products.find(
+        (product) => product.id === item.productId,
+      );
+
+      if (product) {
+        return;
+      }
+
+      return db
+        .update(products)
+        .set({
+          stock: sql<string>`${products.stock} + ${item.quantity}`,
+        })
+        .where(
+          and(eq(products.id, item.productId), eq(products.userId, user.id)),
+        );
+    }),
+  ]);
+
+  revalidatePath("/orders");
+  revalidatePath("/products");
+  revalidatePath("/dashboard");
+  revalidatePath(`/orders?${order.id}/edit`);
 });
 
 const schema = z.object({
@@ -227,6 +304,23 @@ export const deleteOrderAction = action(schema, async (input) => {
   const user = await auth();
 
   const order = await orderRepository.findOrThrow(input.id, user.id);
+
+  const items = await db.query.ordersItems.findMany({
+    where: eq(ordersItems.orderId, order.id),
+  });
+
+  await Promise.all(
+    items.map((item) => {
+      return db
+        .update(products)
+        .set({
+          stock: sql`${products.stock} + ${item.quantity}`,
+        })
+        .where(
+          and(eq(products.id, item.productId), eq(products.userId, user.id)),
+        );
+    }),
+  );
 
   if (order.deletedAt) {
     await orderRepository.permRemove(input.id, user.id);
@@ -248,6 +342,23 @@ export const restoreOrderAction = action(schema, async (input) => {
   if (!order.deletedAt) {
     return;
   }
+
+  const items = await db.query.ordersItems.findMany({
+    where: eq(ordersItems.orderId, order.id),
+  });
+
+  await Promise.all(
+    items.map((item) => {
+      return db
+        .update(products)
+        .set({
+          stock: sql`${products.stock} + ${item.quantity}`,
+        })
+        .where(
+          and(eq(products.id, item.productId), eq(products.userId, user.id)),
+        );
+    }),
+  );
 
   await orderRepository.restore(input.id, user.id);
 

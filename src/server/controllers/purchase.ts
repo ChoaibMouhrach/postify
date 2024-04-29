@@ -8,7 +8,7 @@ import { db } from "@/server/db";
 import { products, purchases, purchasesItems } from "@/server/db/schema";
 import { action, auth } from "@/server/lib/action";
 import { purchaseRepository } from "@/server/repositories/purchase";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -28,6 +28,21 @@ export const restorePurchaseAction = action(
       return;
     }
 
+    const items = await db.query.purchasesItems.findMany({
+      where: eq(purchasesItems.purchaseId, purchase.id),
+    });
+
+    await Promise.all(
+      items.map((item) => {
+        return db
+          .update(products)
+          .set({
+            stock: sql<string>`${products.stock} + ${item.quantity}`,
+          })
+          .where(eq(products.id, item.productId));
+      }),
+    );
+
     await db
       .update(purchases)
       .set({
@@ -45,31 +60,27 @@ export const createPurchaseAction = action(
   async (input) => {
     const user = await auth();
 
-    let ps = await db.query.products
-      .findMany({
-        where: and(
-          eq(products.userId, user.id),
-          inArray(
-            products.id,
-            input.products.map((product) => product.id),
-          ),
+    let ps = await db.query.products.findMany({
+      where: and(
+        eq(products.userId, user.id),
+        inArray(
+          products.id,
+          input.products.map((product) => product.id),
         ),
-      })
-      .then((ps) =>
-        ps.map((p) => {
-          const product = input.products.find(
-            (product) => product.id === p.id,
-          )!;
+      ),
+    });
 
-          return {
-            ...p,
-            quantity: product.quantity,
-            cost: product.cost,
-          };
-        }),
-      );
+    const items = ps.map((p) => {
+      const product = input.products.find((product) => product.id === p.id)!;
 
-    const totalCost = ps
+      return {
+        ...p,
+        quantity: product.quantity,
+        cost: product.cost,
+      };
+    });
+
+    const totalCost = items
       .map((p) => p.quantity * p.cost)
       .reduce((a, b) => a + b);
 
@@ -83,7 +94,7 @@ export const createPurchaseAction = action(
       .then((ps) => ps[0].id);
 
     await db.insert(purchasesItems).values(
-      ps.map((p) => {
+      items.map((p) => {
         return {
           purchaseId,
           cost: p.cost,
@@ -93,6 +104,21 @@ export const createPurchaseAction = action(
       }),
     );
 
+    await Promise.all(
+      items.map((item) => {
+        return db
+          .update(products)
+          .set({
+            stock: sql<string>`${products.stock} + ${item.quantity}`,
+          })
+          .where(eq(products.id, item.id));
+      }),
+    );
+
+    // revalidate products
+    revalidatePath("/products");
+
+    // revalidate purchases
     revalidatePath("/purchases");
     revalidatePath(`/dashboard`);
     revalidatePath(`/purchases/${purchaseId}/edit`);
@@ -106,11 +132,30 @@ export const updatePurchaseAction = action(
 
     const purchase = await purchaseRepository.findOrThrow(input.id, user.id);
 
+    if (purchase.supplierId !== input.supplierId) {
+      await purchaseRepository.update(input.id, user.id, {
+        supplierId: input.supplierId,
+      });
+    }
+
+    const oldItems = await db.query.purchasesItems.findMany({
+      where: eq(purchasesItems.purchaseId, purchase.id),
+    });
+
     await db
       .delete(purchasesItems)
-      .where(eq(purchasesItems.purchaseId, input.id));
+      .where(eq(purchasesItems.purchaseId, purchase.id));
 
-    const items = await db.query.products.findMany({
+    await db.insert(purchasesItems).values(
+      input.products.map((product) => ({
+        productId: product.id,
+        purchaseId: purchase.id,
+        cost: product.cost,
+        quantity: product.quantity,
+      })),
+    );
+
+    const newItems = await db.query.products.findMany({
       where: and(
         eq(products.userId, user.id),
         inArray(
@@ -120,39 +165,79 @@ export const updatePurchaseAction = action(
       ),
     });
 
-    const ps = items.map((item) => {
-      const product = input.products.find((p) => p.id === item.id)!;
+    await Promise.all([
+      ...newItems.map((item) => {
+        const product = input.products.find(
+          (product) => product.id === item.id,
+        )!;
 
-      return {
-        ...item,
-        quantity: product.quantity,
-        cost: product.cost,
-      };
-    });
+        const oldItem = oldItems.find(
+          (oldItem) => oldItem.productId === item.id,
+        );
 
-    await db.insert(purchasesItems).values(
-      ps.map((p) => ({
-        cost: p.cost,
-        productId: p.id,
-        quantity: p.quantity,
-        purchaseId: purchase.id,
-      })),
-    );
+        if (oldItem) {
+          const q = Math.abs(product.quantity - oldItem.quantity);
 
-    const totalCost = ps
-      .map((p) => p.cost * p.quantity)
-      .reduce((a, b) => a + b);
+          if (oldItem.quantity === product.quantity) {
+            return;
+          }
 
-    await db
-      .update(purchases)
-      .set({
-        supplierId: input.supplierId,
-        totalCost,
-      })
-      .where(eq(purchases.id, input.id));
+          if (oldItem.quantity > product.quantity) {
+            return db
+              .update(products)
+              .set({
+                stock: sql<string>`${products.stock} - ${q}`,
+              })
+              .where(
+                and(eq(products.id, product.id), eq(products.userId, user.id)),
+              );
+          }
 
+          return db
+            .update(products)
+            .set({
+              stock: sql<string>`${products.stock} + ${q}`,
+            })
+            .where(
+              and(eq(products.id, product.id), eq(products.userId, user.id)),
+            );
+        }
+
+        return db
+          .update(products)
+          .set({
+            stock: sql<string>`${products.stock} + ${product.quantity}`,
+          })
+          .where(
+            and(eq(products.id, product.id), eq(products.userId, user.id)),
+          );
+      }),
+      ...oldItems.map((oldItem) => {
+        const product = input.products.find(
+          (product) => product.id === oldItem.productId,
+        );
+
+        if (product) {
+          return;
+        }
+
+        return db
+          .update(products)
+          .set({
+            stock: sql<string>`${products.stock} - ${oldItem.quantity}`,
+          })
+          .where(
+            and(
+              eq(products.userId, user.id),
+              eq(products.id, oldItem.productId),
+            ),
+          );
+      }),
+    ]);
+
+    revalidatePath("/products");
+    revalidatePath("/purchases");
     revalidatePath(`/purchases/${purchase.id}/edit`);
-    revalidatePath(`/purchases`);
   },
 );
 
@@ -167,15 +252,34 @@ export const deletePurchaseAction = action(
 
     const purchase = await purchaseRepository.findOrThrow(input.id, user.id);
 
+    const items = await db.query.purchasesItems.findMany({
+      where: eq(purchasesItems.purchaseId, purchase.id),
+    });
+
+    await Promise.all(
+      items.map((item) => {
+        return db
+          .update(products)
+          .set({
+            stock: sql<string>`${products.stock} - ${item.quantity}`,
+          })
+          .where(eq(products.id, item.productId));
+      }),
+    );
+
     if (purchase.deletedAt) {
       await purchaseRepository.permRemove(input.id, user.id);
     } else {
       await purchaseRepository.remove(input.id, user.id);
     }
 
-    revalidatePath(`/purchases`);
+    revalidatePath("/products");
+
     revalidatePath(`/dashboard`);
+    revalidatePath(`/purchases`);
     revalidatePath(`/purchases/${purchase.id}/edit`);
+
+    // redirection
     redirect("/purchases");
   },
 );
