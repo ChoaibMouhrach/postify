@@ -1,5 +1,4 @@
 import {
-  Card,
   CardContent,
   CardDescription,
   CardHeader,
@@ -8,7 +7,6 @@ import {
 import { db } from "@/server/db";
 import { orders } from "@/server/db/schema";
 import { auth } from "@/server/lib/action";
-import { SearchParams } from "@/types/nav";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import {
@@ -19,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/client/components/ui/table";
-import React, { Suspense } from "react";
+import React from "react";
 import { Skeleton } from "@/client/components/ui/skeleton";
 
 interface OrderProps {
@@ -95,7 +93,7 @@ export const Order: React.FC<OrderProps> = async ({ id }) => {
   );
 };
 
-const OrderSkeleton = () => {
+export const OrderSkeleton = () => {
   return (
     <>
       <CardHeader className="flex flex-col gap-2">
@@ -127,23 +125,3 @@ const OrderSkeleton = () => {
     </>
   );
 };
-
-interface PageProps {
-  searchParams: SearchParams;
-}
-
-const Page: React.FC<PageProps> = ({ searchParams }) => {
-  if (!searchParams.id || searchParams.id instanceof Array) {
-    return;
-  }
-
-  return (
-    <Card>
-      <Suspense fallback={<OrderSkeleton />}>
-        <Order id={searchParams.id} />
-      </Suspense>
-    </Card>
-  );
-};
-
-export default Page;
