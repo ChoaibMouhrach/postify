@@ -69,7 +69,7 @@ export const Create: React.FC<CreateProps> = ({ types, statuses }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <CardContent className="grid gap-4">
+        <CardContent className="grid md:grid-cols-3 gap-4">
           <FormField
             name="typeId"
             render={({ field }) => (
@@ -136,7 +136,7 @@ export const Create: React.FC<CreateProps> = ({ types, statuses }) => {
           <FormField
             name="description"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="md:col-start-1 md:col-end-4">
                 <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} placeholder="Stqrt by..." />

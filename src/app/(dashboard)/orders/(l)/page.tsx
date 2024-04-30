@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/client/components/ui/card";
-import { Orders } from "./table";
+import { Orders } from "../table";
 import { Suspense } from "react";
 import { DataTableSkeleton } from "@/client/components/data-table";
 import { SearchParams } from "@/types/nav";

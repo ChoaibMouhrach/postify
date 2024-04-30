@@ -55,6 +55,12 @@ const Actions: React.FC<ActionsProps> = ({ order }) => {
       <DropdownMenuContent>
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link prefetch={false} href={`/orders?id=${order.id}`}>
+            View
+          </Link>
+        </DropdownMenuItem>
+
         {order.deletedAt && (
           <DropdownMenuItem onClick={onRestore}>Restore</DropdownMenuItem>
         )}
