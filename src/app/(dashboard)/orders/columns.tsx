@@ -56,7 +56,7 @@ const Actions: React.FC<ActionsProps> = ({ order }) => {
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link prefetch={false} href={`/orders?id=${order.id}`}>
+          <Link scroll href={`/orders?id=${order.id}`}>
             View
           </Link>
         </DropdownMenuItem>

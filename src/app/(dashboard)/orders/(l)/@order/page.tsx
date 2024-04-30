@@ -19,21 +19,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/client/components/ui/table";
-import React from "react";
+import React, { Suspense } from "react";
+import { Skeleton } from "@/client/components/ui/skeleton";
 
-interface PageProps {
-  searchParams: SearchParams;
+interface OrderProps {
+  id: string;
 }
 
-const Page: React.FC<PageProps> = async ({ searchParams }) => {
-  if (!searchParams.id || searchParams.id instanceof Array) {
-    return;
-  }
-
+export const Order: React.FC<OrderProps> = async ({ id }) => {
   const user = await auth();
 
   const order = await db.query.orders.findFirst({
-    where: and(eq(orders.userId, user.id), eq(orders.id, searchParams.id)),
+    where: and(eq(orders.userId, user.id), eq(orders.id, id)),
     with: {
       customer: true,
       items: {
@@ -49,7 +46,7 @@ const Page: React.FC<PageProps> = async ({ searchParams }) => {
   }
 
   return (
-    <Card>
+    <>
       <CardHeader>
         <CardTitle>Order # {order.id}</CardTitle>
         <CardDescription>
@@ -62,10 +59,12 @@ const Page: React.FC<PageProps> = async ({ searchParams }) => {
           <span>Phone</span>
           <span className="text-muted-foreground">{order.customer?.phone}</span>
           <span className="mt-3">Email address</span>
-          <span className="text-muted-foreground">{order.customer?.email}</span>
+          <span className="text-muted-foreground">
+            {order.customer?.email || "N/A"}
+          </span>
           <span className="mt-3">Address</span>
           <span className="text-muted-foreground">
-            {order.customer?.address}
+            {order.customer?.address || "N/A"}
           </span>
         </section>
         <span className="font-semibold mt-2">Items</span>
@@ -92,6 +91,57 @@ const Page: React.FC<PageProps> = async ({ searchParams }) => {
           </Table>
         </section>
       </CardContent>
+    </>
+  );
+};
+
+const OrderSkeleton = () => {
+  return (
+    <>
+      <CardHeader className="flex flex-col gap-2">
+        <Skeleton className="h-2 w-32" />
+        <Skeleton className="h-2 w-12" />
+      </CardHeader>
+
+      <CardContent className="flex flex-col gap-4">
+        <Skeleton className="h-2 w-32" />
+
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-2 w-20" />
+          <Skeleton className="h-2 w-20" />
+          <Skeleton className="h-2 w-20" />
+          <Skeleton className="h-2 w-20" />
+        </div>
+
+        <Skeleton className="mt-2 h-2 w-32" />
+
+        <div className="flex flex-col gap-1">
+          <Skeleton className="h-8" />
+          <Skeleton className="h-8" />
+          <Skeleton className="h-8" />
+          <Skeleton className="h-8" />
+          <Skeleton className="h-8" />
+          <Skeleton className="h-8" />
+        </div>
+      </CardContent>
+    </>
+  );
+};
+
+interface PageProps {
+  searchParams: SearchParams;
+}
+
+const Page: React.FC<PageProps> = ({ searchParams }) => {
+  if (!searchParams.id || searchParams.id instanceof Array) {
+    return;
+  }
+
+  return (
+    <Card>
+      <Suspense fallback={<OrderSkeleton />}>
+        <Order id={searchParams.id} />
+      </Suspense>
     </Card>
   );
 };
