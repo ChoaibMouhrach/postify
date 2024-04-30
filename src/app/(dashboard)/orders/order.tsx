@@ -27,12 +27,6 @@ interface OrderProps {
 export const Order: React.FC<OrderProps> = async ({ id }) => {
   const user = await auth();
 
-  await new Promise((res) => {
-    setTimeout(() => {
-      res("");
-    }, 1500);
-  });
-
   const order = await db.query.orders.findFirst({
     where: and(eq(orders.userId, user.id), eq(orders.id, id)),
     with: {
