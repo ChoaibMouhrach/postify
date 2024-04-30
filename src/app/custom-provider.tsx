@@ -18,7 +18,7 @@ export const CustomProvider: React.FC<CustomProviderProps> = ({ children }) => {
       <SessionProvider>
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
       </SessionProvider>
-      <Toaster />
+      <Toaster closeButton />
       <ProgressBar
         height="4px"
         color="hsl(var(--primary))"

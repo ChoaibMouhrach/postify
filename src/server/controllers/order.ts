@@ -30,6 +30,7 @@ import {
 import { RECORDS_LIMIT } from "@/common/constants";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { notificationRepository } from "../repositories/notification";
 
 const indexSchema = z.object({
   page: pageSchema,
@@ -162,16 +163,28 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
 
   await Promise.all(
     items.map((item) => {
-      return db
-        .update(products)
-        .set({
-          stock: sql`${products.stock} - ${item.quantity}`,
-        })
-        .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+      return new Promise(async (res) => {
+        await db
+          .update(products)
+          .set({
+            stock: sql`${products.stock} - ${item.quantity}`,
+          })
+          .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+
+        if (item.stock - item.quantity <= 5) {
+          await notificationRepository.create({
+            title: `${item.name} is about to go out of stock`,
+            userId: user.id,
+          });
+        }
+
+        res("");
+      });
     }),
   );
 
   revalidatePath(`/orders`);
+  revalidatePath("/notifications");
   revalidatePath(`/dashboard`);
   revalidatePath(`/orders/${order.id}/edit`);
 });
@@ -255,20 +268,42 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
             .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
         }
 
-        return db
-          .update(products)
-          .set({
-            stock: sql<string>`${products.stock} - ${q}`,
-          })
-          .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+        return new Promise(async (res) => {
+          await db
+            .update(products)
+            .set({
+              stock: sql<string>`${products.stock} - ${q}`,
+            })
+            .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+
+          if (item.stock - q <= 5) {
+            await notificationRepository.create({
+              title: `${item.name} is about to go out of stock`,
+              userId: user.id,
+            });
+          }
+
+          res(true);
+        });
       }
 
-      return db
-        .update(products)
-        .set({
-          stock: sql<string>`${products.stock} - ${item.new.quantity}`,
-        })
-        .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+      return new Promise(async (res) => {
+        await db
+          .update(products)
+          .set({
+            stock: sql<string>`${products.stock} - ${item.new.quantity}`,
+          })
+          .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+
+        if (item.stock - item.new.quantity <= 5) {
+          await notificationRepository.create({
+            title: `${item.name} is about to go out of stock`,
+            userId: user.id,
+          });
+        }
+
+        res(true);
+      });
     }),
     ...oldItems.map((item) => {
       const product = input.products.find(
@@ -292,6 +327,7 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
 
   revalidatePath("/orders");
   revalidatePath("/products");
+  revalidatePath("/notifications");
   revalidatePath("/dashboard");
   revalidatePath(`/orders?${order.id}/edit`);
 });

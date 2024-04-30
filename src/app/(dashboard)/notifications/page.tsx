@@ -5,8 +5,56 @@ import {
   CardHeader,
   CardTitle,
 } from "@/client/components/ui/card";
+import { db } from "@/server/db";
+import { notifications } from "@/server/db/schema";
+import { rscAuth } from "@/server/lib/action";
+import { desc, eq, sql } from "drizzle-orm";
+import { NotificationSkeleton, Notifications } from "./table";
+import { z } from "zod";
+import { pageSchema } from "@/common/schemas";
+import { SearchParams } from "@/types/nav";
+import React, { Suspense } from "react";
+import { RECORDS_LIMIT } from "@/common/constants";
 
-const Notifications = () => {
+interface NotificationsWrapperProps {
+  searchParams: SearchParams;
+}
+
+const NotificationsWrapper: React.FC<NotificationsWrapperProps> = async ({
+  searchParams,
+}) => {
+  const { page } = indexSchema.parse(searchParams);
+
+  const user = await rscAuth();
+
+  const data = await db.query.notifications.findMany({
+    where: eq(notifications.userId, user.id),
+    orderBy: desc(notifications.createdAt),
+    offset: (page - 1) * RECORDS_LIMIT,
+    limit: RECORDS_LIMIT,
+  });
+
+  const count = await db
+    .select({
+      count: sql<string>`COUNT(*)`,
+    })
+    .from(notifications)
+    .then((notifications) => parseInt(notifications[0].count));
+
+  const lastPage = Math.ceil(count / RECORDS_LIMIT);
+
+  return <Notifications page={page} lastPage={lastPage} data={data} />;
+};
+
+const indexSchema = z.object({
+  page: pageSchema,
+});
+
+interface PageProps {
+  searchParams: SearchParams;
+}
+
+const Page: React.FC<PageProps> = async ({ searchParams }) => {
   return (
     <Card>
       <CardHeader>
@@ -15,9 +63,13 @@ const Notifications = () => {
           You can manage your Notifications from here.
         </CardDescription>
       </CardHeader>
-      <CardContent>Notifications</CardContent>
+      <CardContent className="flex flex-col gap-4">
+        <Suspense fallback={<NotificationSkeleton />}>
+          <NotificationsWrapper searchParams={searchParams} />
+        </Suspense>
+      </CardContent>
     </Card>
   );
 };
 
-export default Notifications;
+export default Page;

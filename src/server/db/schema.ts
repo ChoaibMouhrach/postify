@@ -224,7 +224,7 @@ export const notifications = pgTable("notifications", {
 
   // info
   title: text("title").notNull(),
-  description: text("description").notNull(),
+  description: text("description"),
   read: boolean("read").notNull().default(false),
 
   // meta
@@ -234,6 +234,9 @@ export const notifications = pgTable("notifications", {
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
+
+export type TNotification = typeof notifications.$inferSelect;
+export type TNotificationInsert = typeof notifications.$inferInsert;
 
 export const taskTypes = pgTable("taskTypes", {
   id: id(),
