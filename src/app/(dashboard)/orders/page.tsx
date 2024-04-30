@@ -9,7 +9,7 @@ import { Orders } from "./table";
 import { Suspense } from "react";
 import { DataTableSkeleton } from "@/client/components/data-table";
 import { SearchParams } from "@/types/nav";
-import { Order } from "./order";
+import { Order, OrderSkeleton } from "./order";
 import { cn } from "@/client/lib/utils";
 
 interface PageProps {
@@ -41,9 +41,12 @@ const Page: React.FC<PageProps> = ({ searchParams }) => {
       </Card>
       {searchParams.id && !(searchParams.id instanceof Array) && (
         <Card
-          className={cn(searchParams.id ? "lg:col-start-4 lg:col-end-6" : "")}
+          className={cn(
+            "h-fit",
+            searchParams.id ? "lg:col-start-4 lg:col-end-6" : "",
+          )}
         >
-          <Suspense fallback={<DataTableSkeleton />}>
+          <Suspense fallback={<OrderSkeleton />}>
             <Order id={searchParams.id} />
           </Suspense>
         </Card>

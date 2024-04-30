@@ -27,6 +27,12 @@ interface OrderProps {
 export const Order: React.FC<OrderProps> = async ({ id }) => {
   const user = await auth();
 
+  await new Promise((res) => {
+    setTimeout(() => {
+      res("");
+    }, 1500);
+  });
+
   const order = await db.query.orders.findFirst({
     where: and(eq(orders.userId, user.id), eq(orders.id, id)),
     with: {
@@ -97,21 +103,23 @@ export const OrderSkeleton = () => {
   return (
     <>
       <CardHeader className="flex flex-col gap-2">
-        <Skeleton className="h-2 w-32" />
-        <Skeleton className="h-2 w-12" />
+        <Skeleton className="h-3 w-64" />
+        <Skeleton className="h-3 w-24" />
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
-        <Skeleton className="h-2 w-32" />
+        <Skeleton className="h-3 w-32" />
 
-        <div className="flex flex-col gap-4">
-          <Skeleton className="h-2 w-20" />
-          <Skeleton className="h-2 w-20" />
-          <Skeleton className="h-2 w-20" />
-          <Skeleton className="h-2 w-20" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 mt-3 w-20" />
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 mt-3 w-20" />
+          <Skeleton className="h-3 w-20" />
         </div>
 
-        <Skeleton className="mt-2 h-2 w-32" />
+        <Skeleton className="mt-2 h-3 w-32" />
 
         <div className="flex flex-col gap-1">
           <Skeleton className="h-8" />
