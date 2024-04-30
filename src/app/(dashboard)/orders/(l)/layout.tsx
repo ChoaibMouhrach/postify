@@ -2,14 +2,14 @@
 
 import { cn } from "@/client/lib/utils";
 import { useSearchParams } from "next/navigation";
-import React, { useMemo } from "react";
+import React, { Suspense, useMemo } from "react";
 
-interface LayoutProps {
+interface WrapperProps {
   children: React.ReactNode;
   order: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, order }) => {
+export const Wrapper: React.FC<WrapperProps> = ({ children, order }) => {
   const searchParams = useSearchParams();
   const id = useMemo(() => {
     return searchParams.get("id") || false;
@@ -22,6 +22,19 @@ const Layout: React.FC<LayoutProps> = ({ children, order }) => {
       <div className={cn(id ? "md:col-start-1 col-end-4" : "")}>{children}</div>
       <div className={cn(id ? "md:col-start-4 col-end-6" : "")}>{order}</div>
     </div>
+  );
+};
+
+interface LayoutProps {
+  children: React.ReactNode;
+  order: React.ReactNode;
+}
+
+const Layout: React.FC<LayoutProps> = ({ children, order }) => {
+  return (
+    <Suspense>
+      <Wrapper order={order}>{children}</Wrapper>
+    </Suspense>
   );
 };
 
