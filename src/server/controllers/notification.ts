@@ -23,3 +23,11 @@ export const markAsReadAction = action(markAsReadSchema, async (input) => {
 
   revalidatePath("/notifications");
 });
+
+export const markAllAsReadAction = action(z.object({}), async () => {
+  const user = await auth();
+
+  await notificationRepository.markAll(user.id);
+
+  revalidatePath("/notifications");
+});

@@ -11,7 +11,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "../db";
 import { categories } from "../db/schema";
-import { redirect } from "next/navigation";
 
 const restoreCategorySchema = z.object({
   id: z.string().uuid(),
@@ -114,7 +113,5 @@ export const deleteCategoryAction = action(
     revalidatePath("/dashboard");
     revalidatePath("/categories");
     revalidatePath(`/categories/${category.id}/edit`);
-
-    redirect("/categories");
   },
 );

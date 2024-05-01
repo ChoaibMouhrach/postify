@@ -32,7 +32,6 @@ import {
 } from "@/common/schemas";
 import { z } from "zod";
 import { SearchParams } from "@/types/nav";
-import { redirect } from "next/navigation";
 
 const schema = z.object({
   page: pageSchema,
@@ -181,7 +180,6 @@ export const deleteSupplierAction = action(
     revalidatePath("/suppliers");
     revalidatePath(`/dashboard`);
     revalidatePath(`/suppliers/${input.id}/edit`);
-    redirect("/suppliers");
   },
 );
 

@@ -85,6 +85,7 @@ export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
       count: sql<string>`COUNT(*)`,
     })
     .from(tasks)
+    .where(where)
     .then((recs) => parseInt(recs[0].count));
 
   const [data, count] = await Promise.all([dataPromise, countPromise]);

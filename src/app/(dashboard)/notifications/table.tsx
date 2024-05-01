@@ -7,14 +7,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/client/components/ui/dropdown-menu";
-import React from "react";
-import { MoreHorizontal } from "lucide-react";
-import { markAsReadAction } from "@/server/controllers/notification";
+import React, { useMemo } from "react";
+import { Check, MoreHorizontal } from "lucide-react";
+import {
+  markAllAsReadAction,
+  markAsReadAction,
+} from "@/server/controllers/notification";
 import { toast } from "sonner";
 import { cn } from "@/client/lib/utils";
 import { Button } from "@/client/components/ui/button";
 import { useUpdateSearchParams } from "@/client/hooks/search-params";
 import { Skeleton } from "@/client/components/ui/skeleton";
+import { useAction } from "next-safe-action/hooks";
+import { Separator } from "@/client/components/ui/separator";
 
 interface NotificationsProps {
   data: TNotification[];
@@ -31,6 +36,19 @@ export const Notifications: React.FC<NotificationsProps> = ({
 }) => {
   const { update } = useUpdateSearchParams();
 
+  const { execute, status } = useAction(markAllAsReadAction, {
+    onSuccess: () => {
+      toast.success("All notifications are marked as read");
+    },
+    onError: (err) => {
+      toast.error(err.serverError || "Something went wrong");
+    },
+  });
+
+  const pending = useMemo(() => {
+    return status === "executing";
+  }, [status]);
+
   const onNext = () => {
     update({
       key: "page",
@@ -43,6 +61,10 @@ export const Notifications: React.FC<NotificationsProps> = ({
       key: "page",
       value: String(page - 1),
     });
+  };
+
+  const onReadAll = () => {
+    execute({});
   };
 
   const onRead = (id: string) => {
@@ -68,39 +90,54 @@ export const Notifications: React.FC<NotificationsProps> = ({
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        {data.map((notification) => (
-          <div
-            key={notification.id}
-            className={cn(
-              "flex items-center justify-between border rounded-md p-4",
-              notification.read ? "bg-secondary" : "",
-            )}
-          >
-            <div>
-              <span>{notification.title}</span>
-              <p className="text-muted-foreground">
-                {notification.description}
-              </p>
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <MoreHorizontal className="w-4 h-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => onRead(notification.id)}>
-                  Mark as read
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ))}
+      <div>
+        <Button size="sm" pending={pending} onClick={onReadAll}>
+          {!pending && <Check className="w-4 h-4" />}
+          Mark all as read
+        </Button>
       </div>
+
+      <Separator />
+
+      {data.length ? (
+        <div className="flex flex-col gap-2">
+          {data.map((notification) => (
+            <div
+              key={notification.id}
+              className={cn(
+                "flex items-center justify-between border rounded-md p-4",
+                notification.read ? "bg-secondary" : "",
+              )}
+            >
+              <div>
+                <span>{notification.title}</span>
+                <p className="text-muted-foreground">
+                  {notification.description}
+                </p>
+              </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger>
+                  <MoreHorizontal className="w-4 h-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => onRead(notification.id)}>
+                    Mark as read
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-muted-foreground">No notifications found</div>
+      )}
+
+      <Separator />
 
       <div className="flex items-center justify-between">
         <p>
-          Page {page} of {lastPage}
+          Page {page} of {lastPage || 1}
         </p>
         <div className="flex items-center gap-4">
           <Button

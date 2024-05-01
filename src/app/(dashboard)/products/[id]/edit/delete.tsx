@@ -5,6 +5,7 @@ import { useAction } from "next-safe-action/hooks";
 import { deleteProductAction } from "@/server/controllers/product";
 import React, { useMemo } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface DeleteProps {
   id: string;
@@ -12,9 +13,12 @@ interface DeleteProps {
 }
 
 export const Delete: React.FC<DeleteProps> = ({ id, deleted }) => {
+  const router = useRouter();
+
   const { execute, status } = useAction(deleteProductAction, {
     onSuccess: () => {
       toast.success("Product deleted successfully");
+      router.push("/products");
     },
     onError: (err) => {
       toast.error(err.serverError);

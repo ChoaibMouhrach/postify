@@ -9,6 +9,11 @@ import {
 import React, { Suspense } from "react";
 import { Tasks } from "./table";
 import { SearchParams } from "@/types/nav";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Tasks",
+};
 
 interface PageProps {
   searchParams: SearchParams;

@@ -38,9 +38,19 @@ const update = async (
     .where(and(eq(notifications.userId, userId), eq(notifications.id, id)));
 };
 
+const markAll = (userId: string) => {
+  return db
+    .update(notifications)
+    .set({
+      read: true,
+    })
+    .where(eq(notifications.userId, userId));
+};
+
 export const notificationRepository = {
   find,
   findOrThrow,
   create,
   update,
+  markAll,
 };

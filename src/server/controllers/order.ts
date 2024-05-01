@@ -29,7 +29,6 @@ import {
 } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { notificationRepository } from "../repositories/notification";
 
 const indexSchema = z.object({
@@ -367,7 +366,6 @@ export const deleteOrderAction = action(schema, async (input) => {
   revalidatePath(`/orders`);
   revalidatePath(`/dashboard`);
   revalidatePath(`/orders/${order.id}/edit`);
-  redirect("/orders");
 });
 
 export const restoreOrderAction = action(schema, async (input) => {

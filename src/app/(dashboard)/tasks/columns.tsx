@@ -75,11 +75,39 @@ export const columns: ColumnDef<
   },
   {
     header: "Type",
-    cell: ({ row }) => <Badge>{row.original.type.name}</Badge>,
+    cell: ({ row }) => {
+      const type = row.original.type.name;
+
+      return (
+        <Badge
+          variant={
+            type.toLowerCase().includes("bug") ? "destructive" : "secondary"
+          }
+        >
+          {type}
+        </Badge>
+      );
+    },
   },
   {
     header: "Status",
-    cell: ({ row }) => <Badge>{row.original.status.name}</Badge>,
+    cell: ({ row }) => {
+      const status = row.original.status.name;
+
+      return (
+        <Badge
+          variant={
+            status.toLowerCase().includes("progress")
+              ? "secondary"
+              : status.toLowerCase().includes("started")
+                ? "outline"
+                : "default"
+          }
+        >
+          {status}
+        </Badge>
+      );
+    },
   },
   {
     header: "Created At",
