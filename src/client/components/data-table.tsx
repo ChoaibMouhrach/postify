@@ -333,11 +333,10 @@ export function DataTable<TData>({
 export const DataTableSkeleton = () => {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center">
+      <div className="flex items-center flex-wrap-reverse gap-4">
         <Skeleton className="h-9 w-full max-w-md" />
 
         <div className="ml-auto flex items-center gap-2">
-          <Skeleton className="h-9 w-[120px]" />
           <Skeleton className="h-9 w-[100px]" />
           <Skeleton className="h-9 w-[100px]" />
         </div>

@@ -13,6 +13,12 @@ interface ProductsTableProps {
 export const ProductsTable: React.FC<ProductsTableProps> = async ({
   searchParams,
 }) => {
+  await new Promise((res) => {
+    setTimeout(() => {
+      res("");
+    }, 2000);
+  });
+
   const { data, lastPage, page, trash, query, from, to } =
     await getProductsAction(searchParams);
 
