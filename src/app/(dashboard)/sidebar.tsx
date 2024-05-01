@@ -118,10 +118,15 @@ const SideBarItem: React.FC<SideBarItemProps> = ({ link, onNavigate }) => {
 
 interface SideBarProps {
   className?: string;
+  notificationsCount: number;
   onNavigate?: () => void;
 }
 
-export const SideBar: React.FC<SideBarProps> = ({ className, onNavigate }) => {
+export const SideBar: React.FC<SideBarProps> = ({
+  className,
+  notificationsCount,
+  onNavigate,
+}) => {
   const session = useSession();
 
   return (
@@ -145,18 +150,26 @@ export const SideBar: React.FC<SideBarProps> = ({ className, onNavigate }) => {
       <div className="pb-4 px-4 flex flex-col">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="secondary">
-              {session.status === "loading"
-                ? "Loading..."
-                : session.data?.user.email.slice(0, 15)}
-              ...
-              <ChevronUp className="w-4 h-4 ml-auto" />
-            </Button>
+            <div className="relative w-full">
+              <Button size="sm" variant="secondary" className="w-full">
+                {session.status === "loading"
+                  ? "Loading..."
+                  : session.data?.user.email.slice(0, 15)}
+                ...
+                <ChevronUp className="w-4 h-4 ml-auto" />
+              </Button>
+              {!!notificationsCount && (
+                <div className="w-2 h-2 bg-red-700 rounded-full absolute -top-1 -right-1" />
+              )}
+            </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="DropdownMenuContent">
             <DropdownMenuItem asChild>
               <Link onClick={onNavigate} href="/notifications">
                 Notifications
+                {!!notificationsCount && (
+                  <div className="w-2 h-2 bg-red-700 rounded-full ml-2" />
+                )}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
@@ -176,7 +189,13 @@ export const SideBar: React.FC<SideBarProps> = ({ className, onNavigate }) => {
   );
 };
 
-export const MobileSideBar = () => {
+interface MobileSideBarProps {
+  notificationsCount: number;
+}
+
+export const MobileSideBar: React.FC<MobileSideBarProps> = ({
+  notificationsCount,
+}) => {
   const [open, setOpen] = useState(false);
 
   const onNavigate = () => {
@@ -187,12 +206,19 @@ export const MobileSideBar = () => {
     <div className="h-16 flex items-center px-4 lg:hidden">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="outline" size="icon">
+          <Button variant="outline" size="icon" className="relative">
             <Menu className="w-4 h-4" />
+            {!!notificationsCount && (
+              <div className="w-2 h-2 bg-red-700 rounded-full ml-2 absolute -top-1 -right-1" />
+            )}
           </Button>
         </SheetTrigger>
         <SheetContent className="p-0" side="left">
-          <SideBar onNavigate={onNavigate} className="flex w-full static" />
+          <SideBar
+            notificationsCount={notificationsCount}
+            onNavigate={onNavigate}
+            className="flex w-full static"
+          />
         </SheetContent>
       </Sheet>
     </div>
