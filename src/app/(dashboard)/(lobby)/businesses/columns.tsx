@@ -32,7 +32,7 @@ const Actions: React.FC<ActionsProps> = ({ business }) => {
           <DropdownMenuItem onClick={onRestore}>Restore</DropdownMenuItem>
         )}
         <DropdownMenuItem asChild>
-          <Link href={`/businesses/${business.id}`}>View</Link>
+          <Link href={`/businesses/${business.id}/dashboard`}>View</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
