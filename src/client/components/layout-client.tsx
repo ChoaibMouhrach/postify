@@ -4,8 +4,6 @@ import { LucideIcon, Menu } from "lucide-react";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/client/components/ui/sheet";
 import { Button } from "./ui/button";
@@ -22,6 +20,7 @@ import {
   SelectValue,
 } from "@/client/components/ui/select";
 import { useRouter } from "next/navigation";
+import { Logo } from "./logo";
 
 interface LayoutSidebarItemProps {
   onNavigate?: () => unknown;
@@ -94,12 +93,10 @@ export const LayoutMobileSidebar: React.FC<LayoutMobileSidebarProps> = ({
             <Menu className="w-4 h-4" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col">
-          <SheetHeader>
-            <SheetTitle className="text-start">
-              Are you absolutely sure?
-            </SheetTitle>
-          </SheetHeader>
+        <SheetContent side="left" className="flex flex-col p-4">
+          <div className="px-2 text-2xl gap-2 font-bold flex items-end">
+            <Logo /> <span>YeraPos</span>
+          </div>
 
           <ScrollArea className="flex-1">{children}</ScrollArea>
         </SheetContent>
