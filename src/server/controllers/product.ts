@@ -15,7 +15,6 @@ import { db } from "@/server/db";
 import { products } from "@/server/db/schema";
 import { action, auth, NotfoundError, rscAuth } from "@/server/lib/action";
 import { productRepository } from "@/server/repositories/product";
-import { SearchParams } from "@/types/nav";
 import {
   and,
   desc,
@@ -29,8 +28,10 @@ import {
 } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { businessRepository } from "../repositories/business";
 
 const schema = z.object({
+  businessId: z.string().uuid(),
   page: pageSchema,
   trash: trashSchema,
   query: querySchema,
@@ -38,13 +39,16 @@ const schema = z.object({
   to: toSchema,
 });
 
-export const getProductsAction = async (searchParams: SearchParams) => {
+export const getProductsAction = async (searchParams: unknown) => {
+  const { page, trash, query, from, to, businessId } =
+    schema.parse(searchParams);
+
   const user = await rscAuth();
 
-  const { page, trash, query, from, to } = schema.parse(searchParams);
+  const business = await businessRepository.findOrThrow(businessId, user.id);
 
   const where = and(
-    eq(products.userId, user.id),
+    eq(products.businessId, business.id),
     trash ? isNotNull(products.deletedAt) : isNull(products.deletedAt),
     from || to
       ? and(
@@ -92,13 +96,16 @@ export const createProductAction = action(
   async (input) => {
     const user = await auth();
 
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
     const product = await productRepository.create({
       name: input.name,
       price: input.price,
       description: input.description,
-
-      // meta
-      userId: user.id,
+      businessId: business.id,
     });
 
     revalidatePath("/products");
@@ -112,13 +119,17 @@ export const updateProductAction = action(
   async (input) => {
     const user = await auth();
 
-    await productRepository.findOrThrow(input.id, user.id);
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
 
-    await productRepository.update(input.id, user.id, {
+    const product = await productRepository.findOrThrow(input.id, business.id);
+
+    await productRepository.update(product.id, business.id, {
       name: input.name,
       price: input.price,
       description: input.description || null,
-      userId: user.id,
     });
 
     revalidatePath("/products");
@@ -127,6 +138,7 @@ export const updateProductAction = action(
 );
 
 const deleteProductSchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
@@ -135,12 +147,17 @@ export const deleteProductAction = action(
   async (input) => {
     const user = await auth();
 
-    const product = await productRepository.findOrThrow(input.id, user.id);
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
+    const product = await productRepository.findOrThrow(input.id, business.id);
 
     if (product.deletedAt) {
-      await productRepository.permRemove(product.id, user.id);
+      await productRepository.permRemove(product.id, business.id);
     } else {
-      await productRepository.remove(product.id, user.id);
+      await productRepository.remove(product.id, business.id);
     }
 
     revalidatePath("/products");
@@ -150,6 +167,7 @@ export const deleteProductAction = action(
 );
 
 const restoreProductSchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
@@ -158,9 +176,12 @@ export const restoreProductAction = action(
   async (input) => {
     const user = await auth();
 
-    const product = await db.query.products.findFirst({
-      where: and(eq(products.userId, user.id), eq(products.id, input.id)),
-    });
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
+    const product = await productRepository.findOrThrow(input.id, business.id);
 
     if (!product) {
       throw new NotfoundError("Product");
@@ -170,7 +191,7 @@ export const restoreProductAction = action(
       return;
     }
 
-    await productRepository.restore(input.id, user.id);
+    await productRepository.restore(input.id, business.id);
 
     revalidatePath("/products");
     revalidatePath(`/products/${product.id}/edit`);

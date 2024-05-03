@@ -22,7 +22,6 @@ import {
   lte,
   gte,
 } from "drizzle-orm";
-import { rscAuth } from "../lib/action";
 import {
   fromSchema,
   pageSchema,
@@ -31,9 +30,10 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { z } from "zod";
-import { SearchParams } from "@/types/nav";
+import { businessRepository } from "../repositories/business";
 
 const schema = z.object({
+  businessId: z.string().uuid(),
   page: pageSchema,
   query: querySchema,
   trash: trashSchema,
@@ -41,13 +41,11 @@ const schema = z.object({
   to: toSchema,
 });
 
-export const getSuppliersAction = async (searchParams: SearchParams) => {
-  const user = await rscAuth();
-
-  const { page, query, trash, from, to } = schema.parse(searchParams);
+export const getSuppliersAction = async (input: unknown) => {
+  const { page, query, trash, from, to, businessId } = schema.parse(input);
 
   const where = and(
-    eq(suppliers.userId, user.id),
+    eq(suppliers.businessId, businessId),
     trash ? isNotNull(suppliers.deletedAt) : isNull(suppliers.deletedAt),
     from || to
       ? and(
@@ -103,6 +101,7 @@ export const getSuppliersAction = async (searchParams: SearchParams) => {
 };
 
 const restoreSupplierSchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
@@ -110,8 +109,18 @@ export const restoreSupplierAction = action(
   restoreSupplierSchema,
   async (input) => {
     const user = await auth();
-    await supplierRepository.findOrThrow(input.id, user.id);
-    await supplierRepository.restore(input.id, user.id);
+
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
+    const supplier = await supplierRepository.findOrThrow(
+      input.id,
+      business.id,
+    );
+
+    await supplierRepository.restore(supplier.id, business.id);
 
     revalidatePath("/suppliers");
     revalidatePath(`/suppliers/${input.id}/edit`);
@@ -123,11 +132,16 @@ export const createSupplierAction = action(
   async (input) => {
     const user = await auth();
 
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
     if (input.email) {
       const supplierCheck = await db.query.suppliers.findFirst({
         where: and(
           eq(suppliers.email, input.email),
-          eq(suppliers.userId, user.id),
+          eq(suppliers.businessId, business.id),
         ),
       });
 
@@ -139,7 +153,7 @@ export const createSupplierAction = action(
     const supplierPhoneCheck = await db.query.suppliers.findFirst({
       where: and(
         eq(suppliers.phone, input.phone),
-        eq(suppliers.userId, user.id),
+        eq(suppliers.businessId, user.id),
       ),
     });
 
@@ -149,10 +163,10 @@ export const createSupplierAction = action(
 
     const supplier = await supplierRepository.create({
       name: input.name,
-      email: input.email || null,
       phone: input.phone,
+      email: input.email || null,
       address: input.address || null,
-      userId: user.id,
+      businessId: business.id,
     });
 
     revalidatePath("/suppliers");
@@ -162,6 +176,7 @@ export const createSupplierAction = action(
 );
 
 const deleteSupplierSchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
@@ -169,17 +184,25 @@ export const deleteSupplierAction = action(
   deleteSupplierSchema,
   async (input) => {
     const user = await auth();
-    const supplier = await supplierRepository.findOrThrow(input.id, user.id);
+
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
+    const supplier = await supplierRepository.findOrThrow(
+      input.id,
+      business.id,
+    );
 
     if (supplier.deletedAt) {
-      await supplierRepository.permRemove(input.id, user.id);
+      await supplierRepository.permRemove(input.id, business.id);
     } else {
-      await supplierRepository.remove(input.id, user.id);
+      await supplierRepository.remove(input.id, business.id);
     }
 
     revalidatePath("/suppliers");
     revalidatePath(`/dashboard`);
-    revalidatePath(`/suppliers/${input.id}/edit`);
   },
 );
 
@@ -188,17 +211,25 @@ export const updateSupplierAction = action(
   async (input) => {
     const user = await auth();
 
-    await supplierRepository.findOrThrow(input.id, user.id);
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
+    const supplier = await supplierRepository.findOrThrow(
+      input.id,
+      business.id,
+    );
 
     if (input.email) {
       const supplierEmailCheck = await db.query.suppliers.findFirst({
         where: and(
           eq(suppliers.email, input.email),
-          eq(suppliers.userId, user.id),
+          eq(suppliers.businessId, business.id),
         ),
       });
 
-      if (supplierEmailCheck && supplierEmailCheck.id !== input.id) {
+      if (supplierEmailCheck && supplierEmailCheck.id !== supplier.id) {
         throw new TakenError("Email address");
       }
     }
@@ -206,15 +237,15 @@ export const updateSupplierAction = action(
     const supplierPhoneCheck = await db.query.suppliers.findFirst({
       where: and(
         eq(suppliers.phone, input.phone),
-        eq(suppliers.userId, user.id),
+        eq(suppliers.businessId, business.id),
       ),
     });
 
-    if (supplierPhoneCheck && supplierPhoneCheck.id !== input.id) {
+    if (supplierPhoneCheck && supplierPhoneCheck.id !== supplier.id) {
       throw new TakenError("Phone");
     }
 
-    await supplierRepository.update(input.id, user.id, {
+    await supplierRepository.update(supplier.id, business.id, {
       name: input.name,
       email: input.email || null,
       phone: input.phone,
@@ -222,6 +253,5 @@ export const updateSupplierAction = action(
     });
 
     revalidatePath("/suppliers");
-    revalidatePath(`/suppliers/${input.id}/edit`);
   },
 );

@@ -69,6 +69,31 @@ export const verificationTokens = pgTable(
   }),
 );
 
+export const businesses = pgTable("businesses", {
+  id: id(),
+  // meta
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  currency: text("currency").notNull(),
+
+  // optional
+  address: text("description"),
+  email: text("email"),
+
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
+
+  // timestamps
+  deletedAt: deletedAt(),
+  createdAt: createdAt(),
+});
+
+export type TBusiness = typeof businesses.$inferSelect;
+export type TBusinessInsert = typeof businesses.$inferInsert;
+
 export const products = pgTable("products", {
   id: id(),
 
@@ -79,9 +104,9 @@ export const products = pgTable("products", {
   stock: integer("stock").notNull().default(0),
 
   // meta
-  userId: text("userId")
+  businessId: text("businessId")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => businesses.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
@@ -96,9 +121,9 @@ export const categories = pgTable("categories", {
   name: text("name").notNull(),
 
   // meta
-  userId: text("userId")
+  businessId: text("businessId")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => businesses.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
@@ -118,9 +143,9 @@ export const customers = pgTable("customers", {
   phone: text("phone").notNull(),
 
   // meta
-  userId: text("userId")
+  businessId: text("businessId")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => businesses.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
@@ -140,9 +165,9 @@ export const suppliers = pgTable("suppliers", {
   phone: text("phone").notNull(),
 
   // meta
-  userId: text("userId")
+  businessId: text("businessId")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => businesses.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
@@ -161,9 +186,9 @@ export const orders = pgTable("orders", {
   totalPrice: real("totalPrice").notNull(),
 
   // meta
-  userId: text("userId")
+  businessId: text("businessId")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => businesses.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
@@ -195,9 +220,9 @@ export const purchases = pgTable("purchases", {
   totalCost: real("totalCost").notNull(),
 
   // meta
-  userId: text("userId")
+  businessId: text("businessId")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => businesses.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
@@ -279,6 +304,10 @@ export type TTask = typeof tasks.$inferSelect;
 export type TTaskInsert = typeof tasks.$inferInsert;
 
 export const purchasesRelations = relations(purchases, ({ one, many }) => ({
+  business: one(businesses, {
+    fields: [purchases.businessId],
+    references: [businesses.id],
+  }),
   supplier: one(suppliers, {
     fields: [purchases.supplierId],
     references: [suppliers.id],
@@ -297,28 +326,41 @@ export const purchasesItemsRelations = relations(purchasesItems, ({ one }) => ({
   }),
 }));
 
-export const suppliersRelations = relations(suppliers, ({ many }) => ({
+export const suppliersRelations = relations(suppliers, ({ many, one }) => ({
+  business: one(businesses, {
+    fields: [suppliers.businessId],
+    references: [businesses.id],
+  }),
   purchases: many(purchases),
 }));
 
 export const productRelations = relations(products, ({ one, many }) => ({
-  user: one(users, {
-    fields: [products.userId],
-    references: [users.id],
+  business: one(businesses, {
+    fields: [products.businessId],
+    references: [businesses.id],
   }),
   purchasesItems: many(purchasesItems),
 }));
 
 export const userRelations = relations(users, ({ many }) => ({
   user: many(products),
+  businesses: many(businesses),
 }));
 
-export const customersRelations = relations(customers, ({ many }) => ({
+export const customersRelations = relations(customers, ({ many, one }) => ({
   orders: many(orders),
+  business: one(businesses, {
+    fields: [customers.businessId],
+    references: [businesses.id],
+  }),
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   items: many(ordersItems),
+  business: one(businesses, {
+    fields: [orders.businessId],
+    references: [businesses.id],
+  }),
   customer: one(customers, {
     fields: [orders.customerId],
     references: [customers.id],

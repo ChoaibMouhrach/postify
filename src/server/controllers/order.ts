@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { action, auth, rscAuth } from "../lib/action";
+import { action, auth } from "../lib/action";
 import { createOrderSchema, updateOrderSchema } from "@/common/schemas/order";
 import { customerRepository } from "../repositories/customer";
 import { orderRepository } from "../repositories/order";
@@ -30,8 +30,10 @@ import {
 import { RECORDS_LIMIT } from "@/common/constants";
 import { revalidatePath } from "next/cache";
 import { notificationRepository } from "../repositories/notification";
+import { businessRepository } from "../repositories/business";
 
 const indexSchema = z.object({
+  businessId: z.string().uuid(),
   page: pageSchema,
   query: querySchema,
   trash: trashSchema,
@@ -40,9 +42,7 @@ const indexSchema = z.object({
 });
 
 export const getOrdersAction = async (input: unknown) => {
-  const user = await rscAuth();
-
-  const { page, trash, query, from, to } = indexSchema.parse(input);
+  const { page, trash, query, from, to, businessId } = indexSchema.parse(input);
 
   const customersRequest = db
     .select({
@@ -50,11 +50,14 @@ export const getOrdersAction = async (input: unknown) => {
     })
     .from(customers)
     .where(
-      and(eq(customers.userId, user.id), ilike(customers.name, `%${query}%`)),
+      and(
+        eq(customers.businessId, businessId),
+        ilike(customers.name, `%${query}%`),
+      ),
     );
 
   const where = and(
-    eq(orders.userId, user.id),
+    eq(orders.businessId, businessId),
     trash ? isNotNull(orders.deletedAt) : isNull(orders.deletedAt),
     from || to
       ? and(
@@ -115,14 +118,19 @@ export const getOrdersAction = async (input: unknown) => {
 export const createOrderAction = action(createOrderSchema, async (input) => {
   const user = await auth();
 
+  const business = await businessRepository.findOrThrow(
+    input.businessId,
+    user.id,
+  );
+
   const customer = await customerRepository.findOrThrow(
     input.customerId,
-    user.id,
+    business.id,
   );
 
   const ps = await db.query.products.findMany({
     where: and(
-      eq(products.userId, user.id),
+      eq(products.businessId, business.id),
       inArray(
         products.id,
         input.products.map((product) => product.id),
@@ -145,7 +153,7 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
 
   const order = await orderRepository.create({
     customerId: customer.id,
-    userId: user.id,
+    businessId: business.id,
     totalPrice,
   });
 
@@ -168,7 +176,9 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
           .set({
             stock: sql`${products.stock} - ${item.quantity}`,
           })
-          .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+          .where(
+            and(eq(products.id, item.id), eq(products.businessId, business.id)),
+          );
 
         if (item.stock - item.quantity <= 5) {
           await notificationRepository.create({
@@ -191,16 +201,21 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
 export const updateOrderAction = action(updateOrderSchema, async (input) => {
   const user = await auth();
 
-  const order = await orderRepository.findOrThrow(input.id, user.id);
+  const business = await businessRepository.findOrThrow(
+    input.businessId,
+    user.id,
+  );
+
+  const order = await orderRepository.findOrThrow(input.id, business.id);
 
   if (order.customerId !== input.customerId) {
     const customer = await customerRepository.findOrThrow(
       input.customerId,
-      user.id,
+      business.id,
     );
 
-    await orderRepository.update(customer.id, user.id, {
-      customerId: input.customerId,
+    await orderRepository.update(order.id, business.id, {
+      customerId: customer.id,
     });
   }
 
@@ -212,7 +227,7 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
 
   const newItems = await db.query.products.findMany({
     where: and(
-      eq(products.userId, user.id),
+      eq(products.businessId, business.id),
       inArray(
         products.id,
         input.products.map((product) => product.id),
@@ -264,7 +279,12 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
             .set({
               stock: sql<string>`${products.stock} + ${q}`,
             })
-            .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+            .where(
+              and(
+                eq(products.id, item.id),
+                eq(products.businessId, business.id),
+              ),
+            );
         }
 
         return new Promise(async (res) => {
@@ -273,7 +293,12 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
             .set({
               stock: sql<string>`${products.stock} - ${q}`,
             })
-            .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+            .where(
+              and(
+                eq(products.id, item.id),
+                eq(products.businessId, business.id),
+              ),
+            );
 
           if (item.stock - q <= 5) {
             await notificationRepository.create({
@@ -292,7 +317,9 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
           .set({
             stock: sql<string>`${products.stock} - ${item.new.quantity}`,
           })
-          .where(and(eq(products.id, item.id), eq(products.userId, user.id)));
+          .where(
+            and(eq(products.id, item.id), eq(products.businessId, business.id)),
+          );
 
         if (item.stock - item.new.quantity <= 5) {
           await notificationRepository.create({
@@ -319,7 +346,10 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
           stock: sql<string>`${products.stock} + ${item.quantity}`,
         })
         .where(
-          and(eq(products.id, item.productId), eq(products.userId, user.id)),
+          and(
+            eq(products.id, item.productId),
+            eq(products.businessId, business.id),
+          ),
         );
     }),
   ]);
@@ -332,13 +362,19 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
 });
 
 const schema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
 export const deleteOrderAction = action(schema, async (input) => {
   const user = await auth();
 
-  const order = await orderRepository.findOrThrow(input.id, user.id);
+  const business = await businessRepository.findOrThrow(
+    input.businessId,
+    user.id,
+  );
+
+  const order = await orderRepository.findOrThrow(input.id, business.id);
 
   const items = await db.query.ordersItems.findMany({
     where: eq(ordersItems.orderId, order.id),
@@ -352,15 +388,18 @@ export const deleteOrderAction = action(schema, async (input) => {
           stock: sql`${products.stock} + ${item.quantity}`,
         })
         .where(
-          and(eq(products.id, item.productId), eq(products.userId, user.id)),
+          and(
+            eq(products.id, item.productId),
+            eq(products.businessId, business.id),
+          ),
         );
     }),
   );
 
   if (order.deletedAt) {
-    await orderRepository.permRemove(input.id, user.id);
+    await orderRepository.permRemove(input.id, business.id);
   } else {
-    await orderRepository.remove(input.id, user.id);
+    await orderRepository.remove(input.id, business.id);
   }
 
   revalidatePath(`/orders`);
@@ -371,7 +410,12 @@ export const deleteOrderAction = action(schema, async (input) => {
 export const restoreOrderAction = action(schema, async (input) => {
   const user = await auth();
 
-  const order = await orderRepository.findOrThrow(input.id, user.id);
+  const business = await businessRepository.findOrThrow(
+    input.businessId,
+    user.id,
+  );
+
+  const order = await orderRepository.findOrThrow(input.id, business.id);
 
   if (!order.deletedAt) {
     return;
@@ -389,12 +433,15 @@ export const restoreOrderAction = action(schema, async (input) => {
           stock: sql`${products.stock} + ${item.quantity}`,
         })
         .where(
-          and(eq(products.id, item.productId), eq(products.userId, user.id)),
+          and(
+            eq(products.id, item.productId),
+            eq(products.businessId, business.id),
+          ),
         );
     }),
   );
 
-  await orderRepository.restore(input.id, user.id);
+  await orderRepository.restore(input.id, business.id);
 
   revalidatePath(`/orders`);
   revalidatePath(`/orders/${order.id}/edit`);

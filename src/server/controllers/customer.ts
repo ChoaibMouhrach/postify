@@ -4,13 +4,7 @@ import {
   createCustomerSchema,
   updateCustomerSchema,
 } from "@/common/schemas/customer";
-import {
-  CustomError,
-  TakenError,
-  action,
-  auth,
-  rscAuth,
-} from "@/server/lib/action";
+import { CustomError, TakenError, action, auth } from "@/server/lib/action";
 import { customerRepository } from "@/server/repositories/customer";
 import {
   and,
@@ -28,7 +22,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "../db";
 import { customers } from "../db/schema";
-import { SearchParams } from "@/types/nav";
 import {
   fromSchema,
   pageSchema,
@@ -37,8 +30,10 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
+import { businessRepository } from "../repositories/business";
 
 const indexSchema = z.object({
+  businessId: z.string().uuid(),
   page: pageSchema,
   query: querySchema,
   trash: trashSchema,
@@ -46,13 +41,13 @@ const indexSchema = z.object({
   to: toSchema,
 });
 
-export const getCustomersAction = async (searchParams: SearchParams) => {
-  const { page, query, trash, from, to } = indexSchema.parse(searchParams);
+export const getCustomersAction = async (input: unknown) => {
+  const { page, query, trash, from, to, businessId } = indexSchema.parse(input);
 
-  const user = await rscAuth();
+  // todo: add check if the business exists first
 
   const where = and(
-    eq(customers.userId, user.id),
+    eq(customers.businessId, businessId),
     trash ? isNotNull(customers.deletedAt) : isNull(customers.deletedAt),
     from || to
       ? and(
@@ -103,6 +98,7 @@ export const getCustomersAction = async (searchParams: SearchParams) => {
 };
 
 const restoreCustomerSchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
@@ -111,16 +107,24 @@ export const restoreCustomerAction = action(
   async (input) => {
     const user = await auth();
 
-    const customer = await customerRepository.findOrThrow(input.id, user.id);
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
+    const customer = await customerRepository.findOrThrow(
+      input.id,
+      business.id,
+    );
 
     if (!customer.deletedAt) {
       throw new CustomError("Customer is not deleted");
     }
 
-    await customerRepository.restore(input.id, user.id);
+    await customerRepository.restore(customer.id, business.id);
 
     revalidatePath("/customers");
-    revalidatePath(`/customers/${input.id}/edit`);
+    revalidatePath(`/customers/${customer.id}/edit`);
   },
 );
 
@@ -129,10 +133,15 @@ export const createCustomerAction = action(
   async (input) => {
     const user = await auth();
 
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
     if (input.email) {
       const customer = await db.query.customers.findFirst({
         where: and(
-          eq(customers.userId, user.id),
+          eq(customers.businessId, business.id),
           eq(customers.email, input.email),
         ),
       });
@@ -142,12 +151,14 @@ export const createCustomerAction = action(
       }
     }
 
+    // todo: check phone number
+
     const customer = await customerRepository.create({
       name: input.name,
       email: input.email || undefined,
       phone: input.phone,
       address: input.address || undefined,
-      userId: user.id,
+      businessId: business.id,
     });
 
     revalidatePath("/customers");
@@ -157,6 +168,7 @@ export const createCustomerAction = action(
 );
 
 const deleteCustomerSchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
@@ -165,13 +177,23 @@ export const deleteCustomerAction = action(
   async (input) => {
     const user = await auth();
 
-    await customerRepository.findOrThrow(input.id, user.id);
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
 
-    await customerRepository.update(input.id, user.id, { deletedAt: `NOW()` });
+    const customer = await customerRepository.findOrThrow(
+      input.id,
+      business.id,
+    );
+
+    await customerRepository.update(customer.id, business.id, {
+      deletedAt: `NOW()`,
+    });
 
     revalidatePath("/customers");
     revalidatePath("/dashboard");
-    revalidatePath(`/customers/${input.id}/edit`);
+    revalidatePath(`/customers/${customer.id}/edit`);
   },
 );
 
@@ -180,17 +202,25 @@ export const updateCustomerAction = action(
   async (input) => {
     const user = await auth();
 
-    await customerRepository.findOrThrow(input.id, user.id);
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
+    const customer = await customerRepository.findOrThrow(
+      input.id,
+      business.id,
+    );
 
     if (input.email) {
       const customerCheck = await db.query.customers.findFirst({
         where: and(
           eq(customers.email, input.email),
-          eq(customers.userId, user.id),
+          eq(customers.businessId, business.id),
         ),
       });
 
-      if (customerCheck && customerCheck.id !== input.id) {
+      if (customerCheck && customerCheck.id !== customer.id) {
         throw new TakenError("Email address");
       }
     }
@@ -198,15 +228,15 @@ export const updateCustomerAction = action(
     const customerPhoneCheck = await db.query.customers.findFirst({
       where: and(
         eq(customers.phone, input.phone),
-        eq(customers.userId, user.id),
+        eq(customers.businessId, business.id),
       ),
     });
 
-    if (customerPhoneCheck && customerPhoneCheck.id !== input.id) {
+    if (customerPhoneCheck && customerPhoneCheck.id !== customer.id) {
       throw new TakenError("Phone number");
     }
 
-    await customerRepository.update(input.id, user.id, {
+    await customerRepository.update(customer.id, business.id, {
       name: input.name,
       email: input.email || null,
       phone: input.phone,

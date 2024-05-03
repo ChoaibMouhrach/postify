@@ -11,8 +11,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "../db";
 import { categories } from "../db/schema";
+import { businessRepository } from "../repositories/business";
 
 const restoreCategorySchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
@@ -21,8 +23,21 @@ export const restoreCategoryAction = action(
   async (input) => {
     const user = await auth();
 
-    await categoryRepository.findOrThrow(input.id, user.id);
-    await categoryRepository.restore(input.id, user.id);
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
+    const category = await categoryRepository.findOrThrow(
+      input.id,
+      business.id,
+    );
+
+    if (!category.deletedAt) {
+      return;
+    }
+
+    await categoryRepository.restore(category.id, user.id);
 
     revalidatePath("/categories");
     revalidatePath(`/categories/${input.id}/edit`);
@@ -34,10 +49,15 @@ export const createCategoryAction = action(
   async (input) => {
     const user = await auth();
 
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
     const category = await db.query.categories.findFirst({
       where: and(
         eq(categories.name, input.name),
-        eq(categories.userId, user.id),
+        eq(categories.businessId, business.id),
       ),
     });
 
@@ -49,7 +69,7 @@ export const createCategoryAction = action(
       .insert(categories)
       .values({
         name: input.name,
-        userId: user.id,
+        businessId: input.businessId,
       })
       .returning({
         id: categories.id,
@@ -67,7 +87,15 @@ export const updateCategoryAction = action(
   async (input) => {
     const user = await auth();
 
-    const category = await categoryRepository.findOrThrow(input.id, user.id);
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
+    const category = await categoryRepository.findOrThrow(
+      input.id,
+      business.id,
+    );
 
     if (category.name === input.name) {
       return;
@@ -75,7 +103,7 @@ export const updateCategoryAction = action(
 
     const categoryCheck = await db.query.categories.findFirst({
       where: and(
-        eq(categories.userId, user.id),
+        eq(categories.businessId, business.id),
         eq(categories.name, input.name),
       ),
     });
@@ -84,7 +112,7 @@ export const updateCategoryAction = action(
       throw new TakenError("Category");
     }
 
-    await categoryRepository.update(input.id, user.id, {
+    await categoryRepository.update(input.id, business.id, {
       name: input.name,
     });
 
@@ -94,6 +122,7 @@ export const updateCategoryAction = action(
 );
 
 const deleteCategorySchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
@@ -102,12 +131,20 @@ export const deleteCategoryAction = action(
   async (input) => {
     const user = await auth();
 
-    const category = await categoryRepository.findOrThrow(input.id, user.id);
+    const business = await businessRepository.findOrThrow(
+      input.businessId,
+      user.id,
+    );
+
+    const category = await categoryRepository.findOrThrow(
+      input.id,
+      business.id,
+    );
 
     if (!category.deletedAt) {
-      await categoryRepository.remove(input.id, user.id);
+      await categoryRepository.remove(input.id, business.id);
     } else {
-      await categoryRepository.permRemove(input.id, user.id);
+      await categoryRepository.permRemove(input.id, business.id);
     }
 
     revalidatePath("/dashboard");

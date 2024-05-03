@@ -1,0 +1,41 @@
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/client/components/ui/card";
+import { Purchases } from "./table";
+import { Suspense } from "react";
+import { DataTableSkeleton } from "@/client/components/data-table";
+import { SearchParams } from "@/types/nav";
+
+interface PageProps {
+  searchParams: SearchParams;
+  params: {
+    businessId: string;
+  };
+}
+
+const Page: React.FC<PageProps> = ({ searchParams, params }) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Purchases</CardTitle>
+        <CardDescription>
+          You can manage your purchases from here.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Suspense fallback={<DataTableSkeleton />}>
+          <Purchases
+            businessId={params.businessId}
+            searchParams={searchParams}
+          />
+        </Suspense>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default Page;

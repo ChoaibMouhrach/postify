@@ -2,6 +2,7 @@ import validator from "validator";
 import { z } from "zod";
 
 export const updateSupplierSchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
   name: z.string().min(3),
   phone: z
@@ -13,6 +14,7 @@ export const updateSupplierSchema = z.object({
 });
 
 export const createSupplierSchema = z.object({
+  businessId: z.string().uuid(),
   name: z.string().min(3),
   phone: z
     .string()

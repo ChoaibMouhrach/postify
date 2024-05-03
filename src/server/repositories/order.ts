@@ -3,14 +3,14 @@ import { db } from "../db";
 import { orders, TOrderInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
 
-const find = (id: string, userId: string) => {
+const find = (id: string, businessId: string) => {
   return db.query.orders.findFirst({
-    where: and(eq(orders.userId, userId), eq(orders.id, id)),
+    where: and(eq(orders.businessId, businessId), eq(orders.id, id)),
   });
 };
 
-const findOrThrow = async (id: string, userId: string) => {
-  const order = await find(id, userId);
+const findOrThrow = async (id: string, businessId: string) => {
+  const order = await find(id, businessId);
 
   if (!order) {
     throw new NotfoundError("order");
@@ -27,35 +27,39 @@ const create = async (input: TOrderInsert) => {
   return os[0];
 };
 
-const update = (id: string, userId: string, input: Partial<TOrderInsert>) => {
+const update = (
+  id: string,
+  businessId: string,
+  input: Partial<TOrderInsert>,
+) => {
   return db
     .update(orders)
     .set(input)
-    .where(and(eq(orders.userId, userId), eq(orders.id, id)));
+    .where(and(eq(orders.businessId, businessId), eq(orders.id, id)));
 };
 
-const remove = (id: string, userId: string) => {
+const remove = (id: string, businessId: string) => {
   return db
     .update(orders)
     .set({
       deletedAt: `NOW()`,
     })
-    .where(and(eq(orders.userId, userId), eq(orders.id, id)));
+    .where(and(eq(orders.businessId, businessId), eq(orders.id, id)));
 };
 
-const restore = (id: string, userId: string) => {
+const restore = (id: string, businessId: string) => {
   return db
     .update(orders)
     .set({
       deletedAt: null,
     })
-    .where(and(eq(orders.userId, userId), eq(orders.id, id)));
+    .where(and(eq(orders.businessId, businessId), eq(orders.id, id)));
 };
 
-const permRemove = (id: string, userId: string) => {
+const permRemove = (id: string, businessId: string) => {
   return db
     .delete(orders)
-    .where(and(eq(orders.userId, userId), eq(orders.id, id)));
+    .where(and(eq(orders.businessId, businessId), eq(orders.id, id)));
 };
 
 export const orderRepository = {

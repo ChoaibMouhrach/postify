@@ -3,14 +3,14 @@ import { db } from "../db";
 import { NotfoundError } from "../lib/action";
 import { categories, TCategoryInsert } from "../db/schema";
 
-const find = (id: string, userId: string) => {
+const find = (id: string, businessId: string) => {
   return db.query.categories.findFirst({
-    where: and(eq(categories.id, id), eq(categories.userId, userId)),
+    where: and(eq(categories.id, id), eq(categories.businessId, businessId)),
   });
 };
 
-const findOrThrow = async (id: string, userId: string) => {
-  const category = await find(id, userId);
+const findOrThrow = async (id: string, businessId: string) => {
+  const category = await find(id, businessId);
 
   if (!category) {
     throw new NotfoundError("Category");
@@ -25,37 +25,37 @@ const create = async (input: TCategoryInsert) => {
 
 const update = (
   id: string,
-  userId: string,
+  businessId: string,
   input: Partial<TCategoryInsert>,
 ) => {
   return db
     .update(categories)
     .set(input)
-    .where(and(eq(categories.id, id), eq(categories.userId, userId)));
+    .where(and(eq(categories.id, id), eq(categories.businessId, businessId)));
 };
 
-const remove = (id: string, userId: string) => {
+const remove = (id: string, businessId: string) => {
   return db
     .update(categories)
     .set({
       deletedAt: `NOW()`,
     })
-    .where(and(eq(categories.id, id), eq(categories.userId, userId)));
+    .where(and(eq(categories.id, id), eq(categories.businessId, businessId)));
 };
 
-const restore = (id: string, userId: string) => {
+const restore = (id: string, businessId: string) => {
   return db
     .update(categories)
     .set({
       deletedAt: null,
     })
-    .where(and(eq(categories.id, id), eq(categories.userId, userId)));
+    .where(and(eq(categories.id, id), eq(categories.businessId, businessId)));
 };
 
-const permRemove = (id: string, userId: string) => {
+const permRemove = (id: string, businessId: string) => {
   return db
     .delete(categories)
-    .where(and(eq(categories.id, id), eq(categories.userId, userId)));
+    .where(and(eq(categories.id, id), eq(categories.businessId, businessId)));
 };
 
 export const categoryRepository = {

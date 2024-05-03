@@ -3,14 +3,14 @@ import { db } from "../db";
 import { products, TProductInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
 
-const find = (id: string, userId: string) => {
+const find = (id: string, businessId: string) => {
   return db.query.products.findFirst({
-    where: and(eq(products.id, id), eq(products.userId, userId)),
+    where: and(eq(products.id, id), eq(products.businessId, businessId)),
   });
 };
 
-const findOrThrow = async (id: string, userId: string) => {
-  const product = await find(id, userId);
+const findOrThrow = async (id: string, businessId: string) => {
+  const product = await find(id, businessId);
 
   if (!product) {
     throw new NotfoundError("Product");
@@ -38,35 +38,39 @@ const create = async (input: TProductInsert) => {
   return ps[0];
 };
 
-const update = (id: string, userId: string, input: TProductInsert) => {
+const update = (
+  id: string,
+  businessId: string,
+  input: Partial<TProductInsert>,
+) => {
   return db
     .update(products)
     .set(input)
-    .where(and(eq(products.id, id), eq(products.userId, userId)));
+    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
 };
 
-const remove = (id: string, userId: string) => {
+const remove = (id: string, businessId: string) => {
   return db
     .update(products)
     .set({
       deletedAt: `NOW()`,
     })
-    .where(and(eq(products.id, id), eq(products.userId, userId)));
+    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
 };
 
-const permRemove = (id: string, userId: string) => {
+const permRemove = (id: string, businessId: string) => {
   return db
     .delete(products)
-    .where(and(eq(products.id, id), eq(products.userId, userId)));
+    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
 };
 
-const restore = (id: string, userId: string) => {
+const restore = (id: string, businessId: string) => {
   return db
     .update(products)
     .set({
       deletedAt: null,
     })
-    .where(and(eq(products.id, id), eq(products.userId, userId)));
+    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
 };
 
 export const productRepository = {

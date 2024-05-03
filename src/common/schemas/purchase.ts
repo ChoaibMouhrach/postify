@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const updatePurchaseSchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
   supplierId: z.string().uuid("Supplier not selected"),
   products: z
@@ -15,6 +16,7 @@ export const updatePurchaseSchema = z.object({
 });
 
 export const createPurchaseSchema = z.object({
+  businessId: z.string().uuid(),
   supplierId: z.string().uuid("Supplier not selected"),
   products: z
     .array(

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const createOrderSchema = z.object({
+  businessId: z.string().uuid(),
   customerId: z.string().uuid("Customer is not selected"),
   products: z
     .array(
@@ -13,6 +14,7 @@ export const createOrderSchema = z.object({
 });
 
 export const updateOrderSchema = z.object({
+  businessId: z.string().uuid(),
   id: z.string().uuid(),
   customerId: z.string().uuid("Customer is not selected"),
   products: z
