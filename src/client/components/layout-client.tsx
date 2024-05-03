@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/client/components/ui/select";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "./logo";
 
 interface LayoutSidebarItemProps {
@@ -115,9 +115,16 @@ export const BusinessesSwitchCMP: React.FC<BusinessesSwitchCMPProps> = ({
   value,
 }) => {
   const router = useRouter();
+  const pathName = usePathname();
 
   const onValueChange = (value: string) => {
-    router.push(`/businesses/${value}/dashboard`);
+    const segments = pathName.split("/");
+
+    segments.shift();
+    segments.shift();
+    segments.shift();
+
+    router.push("/" + [`businesses`, value, ...segments].join("/"));
   };
 
   return (
