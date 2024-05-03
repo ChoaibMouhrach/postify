@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { CustomProvider } from "./custom-provider";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "YeraPos",
@@ -18,6 +19,7 @@ const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
     <html lang="en">
       <body className={GeistSans.className}>
         <Analytics />
+        <SpeedInsights />
         <CustomProvider>{children}</CustomProvider>
       </body>
     </html>
