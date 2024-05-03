@@ -1,9 +1,4 @@
 import React from "react";
-import { rscAuth } from "@/server/lib/action";
-import { db } from "@/server/db";
-import { and, eq } from "drizzle-orm";
-import { businesses } from "@/server/db/schema";
-import { redirect } from "next/navigation";
 import {
   LayoutBody,
   LayoutContent,
@@ -20,23 +15,10 @@ interface LayoutProps {
   };
 }
 
-const Layout: React.FC<LayoutProps> = async ({ params, children }) => {
-  const user = await rscAuth();
-
-  const business = await db.query.businesses.findFirst({
-    where: and(
-      eq(businesses.userId, user.id),
-      eq(businesses.id, params.businessId),
-    ),
-  });
-
-  if (!business) {
-    redirect("/businesses");
-  }
-
+const Layout: React.FC<LayoutProps> = async ({ children, params }) => {
   return (
     <LayoutWrapper>
-      <LayoutHead>
+      <LayoutHead businessId={params.businessId}>
         <MobileBar />
       </LayoutHead>
       <LayoutBody>

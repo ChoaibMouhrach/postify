@@ -8,10 +8,9 @@ import {
 import { Delete } from "./delete";
 import { Edit } from "./edit";
 import React from "react";
-import { db } from "@/server/db";
-import { and, eq } from "drizzle-orm";
-import { categories } from "@/server/db/schema";
-import { redirect } from "next/navigation";
+import { categoryRepository } from "@/server/repositories/category";
+import { businessRepository } from "@/server/repositories/business";
+import { rscAuth } from "@/server/lib/action";
 
 interface PageProps {
   params: {
@@ -21,16 +20,17 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ params }) => {
-  const category = await db.query.categories.findFirst({
-    where: and(
-      eq(categories.id, params.id),
-      eq(categories.businessId, params.businessId),
-    ),
-  });
+  const user = await rscAuth();
 
-  if (!category) {
-    redirect("/categories");
-  }
+  const business = await businessRepository.rscFindOrThrow(
+    params.businessId,
+    user.id,
+  );
+
+  const category = await categoryRepository.rscFindOrThrow(
+    params.id,
+    business.id,
+  );
 
   return (
     <>

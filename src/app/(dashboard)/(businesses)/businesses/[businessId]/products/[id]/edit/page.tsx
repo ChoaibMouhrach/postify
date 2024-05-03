@@ -7,26 +7,26 @@ import {
 } from "@/client/components/ui/card";
 import { Edit } from "./edit";
 import { Delete } from "./delete";
-import { redirect } from "next/navigation";
-import { db } from "@/server/db";
-import { and, eq } from "drizzle-orm";
-import { products } from "@/server/db/schema";
+import { rscAuth } from "@/server/lib/action";
+import { businessRepository } from "@/server/repositories/business";
+import { productRepository } from "@/server/repositories/product";
 
 interface PageProps {
   params: { businessId: string; id: string };
 }
 
 const Page: React.FC<PageProps> = async ({ params }) => {
-  const product = await db.query.products.findFirst({
-    where: and(
-      eq(products.businessId, params.businessId),
-      eq(products.id, params.id),
-    ),
-  });
+  const user = await rscAuth();
 
-  if (!product) {
-    redirect("/products");
-  }
+  const business = await businessRepository.rscFindOrThrow(
+    params.businessId,
+    user.id,
+  );
+
+  const product = await productRepository.rscFindOrThrow(
+    params.id,
+    business.id,
+  );
 
   return (
     <>

@@ -2,6 +2,7 @@ import { and, eq, SQL, sql } from "drizzle-orm";
 import { db } from "../db";
 import { customers, TCustomerInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
+import { redirect } from "next/navigation";
 
 const find = async (id: string, businessId: string) => {
   return db.query.customers.findFirst({
@@ -14,6 +15,16 @@ const findOrThrow = async (id: string, businessId: string) => {
 
   if (!customer) {
     throw new NotfoundError("Customer");
+  }
+
+  return customer;
+};
+
+const rscFindOrThrow = async (id: string, businessId: string) => {
+  const customer = await find(id, businessId);
+
+  if (!customer) {
+    redirect(`/businesses/${businessId}/customers`);
   }
 
   return customer;
@@ -77,6 +88,7 @@ export const customerRepository = {
   find,
   count,
   findOrThrow,
+  rscFindOrThrow,
   create,
   update,
   remove,

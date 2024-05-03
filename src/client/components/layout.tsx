@@ -11,6 +11,24 @@ import {
   DropdownMenuTrigger,
 } from "@/client/components/ui/dropdown-menu";
 import { ScrollArea } from "./ui/scroll-area";
+import { db } from "@/server/db";
+import { eq } from "drizzle-orm";
+import { businesses } from "@/server/db/schema";
+import { BusinessesSwitchCMP } from "./layout-client";
+
+interface LayoutSidebarWrapperProps {
+  children: React.ReactNode;
+}
+
+export const LayoutSidebarWrapper: React.FC<LayoutSidebarWrapperProps> = ({
+  children,
+}) => {
+  return (
+    <ScrollArea className="w-48 border-r  shrink-0  hidden lg:block">
+      <div className="p-4">{children}</div>
+    </ScrollArea>
+  );
+};
 
 const Profile = async () => {
   const user = await rscAuth();
@@ -40,31 +58,38 @@ const Profile = async () => {
   );
 };
 
-interface LayoutSidebarWrapperProps {
-  children: React.ReactNode;
+interface BusinessesSwitchProps {
+  businessId: string;
 }
 
-export const LayoutSidebarWrapper: React.FC<LayoutSidebarWrapperProps> = ({
-  children,
+const BusinessesSwitch: React.FC<BusinessesSwitchProps> = async ({
+  businessId,
 }) => {
-  return (
-    <ScrollArea className="w-48 border-r  shrink-0  hidden lg:block">
-      <div className="p-4">{children}</div>
-    </ScrollArea>
-  );
+  const user = await rscAuth();
+
+  const data = await db.query.businesses.findMany({
+    where: eq(businesses.userId, user.id),
+  });
+
+  return <BusinessesSwitchCMP value={businessId} businesses={data} />;
 };
 
 interface LayoutHeadProps {
   children: React.ReactNode;
+  businessId: string;
 }
 
-export const LayoutHead: React.FC<LayoutHeadProps> = ({ children }) => {
+export const LayoutHead: React.FC<LayoutHeadProps> = ({
+  children,
+  businessId,
+}) => {
   return (
     <div className="h-16  border-b shrink-0 flex items-center px-4 gap-4">
       {children}
       <Link href="/">
         <Logo />
       </Link>
+      {businessId && <BusinessesSwitch businessId={businessId} />}
       <Profile />
     </div>
   );

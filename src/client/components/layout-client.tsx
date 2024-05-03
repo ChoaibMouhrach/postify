@@ -10,9 +10,18 @@ import {
 } from "@/client/components/ui/sheet";
 import { Button } from "./ui/button";
 import Link from "next/link";
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { cn } from "../lib/utils";
 import { ScrollArea } from "./ui/scroll-area";
+import { TBusiness } from "@/server/db/schema";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/client/components/ui/select";
+import { useRouter } from "next/navigation";
 
 interface LayoutSidebarItemProps {
   onNavigate?: () => unknown;
@@ -96,5 +105,36 @@ export const LayoutMobileSidebar: React.FC<LayoutMobileSidebarProps> = ({
         </SheetContent>
       </Sheet>
     </div>
+  );
+};
+
+interface BusinessesSwitchCMPProps {
+  businesses: TBusiness[];
+  value: string;
+}
+
+export const BusinessesSwitchCMP: React.FC<BusinessesSwitchCMPProps> = ({
+  businesses,
+  value,
+}) => {
+  const router = useRouter();
+
+  const onValueChange = (value: string) => {
+    router.push(`/businesses/${value}/dashboard`);
+  };
+
+  return (
+    <Select defaultValue={value} onValueChange={onValueChange}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder="Select business" />
+      </SelectTrigger>
+      <SelectContent>
+        {businesses.map((business) => (
+          <SelectItem key={business.id} value={business.id}>
+            {business.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 };

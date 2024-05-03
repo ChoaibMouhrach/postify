@@ -9,6 +9,8 @@ import {
 } from "@/client/components/ui/card";
 import { Suspense } from "react";
 import { DataTableSkeleton } from "@/client/components/data-table";
+import { rscAuth } from "@/server/lib/action";
+import { businessRepository } from "@/server/repositories/business";
 
 interface PageProps {
   searchParams: SearchParams;
@@ -17,7 +19,11 @@ interface PageProps {
   };
 }
 
-const Page: React.FC<PageProps> = ({ searchParams, params }) => {
+const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
+  const user = await rscAuth();
+
+  await businessRepository.rscFindOrThrow(params.businessId, user.id);
+
   return (
     <Card>
       <CardHeader>

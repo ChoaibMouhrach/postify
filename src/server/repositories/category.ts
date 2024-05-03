@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { NotfoundError } from "../lib/action";
 import { categories, TCategoryInsert } from "../db/schema";
+import { redirect } from "next/navigation";
 
 const find = (id: string, businessId: string) => {
   return db.query.categories.findFirst({
@@ -14,6 +15,16 @@ const findOrThrow = async (id: string, businessId: string) => {
 
   if (!category) {
     throw new NotfoundError("Category");
+  }
+
+  return category;
+};
+
+const rscFindOrThrow = async (id: string, businessId: string) => {
+  const category = await find(id, businessId);
+
+  if (!category) {
+    redirect(`/businesses/${businessId}/categories`);
   }
 
   return category;
@@ -61,6 +72,7 @@ const permRemove = (id: string, businessId: string) => {
 export const categoryRepository = {
   find,
   findOrThrow,
+  rscFindOrThrow,
   create,
   update,
   remove,

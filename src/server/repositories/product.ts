@@ -2,6 +2,7 @@ import { and, eq, SQL, sql } from "drizzle-orm";
 import { db } from "../db";
 import { products, TProductInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
+import { redirect } from "next/navigation";
 
 const find = (id: string, businessId: string) => {
   return db.query.products.findFirst({
@@ -14,6 +15,16 @@ const findOrThrow = async (id: string, businessId: string) => {
 
   if (!product) {
     throw new NotfoundError("Product");
+  }
+
+  return product;
+};
+
+const rscFindOrThrow = async (id: string, businessId: string) => {
+  const product = await find(id, businessId);
+
+  if (!product) {
+    redirect(`/businesses/${businessId}/products`);
   }
 
   return product;
@@ -76,6 +87,7 @@ const restore = (id: string, businessId: string) => {
 export const productRepository = {
   find,
   findOrThrow,
+  rscFindOrThrow,
   count,
   create,
   update,

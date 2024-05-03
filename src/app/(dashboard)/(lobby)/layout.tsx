@@ -10,12 +10,15 @@ import { Bar, MobileBar } from "./links";
 
 interface LayoutProps {
   children: React.ReactNode;
+  params: {
+    businessId: string;
+  };
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ children, params }) => {
   return (
     <LayoutWrapper>
-      <LayoutHead>
+      <LayoutHead businessId={params.businessId}>
         <MobileBar />
       </LayoutHead>
       <LayoutBody>

@@ -3,6 +3,7 @@ import { db } from "../db";
 import { TSupplierInsert, suppliers } from "../db/schema";
 import { NotfoundError } from "../lib/action";
 import { PgUpdateSetSource } from "drizzle-orm/pg-core";
+import { redirect } from "next/navigation";
 
 const find = (id: string, businessId: string) => {
   return db.query.suppliers.findFirst({
@@ -15,6 +16,16 @@ const findOrThrow = async (id: string, businessId: string) => {
 
   if (!supplier) {
     throw new NotfoundError("Supplier");
+  }
+
+  return supplier;
+};
+
+const rscFindOrThrow = async (id: string, businessId: string) => {
+  const supplier = await find(id, businessId);
+
+  if (!supplier) {
+    redirect(`/businesses/${businessId}/suppliers`);
   }
 
   return supplier;
@@ -67,6 +78,7 @@ const restore = (id: string, businessId: string) => {
 export const supplierRepository = {
   find,
   findOrThrow,
+  rscFindOrThrow,
   create,
   update,
   remove,

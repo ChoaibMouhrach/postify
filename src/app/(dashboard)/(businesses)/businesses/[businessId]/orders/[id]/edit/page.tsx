@@ -7,10 +7,12 @@ import {
 } from "@/client/components/ui/card";
 import { Delete } from "./delete";
 import { db } from "@/server/db";
-import { and, eq } from "drizzle-orm";
-import { orders } from "@/server/db/schema";
-import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { ordersItems } from "@/server/db/schema";
 import { Edit } from "./edit";
+import { rscAuth } from "@/server/lib/action";
+import { businessRepository } from "@/server/repositories/business";
+import { orderRepository } from "@/server/repositories/order";
 
 interface PageProps {
   params: {
@@ -20,23 +22,21 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ params }) => {
-  const order = await db.query.orders.findFirst({
-    where: and(
-      eq(orders.businessId, params.businessId),
-      eq(orders.id, params.id),
-    ),
+  const user = await rscAuth();
+
+  const business = await businessRepository.rscFindOrThrow(
+    params.businessId,
+    user.id,
+  );
+
+  const order = await orderRepository.rscFindOrThrow(params.id, business.id);
+
+  const items = await db.query.ordersItems.findMany({
+    where: eq(ordersItems.orderId, order.id),
     with: {
-      items: {
-        with: {
-          product: true,
-        },
-      },
+      product: true,
     },
   });
-
-  if (!order) {
-    redirect("/orders");
-  }
 
   return (
     <>
@@ -45,7 +45,12 @@ const Page: React.FC<PageProps> = async ({ params }) => {
           <CardTitle>Edit order</CardTitle>
           <CardDescription>You can edit this order from here.</CardDescription>
         </CardHeader>
-        <Edit order={order} />
+        <Edit
+          order={{
+            ...order,
+            items,
+          }}
+        />
       </Card>
       <Card>
         <CardHeader>

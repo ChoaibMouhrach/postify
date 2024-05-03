@@ -6,11 +6,10 @@ import {
   CardTitle,
 } from "@/client/components/ui/card";
 import { Delete } from "./delete";
-import { db } from "@/server/db";
-import { and, eq } from "drizzle-orm";
-import { customers } from "@/server/db/schema";
-import { redirect } from "next/navigation";
 import { Edit } from "./edit";
+import { businessRepository } from "@/server/repositories/business";
+import { rscAuth } from "@/server/lib/action";
+import { customerRepository } from "@/server/repositories/customer";
 
 interface PageProps {
   params: {
@@ -20,16 +19,17 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ params }) => {
-  const customer = await db.query.customers.findFirst({
-    where: and(
-      eq(customers.id, params.id),
-      eq(customers.businessId, params.businessId),
-    ),
-  });
+  const user = await rscAuth();
 
-  if (!customer) {
-    redirect(`/businesses/${params.businessId}/customers`);
-  }
+  const business = await businessRepository.rscFindOrThrow(
+    params.businessId,
+    user.id,
+  );
+
+  const customer = await customerRepository.rscFindOrThrow(
+    params.id,
+    business.id,
+  );
 
   return (
     <>

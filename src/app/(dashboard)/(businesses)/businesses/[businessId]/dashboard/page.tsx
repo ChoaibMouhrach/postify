@@ -8,6 +8,8 @@ import {
   PurchaseCard,
   SupplierCard,
 } from "./cards";
+import { rscAuth } from "@/server/lib/action";
+import { businessRepository } from "@/server/repositories/business";
 
 interface PageProps {
   params: {
@@ -16,6 +18,10 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ params }) => {
+  const user = await rscAuth();
+
+  await businessRepository.rscFindOrThrow(params.businessId, user.id);
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
       <Suspense fallback={<CardSkeleton />}>
