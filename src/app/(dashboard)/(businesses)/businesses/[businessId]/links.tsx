@@ -9,6 +9,7 @@ import {
   Box,
   Home,
   LayoutDashboard,
+  Settings,
   Shapes,
   ShoppingBasket,
   ShoppingCart,
@@ -58,6 +59,11 @@ const links = [
     name: "Suppliers",
     icon: Truck,
     href: "/suppliers",
+  },
+  {
+    name: "Settings",
+    icon: Settings,
+    href: "/settings",
   },
 ];
 

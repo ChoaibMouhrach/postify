@@ -1,23 +1,14 @@
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/client/components/ui/card";
+import React from "react";
 import { Business } from "./business";
 
-const Settings = () => {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Settings</CardTitle>
-        <CardDescription>
-          You can manage your settings from here.
-        </CardDescription>
-      </CardHeader>
-      <Business />
-    </Card>
-  );
+interface SettingsProps {
+  params: {
+    businessId: string;
+  };
+}
+
+const Settings: React.FC<SettingsProps> = ({ params }) => {
+  return <Business businessId={params.businessId} />;
 };
 
 export default Settings;

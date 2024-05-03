@@ -22,7 +22,10 @@ import {
   sql,
 } from "drizzle-orm";
 import { z } from "zod";
-import { createBusinessSchema } from "@/common/schemas/business";
+import {
+  createBusinessSchema,
+  updateBusinessSchema,
+} from "@/common/schemas/business";
 import { TakenError, action, auth } from "../lib/action";
 import { db } from "../db";
 import { businesses } from "../db/schema";
@@ -138,6 +141,92 @@ export const createBusinessAction = action(
       userId: user.id,
     });
 
-    revalidatePath("/products");
+    revalidatePath("/businesses");
+    revalidatePath("/");
+  },
+);
+
+export const updateBusinessAction = action(
+  updateBusinessSchema,
+  async (input) => {
+    const user = await auth();
+
+    const business = await businessRepository.findOrThrow(input.id, user.id);
+
+    if (input.email) {
+      const businessByEmail = await db.query.businesses.findFirst({
+        where: and(
+          eq(businesses.email, input.email),
+          eq(businesses.userId, user.id),
+        ),
+      });
+
+      if (businessByEmail && businessByEmail.id !== business.id) {
+        throw new TakenError("Business email address");
+      }
+    }
+
+    const businessByPhone = await db.query.businesses.findFirst({
+      where: and(
+        eq(businesses.phone, input.phone),
+        eq(businesses.userId, user.id),
+      ),
+    });
+
+    if (businessByPhone && businessByPhone.id !== business.id) {
+      throw new TakenError("Business phone number");
+    }
+
+    await businessRepository.update(business.id, user.id, {
+      name: input.name,
+      phone: input.phone,
+      currency: input.currency,
+      email: input.email || null,
+      address: input.address || null,
+    });
+
+    revalidatePath("/businesses");
+  },
+);
+
+const deleteBusinessSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const deleteBusinessAction = action(
+  deleteBusinessSchema,
+  async (input) => {
+    const user = await auth();
+
+    const business = await businessRepository.findOrThrow(input.id, user.id);
+
+    if (business.deletedAt) {
+      await businessRepository.permRemove(business.id, user.id);
+    } else {
+      await businessRepository.remove(business.id, user.id);
+    }
+
+    revalidatePath("/");
+    revalidatePath("/business");
+  },
+);
+
+const restoreBusinessSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const restoreBusinessAction = action(
+  restoreBusinessSchema,
+  async (input) => {
+    const user = await auth();
+
+    const business = await businessRepository.findOrThrow(input.id, user.id);
+
+    if (business.deletedAt) {
+      await businessRepository.restore(business.id, user.id);
+    }
+
+    revalidatePath("/");
+    revalidatePath("/business");
   },
 );

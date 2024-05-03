@@ -12,13 +12,38 @@ import {
 } from "@/client/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import React from "react";
+import { restoreBusinessAction } from "@/server/controllers/business";
+import { toast } from "sonner";
+
+type RestoreBusinessReturn = Awaited<ReturnType<typeof restoreBusinessAction>>;
 
 interface ActionsProps {
   business: TBusiness;
 }
 
 const Actions: React.FC<ActionsProps> = ({ business }) => {
-  const onRestore = () => {};
+  const onRestore = () => {
+    const promise = new Promise<RestoreBusinessReturn>(async (res, rej) => {
+      const response = await restoreBusinessAction({
+        id: business.id,
+      });
+
+      if ("data" in response) {
+        res(response);
+        return;
+      }
+
+      rej(response);
+    });
+
+    toast.promise(promise, {
+      success: "Business restored successfully",
+      loading: "Please wait while we restore this business",
+      error: (err: RestoreBusinessReturn) => {
+        return err.serverError || "Something went wrong";
+      },
+    });
+  };
 
   return (
     <DropdownMenu>

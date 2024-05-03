@@ -13,32 +13,38 @@ import {
 } from "@/client/components/ui/form";
 import { Input } from "@/client/components/ui/input";
 import { Textarea } from "@/client/components/ui/textarea";
-import { createBusinessSchema } from "@/common/schemas/business";
-import { createBusinessAction } from "@/server/controllers/business";
+import { updateBusinessSchema } from "@/common/schemas/business";
+import { updateBusinessAction } from "@/server/controllers/business";
+import { TBusiness } from "@/server/db/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAction } from "next-safe-action/hooks";
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-type Payload = z.infer<typeof createBusinessSchema>;
+type Payload = z.infer<typeof updateBusinessSchema>;
 
-export const Create = () => {
+interface BusinessEditProps {
+  business: TBusiness;
+}
+
+export const BusinessEdit: React.FC<BusinessEditProps> = ({ business }) => {
   const form = useForm<Payload>({
-    resolver: zodResolver(createBusinessSchema),
+    resolver: zodResolver(updateBusinessSchema),
     values: {
-      name: "",
-      phone: "",
-      currency: "",
-      email: "",
-      address: "",
+      id: business.id,
+      name: business.name,
+      phone: business.phone,
+      currency: business.currency,
+      email: business.email || "",
+      address: business.address || "",
     },
   });
 
-  const { execute, status } = useAction(createBusinessAction, {
+  const { execute, status } = useAction(updateBusinessAction, {
     onSuccess: () => {
-      toast.success("Business created successfully");
+      toast.success("Business updated successfully");
       form.reset();
     },
     onError: (err) => {
@@ -135,7 +141,7 @@ export const Create = () => {
           />
         </CardContent>
         <CardFooter>
-          <Button pending={pending}>Add</Button>
+          <Button pending={pending}>Save</Button>
         </CardFooter>
       </form>
     </Form>
