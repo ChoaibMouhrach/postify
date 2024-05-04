@@ -80,14 +80,23 @@ const Actions: React.FC<ActionsProps> = ({ order }) => {
   );
 };
 
-export const columns: ColumnDef<TOrder & { customer: TCustomer | null }>[] = [
+type Columns = (
+  // eslint-disable-next-line no-unused-vars
+  currency: string,
+) => ColumnDef<TOrder & { customer: TCustomer | null }>[];
+
+export const columns: Columns = (currency) => [
   {
     header: "Customer",
     cell: ({ row }) => row.original.customer?.name,
   },
   {
     header: "Total price",
-    accessorKey: "totalPrice",
+    cell: ({ row }) => (
+      <span>
+        {row.original.totalPrice} {currency}
+      </span>
+    ),
   },
   {
     header: "Created at",

@@ -15,6 +15,7 @@ import { restoreProductAction } from "@/server/controllers/product";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import { cn } from "@/client/lib/utils";
 
 interface ActionsProps {
   product: TProduct;
@@ -79,18 +80,29 @@ const Actions: React.FC<ActionsProps> = ({ product }) => {
   );
 };
 
-export const columns: ColumnDef<TProduct>[] = [
+// eslint-disable-next-line no-unused-vars
+type Columns = (currency: string) => ColumnDef<TProduct>[];
+
+export const columns: Columns = (currency) => [
   {
     header: "Name",
     accessorKey: "name",
   },
   {
     header: "Price",
-    accessorKey: "price",
+    cell: ({ row }) => (
+      <span>
+        {row.original.price} {currency}
+      </span>
+    ),
   },
   {
     header: "Stock",
-    accessorKey: "stock",
+    cell: ({ row }) => (
+      <span className={cn(row.original.stock < 5 ? "text-destructive" : "")}>
+        {row.original.stock}
+      </span>
+    ),
   },
   {
     header: "Created At",

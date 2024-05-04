@@ -6,13 +6,46 @@ import {
   CardTitle,
 } from "@/client/components/ui/card";
 import { Orders } from "./table";
-import { Suspense } from "react";
+import React, { Suspense } from "react";
 import { DataTableSkeleton } from "@/client/components/data-table";
 import { SearchParams } from "@/types/nav";
 import { Order, OrderSkeleton } from "./order";
 import { cn } from "@/client/lib/utils";
 import { rscAuth } from "@/server/lib/action";
 import { businessRepository } from "@/server/repositories/business";
+import { TBusiness } from "@/server/db/schema";
+import { getOrdersAction } from "@/server/controllers/order";
+
+interface OrdersWrapperProps {
+  searchParams: SearchParams;
+  business: TBusiness;
+}
+
+export const OrdersWrapper: React.FC<OrdersWrapperProps> = async ({
+  searchParams,
+  business,
+}) => {
+  const { data, lastPage, page, query, trash, from, to } =
+    await getOrdersAction({
+      ...searchParams,
+      businessId: business.id,
+    });
+
+  return (
+    <Orders
+      data={data}
+      business={business}
+      // meta
+      query={query}
+      trash={trash}
+      from={from}
+      to={to}
+      // pagination
+      page={page}
+      lastPage={lastPage}
+    />
+  );
+};
 
 interface PageProps {
   searchParams: SearchParams;
@@ -24,7 +57,10 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
   const user = await rscAuth();
 
-  await businessRepository.rscFindOrThrow(params.businessId, user.id);
+  const business = await businessRepository.rscFindOrThrow(
+    params.businessId,
+    user.id,
+  );
 
   return (
     <div
@@ -34,7 +70,10 @@ const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
       )}
     >
       <Card
-        className={cn(searchParams.id ? "lg:col-start-1 lg:col-end-4" : "")}
+        className={cn(
+          "h-fit",
+          searchParams.id ? "lg:col-start-1 lg:col-end-4" : "",
+        )}
       >
         <CardHeader>
           <CardTitle>Orders</CardTitle>
@@ -44,10 +83,7 @@ const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
         </CardHeader>
         <CardContent>
           <Suspense fallback={<DataTableSkeleton />}>
-            <Orders
-              businessId={params.businessId}
-              searchParams={searchParams}
-            />
+            <OrdersWrapper business={business} searchParams={searchParams} />
           </Suspense>
         </CardContent>
       </Card>
@@ -59,7 +95,7 @@ const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
           )}
         >
           <Suspense fallback={<OrderSkeleton />}>
-            <Order businessId={params.businessId} id={searchParams.id} />
+            <Order id={searchParams.id} business={business} />
           </Suspense>
         </Card>
       )}

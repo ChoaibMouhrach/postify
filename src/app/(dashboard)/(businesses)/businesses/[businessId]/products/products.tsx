@@ -2,42 +2,45 @@
 
 import { DataTable } from "@/client/components/data-table";
 import { Button } from "@/client/components/ui/button";
+import { TBusiness, TProduct } from "@/server/db/schema";
 import Link from "next/link";
 import React from "react";
 import { columns } from "./columns";
-import { TBusiness, TCustomer, TOrder } from "@/server/db/schema";
 
-interface OrdersProps {
+interface ProductsProps {
+  // data
+  data: TProduct[];
   business: TBusiness;
-  data: (TOrder & { customer: TCustomer | null })[];
+
   // meta
   query: string;
   trash: boolean;
   from?: string;
   to?: string;
+
   // pagination
   page: number;
   lastPage: number;
 }
 
-export const Orders: React.FC<OrdersProps> = async ({
+export const Products: React.FC<ProductsProps> = ({
+  // data
   data,
   business,
   // meta
   query,
   trash,
-  from,
   to,
-
+  from,
   // pagination
   page,
   lastPage,
 }) => {
   return (
-    <DataTable<TOrder & { customer: TCustomer | null }>
+    <DataTable
       // data
-      data={data}
       columns={columns(business.currency)}
+      data={data}
       // meta
       trash={trash}
       query={query}
@@ -48,7 +51,7 @@ export const Orders: React.FC<OrdersProps> = async ({
       lastPage={lastPage}
     >
       <Button asChild>
-        <Link href={`/businesses/${business.id}/orders/create`}>New order</Link>
+        <Link href={`/businesses/${business.id}/products/create`}>Add new</Link>
       </Button>
     </DataTable>
   );

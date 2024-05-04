@@ -217,9 +217,10 @@ export function DataTable<TData>({
                 <div className="flex flex-col gap-3">
                   <Label>Trash</Label>
                   <Toggle
+                    pressed={trash}
                     variant="outline"
                     onPressedChange={onTrash}
-                    pressed={trash}
+                    className="justify-start"
                   >
                     Trash
                   </Toggle>

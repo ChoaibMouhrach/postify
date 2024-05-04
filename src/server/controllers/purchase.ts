@@ -5,14 +5,120 @@ import {
   updatePurchaseSchema,
 } from "@/common/schemas/purchase";
 import { db } from "@/server/db";
-import { products, purchases, purchasesItems } from "@/server/db/schema";
-import { action, auth } from "@/server/lib/action";
+import {
+  products,
+  purchases,
+  purchasesItems,
+  suppliers,
+} from "@/server/db/schema";
+import { action, auth, rscAuth } from "@/server/lib/action";
 import { purchaseRepository } from "@/server/repositories/purchase";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  sql,
+} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { businessRepository } from "../repositories/business";
 import { supplierRepository } from "../repositories/supplier";
+import {
+  fromSchema,
+  pageSchema,
+  querySchema,
+  toSchema,
+  trashSchema,
+} from "@/common/schemas";
+import { RECORDS_LIMIT } from "@/common/constants";
+
+const schema = z.object({
+  businessId: z.string().uuid(),
+  page: pageSchema,
+  trash: trashSchema,
+  query: querySchema,
+  from: fromSchema,
+  to: toSchema,
+});
+
+export const getPurchasesActiopn = async (input: unknown) => {
+  const { page, query, trash, from, to, businessId } = schema.parse(input);
+
+  const user = await rscAuth();
+
+  const business = await businessRepository.findOrThrow(businessId, user.id);
+
+  const suppliersReauest = db
+    .select({
+      id: suppliers.id,
+    })
+    .from(suppliers)
+    .where(
+      and(
+        eq(suppliers.businessId, business.id),
+        ilike(suppliers.name, `%${query}%`),
+      ),
+    );
+
+  const where = and(
+    eq(purchases.businessId, business.id),
+    trash ? isNotNull(purchases.deletedAt) : isNull(purchases.deletedAt),
+    from || to
+      ? and(
+          from
+            ? gte(purchases.createdAt, new Date(parseInt(from)).toDateString())
+            : undefined,
+          lte(
+            purchases.createdAt,
+            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
+          ),
+        )
+      : undefined,
+    query ? inArray(purchases.supplierId, suppliersReauest) : undefined,
+  );
+
+  const dataPromise = db.query.purchases.findMany({
+    where,
+    orderBy: desc(purchases.createdAt),
+    limit: RECORDS_LIMIT,
+    offset: (page - 1) * RECORDS_LIMIT,
+    with: {
+      supplier: true,
+    },
+  });
+
+  const countPromise = db
+    .select({
+      count: sql<string>`COUNT(*)`,
+    })
+    .from(purchases)
+    .where(where)
+    .then((recs) => parseInt(recs[0].count));
+
+  const [data, count] = await Promise.all([dataPromise, countPromise]);
+
+  const lastPage = Math.ceil(count / RECORDS_LIMIT);
+
+  return {
+    // data
+    data,
+    business,
+    // meta
+    query,
+    trash,
+    from,
+    to,
+    // pagination
+    page,
+    lastPage,
+  };
+};
 
 const restorePurchaseSchema = z.object({
   businessId: z.string().uuid(),

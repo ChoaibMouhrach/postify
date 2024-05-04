@@ -71,14 +71,23 @@ const Actions: React.FC<ActionsProps> = ({ purchase }) => {
   );
 };
 
-export const columns: ColumnDef<TPurchase & { supplier: TSupplier }>[] = [
+type Columns = (
+  // eslint-disable-next-line no-unused-vars
+  currency: string,
+) => ColumnDef<TPurchase & { supplier: TSupplier }>[];
+
+export const columns: Columns = (currency) => [
   {
     header: "Supplier",
     accessorKey: "supplier.name",
   },
   {
     header: "Total cost",
-    accessorKey: "totalCost",
+    cell: ({ row }) => (
+      <span>
+        {row.original.totalCost} {currency}
+      </span>
+    ),
   },
   {
     header: "Created at",

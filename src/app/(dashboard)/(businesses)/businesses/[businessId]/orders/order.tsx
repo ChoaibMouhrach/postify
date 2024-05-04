@@ -5,7 +5,7 @@ import {
   CardTitle,
 } from "@/client/components/ui/card";
 import { db } from "@/server/db";
-import { orders } from "@/server/db/schema";
+import { TBusiness, orders } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import {
@@ -21,12 +21,12 @@ import { Skeleton } from "@/client/components/ui/skeleton";
 
 interface OrderProps {
   id: string;
-  businessId: string;
+  business: TBusiness;
 }
 
-export const Order: React.FC<OrderProps> = async ({ businessId, id }) => {
+export const Order: React.FC<OrderProps> = async ({ business, id }) => {
   const order = await db.query.orders.findFirst({
-    where: and(eq(orders.businessId, businessId), eq(orders.id, id)),
+    where: and(eq(orders.businessId, business.id), eq(orders.id, id)),
     with: {
       customer: true,
       items: {
@@ -50,6 +50,19 @@ export const Order: React.FC<OrderProps> = async ({ businessId, id }) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        <span className="font-semibold">{business.name}</span>
+        <section className="flex flex-col text-sm">
+          <span>Phone</span>
+          <span className="text-muted-foreground">{business.phone}</span>
+          <span className="mt-3">Email address</span>
+          <span className="text-muted-foreground">
+            {business.email || "N/A"}
+          </span>
+          <span className="mt-3">Address</span>
+          <span className="text-muted-foreground">
+            {business.address || "N/A"}
+          </span>
+        </section>
         <span className="font-semibold">Customer {order.customer?.name}</span>
         <section className="flex flex-col text-sm">
           <span>Phone</span>
@@ -79,8 +92,12 @@ export const Order: React.FC<OrderProps> = async ({ businessId, id }) => {
                 <TableRow key={item.id}>
                   <TableCell>{item.product.name}</TableCell>
                   <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{item.price}</TableCell>
-                  <TableCell>{item.price * item.quantity}</TableCell>
+                  <TableCell>
+                    {item.price} {business.currency}
+                  </TableCell>
+                  <TableCell>
+                    {item.price * item.quantity} {business.currency}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
