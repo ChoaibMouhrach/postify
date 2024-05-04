@@ -21,7 +21,7 @@ interface OrdersWrapperProps {
   business: TBusiness;
 }
 
-export const OrdersWrapper: React.FC<OrdersWrapperProps> = async ({
+const OrdersWrapper: React.FC<OrdersWrapperProps> = async ({
   searchParams,
   business,
 }) => {
