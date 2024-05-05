@@ -22,6 +22,7 @@ import { useAction } from "next-safe-action/hooks";
 import { updateProductAction } from "@/server/controllers/product";
 import { useMemo } from "react";
 import { toast } from "sonner";
+import { CategoriesInput } from "./categories-input";
 
 interface EditProps {
   product: TProduct;
@@ -46,7 +47,12 @@ export const Edit: React.FC<EditProps> = ({ product }) => {
       id: product.id,
       name: product.name,
       price: product.price,
+      unit: product.unit,
+
+      tax: product.tax || "",
       description: product.description || "",
+      categoryId: product.categoryId || "",
+      code: product.code || "",
     },
   });
 
@@ -71,6 +77,74 @@ export const Edit: React.FC<EditProps> = ({ product }) => {
                   <Input {...field} placeholder="Asu..." />
                 </FormControl>
                 <FormDescription>The name of the product.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="categoryId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <FormControl>
+                  <CategoriesInput
+                    defaultValue={field.value}
+                    onValueChange={field.onChange}
+                  />
+                </FormControl>
+                <FormDescription>The category of this product.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="unit"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Unit</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="kg" />
+                </FormControl>
+                <FormDescription>The unit of the product.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Code</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="786374234" />
+                </FormControl>
+                <FormDescription>The code of the product.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="tax"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tax</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      field.onChange(parseInt(e.target.value) || value);
+                    }}
+                    type="number"
+                    step="0.001"
+                    placeholder="1"
+                  />
+                </FormControl>
+                <FormDescription>The tax of the product.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
