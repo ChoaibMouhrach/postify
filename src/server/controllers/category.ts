@@ -4,14 +4,99 @@ import {
   createCategorySchema,
   updateCategorySchema,
 } from "@/common/schemas/category";
-import { action, auth, TakenError } from "@/server/lib/action";
+import { action, auth, rscAuth, TakenError } from "@/server/lib/action";
 import { categoryRepository } from "@/server/repositories/category";
-import { and, eq } from "drizzle-orm";
+import {
+  and,
+  eq,
+  gte,
+  ilike,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "../db";
 import { categories } from "../db/schema";
 import { businessRepository } from "../repositories/business";
+import {
+  fromSchema,
+  pageSchema,
+  querySchema,
+  toSchema,
+  trashSchema,
+} from "@/common/schemas";
+import { RECORDS_LIMIT } from "@/common/constants";
+
+const schema = z.object({
+  businessId: z.string().uuid(),
+  page: pageSchema,
+  trash: trashSchema,
+  query: querySchema,
+  from: fromSchema,
+  to: toSchema,
+});
+
+export const getCategoriesAction = async (input: unknown) => {
+  const { page, query, trash, from, to, businessId } = schema.parse(input);
+
+  const user = await rscAuth();
+
+  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
+
+  const where = and(
+    eq(categories.businessId, business.id),
+    trash ? isNotNull(categories.deletedAt) : isNull(categories.deletedAt),
+    from || to
+      ? and(
+          from
+            ? gte(categories.createdAt, new Date(parseInt(from)).toDateString())
+            : undefined,
+          lte(
+            categories.createdAt,
+            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
+          ),
+        )
+      : undefined,
+    query ? or(ilike(categories.name, `%${query}%`)) : undefined,
+  );
+
+  const dataPromise = db.query.categories.findMany({
+    where,
+    limit: RECORDS_LIMIT,
+    offset: (page - 1) * RECORDS_LIMIT,
+  });
+
+  const countPromise = db
+    .select({
+      count: sql<string>`COUNT(*)`,
+    })
+    .from(categories)
+    .where(where)
+    .then((recs) => parseInt(recs[0].count));
+
+  const [data, count] = await Promise.all([dataPromise, countPromise]);
+
+  const lastPage = Math.ceil(count / RECORDS_LIMIT);
+
+  return {
+    // data
+    data,
+
+    // meta
+    trash,
+    query,
+    from,
+    to,
+
+    // pagination
+    page,
+    lastPage,
+  };
+};
 
 const restoreCategorySchema = z.object({
   businessId: z.string().uuid(),

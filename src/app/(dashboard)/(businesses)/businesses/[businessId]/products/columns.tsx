@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/client/components/ui/button";
-import { TProduct } from "@/server/db/schema";
+import { TCategory, TProduct } from "@/server/db/schema";
 import { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import {
@@ -80,14 +80,21 @@ const Actions: React.FC<ActionsProps> = ({ product }) => {
   );
 };
 
-// eslint-disable-next-line no-unused-vars
-type Columns = (currency: string) => ColumnDef<TProduct>[];
+type Columns = (
+  // eslint-disable-next-line no-unused-vars
+  currency: string,
+) => ColumnDef<TProduct & { category: TCategory | null }>[];
 
 export const columns: Columns = (currency) => [
   {
     header: "Name",
     accessorKey: "name",
   },
+  {
+    header: "Category",
+    cell: ({ row }) => row.original.category?.name || "N/A",
+  },
+
   {
     header: "Price",
     cell: ({ row }) => (

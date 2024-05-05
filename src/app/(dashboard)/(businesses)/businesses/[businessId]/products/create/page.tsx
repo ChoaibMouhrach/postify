@@ -18,7 +18,10 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  await businessRepository.rscFindOrThrow(params.businessId, user.id);
+  const business = await businessRepository.rscFindOrThrow(
+    params.businessId,
+    user.id,
+  );
 
   return (
     <Card>
@@ -26,7 +29,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
         <CardTitle>New Product</CardTitle>
         <CardDescription>You can add new products from here.</CardDescription>
       </CardHeader>
-      <Create businessId={params.businessId} />
+      <Create business={business} />
     </Card>
   );
 };

@@ -1,15 +1,15 @@
 "use client";
 
-import { DataTable } from "@/client/components/data-table";
-import { Button } from "@/client/components/ui/button";
-import { TBusiness, TProduct } from "@/server/db/schema";
-import Link from "next/link";
 import React from "react";
+import Link from "next/link";
 import { columns } from "./columns";
+import { Button } from "@/client/components/ui/button";
+import { DataTable } from "@/client/components/data-table";
+import { TBusiness, TCategory, TProduct } from "@/server/db/schema";
 
 interface ProductsProps {
   // data
-  data: TProduct[];
+  data: (TProduct & { category: TCategory | null })[];
   business: TBusiness;
 
   // meta

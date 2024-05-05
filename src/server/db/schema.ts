@@ -10,10 +10,17 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 
-const id = () => text("id").notNull().primaryKey().$defaultFn(randomUUID);
-const createdAt = () =>
-  timestamp("createdAt", { mode: "string" }).notNull().defaultNow();
-const deletedAt = () => timestamp("deletedAt", { mode: "string" });
+const id = () => {
+  return text("id").notNull().primaryKey().$defaultFn(randomUUID);
+};
+
+const createdAt = () => {
+  return timestamp("createdAt", { mode: "string" }).notNull().defaultNow();
+};
+
+const deletedAt = () => {
+  return timestamp("deletedAt", { mode: "string" });
+};
 
 export const users = pgTable("user", {
   id: id(),
@@ -100,13 +107,23 @@ export const products = pgTable("products", {
   // info
   name: text("name").notNull(),
   price: real("price").notNull(),
-  description: text("description"),
   stock: integer("stock").notNull().default(0),
+  unit: text("unit").notNull(),
+
+  // optional
+  description: text("description"),
+  code: text("code"),
+  tax: real("tax"),
 
   // meta
   businessId: text("businessId")
     .notNull()
     .references(() => businesses.id, { onDelete: "cascade" }),
+
+  categoryId: text("categoryId").references(() => categories.id, {
+    onDelete: "cascade",
+  }),
+
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
@@ -335,11 +352,15 @@ export const suppliersRelations = relations(suppliers, ({ many, one }) => ({
 }));
 
 export const productRelations = relations(products, ({ one, many }) => ({
+  purchasesItems: many(purchasesItems),
+  category: one(categories, {
+    fields: [products.categoryId],
+    references: [categories.id],
+  }),
   business: one(businesses, {
     fields: [products.businessId],
     references: [businesses.id],
   }),
-  purchasesItems: many(purchasesItems),
 }));
 
 export const userRelations = relations(users, ({ many }) => ({

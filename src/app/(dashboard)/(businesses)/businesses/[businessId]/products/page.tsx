@@ -27,6 +27,7 @@ const ProductsWrapper: React.FC<ProductsWrapperProps> = async ({
     await getProductsAction({
       ...searchParams,
       businessId: business.id,
+      category: true,
     });
 
   return (

@@ -21,21 +21,28 @@ import React, { useMemo } from "react";
 import { toast } from "sonner";
 import { createProductAction } from "@/server/controllers/product";
 import { createProductSchema } from "@/common/schemas/product";
+import { TBusiness } from "@/server/db/schema";
+import { CategoriesInput } from "./categories-input";
 
 type Payload = z.infer<typeof createProductSchema>;
 
 interface CreateProps {
-  businessId: string;
+  business: TBusiness;
 }
 
-export const Create: React.FC<CreateProps> = ({ businessId }) => {
+export const Create: React.FC<CreateProps> = ({ business }) => {
   const form = useForm<Payload>({
     resolver: zodResolver(createProductSchema),
     values: {
-      businessId,
+      businessId: business.id,
       name: "",
       price: 1,
+      unit: "",
+      tax: "",
+
       description: "",
+      categoryId: "",
+      code: "",
     },
   });
 
@@ -45,7 +52,7 @@ export const Create: React.FC<CreateProps> = ({ businessId }) => {
       toast.success("Product created successfully");
     },
     onError: (err) => {
-      toast.error(err.serverError);
+      toast.error(err.serverError || "Something went wrong");
     },
   });
 
@@ -70,6 +77,71 @@ export const Create: React.FC<CreateProps> = ({ businessId }) => {
                   <Input {...field} placeholder="Asu..." />
                 </FormControl>
                 <FormDescription>The name of the product.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="categoryId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <FormControl>
+                  <CategoriesInput onValueChange={field.onChange} />
+                </FormControl>
+                <FormDescription>The category of this product.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="unit"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Unit</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="kg" />
+                </FormControl>
+                <FormDescription>The unit of the product.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Code</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="786374234" />
+                </FormControl>
+                <FormDescription>The code of the product.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="tax"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tax</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      field.onChange(parseInt(e.target.value) || value);
+                    }}
+                    type="number"
+                    step="0.001"
+                    placeholder="1"
+                  />
+                </FormControl>
+                <FormDescription>The tax of the product.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

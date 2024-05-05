@@ -29,8 +29,10 @@ import {
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { businessRepository } from "../repositories/business";
+import { categoryRepository } from "../repositories/category";
 
 const schema = z.object({
+  category: z.boolean().default(false),
   businessId: z.string().uuid(),
   page: pageSchema,
   trash: trashSchema,
@@ -39,9 +41,8 @@ const schema = z.object({
   to: toSchema,
 });
 
-export const getProductsAction = async (searchParams: unknown) => {
-  const { page, trash, query, from, to, businessId } =
-    schema.parse(searchParams);
+export const getProductsAction = async (input: unknown) => {
+  const { page, trash, query, from, to, businessId } = schema.parse(input);
 
   const user = await rscAuth();
 
@@ -74,6 +75,9 @@ export const getProductsAction = async (searchParams: unknown) => {
     orderBy: desc(products.createdAt),
     limit: 8,
     offset: (page - 1) * 8,
+    with: {
+      category: true,
+    },
   });
 
   const count = await productRepository.count(where);
@@ -101,11 +105,22 @@ export const createProductAction = action(
       user.id,
     );
 
+    if (input.categoryId) {
+      await categoryRepository.findOrThrow(input.categoryId, business.id);
+    }
+
     const product = await productRepository.create({
-      name: input.name,
-      price: input.price,
-      description: input.description,
+      // info
       businessId: business.id,
+      price: input.price,
+      name: input.name,
+      unit: input.unit,
+
+      // optional
+      description: input.description || null,
+      categoryId: input.categoryId || null,
+      code: input.code || null,
+      tax: input.tax || null,
     });
 
     revalidatePath("/products");
@@ -126,10 +141,20 @@ export const updateProductAction = action(
 
     const product = await productRepository.findOrThrow(input.id, business.id);
 
+    if (input.categoryId) {
+      await categoryRepository.findOrThrow(input.categoryId, business.id);
+    }
+
     await productRepository.update(product.id, business.id, {
       name: input.name,
       price: input.price,
+      unit: input.unit,
+
+      // optional
       description: input.description || null,
+      categoryId: input.categoryId || null,
+      code: input.code || null,
+      tax: input.tax || null,
     });
 
     revalidatePath("/products");
