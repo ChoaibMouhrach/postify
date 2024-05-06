@@ -64,7 +64,7 @@ export const SupplierInput: React.FC<SupplierInputProps> = ({
                 }))}
               />
             ) : (
-              <Skeleton className="h-9" />
+              <Skeleton className="h-10" />
             )}
           </FormControl>
           <FormDescription>The supplier for this purchase.</FormDescription>

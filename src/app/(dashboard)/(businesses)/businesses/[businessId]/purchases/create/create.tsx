@@ -1,16 +1,16 @@
 "use client";
 
+import { z } from "zod";
+import { toast } from "sonner";
 import { Button } from "@/client/components/ui/button";
 import { CardContent, CardFooter } from "@/client/components/ui/card";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { SupplierInput } from "./suppliers";
+import { SupplierInput } from "./suppliers-input";
 import { Form } from "@/client/components/ui/form";
-import { ProductsInput } from "./products";
+import { ProductsInput } from "./products-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAction } from "next-safe-action/hooks";
 import React, { useMemo } from "react";
-import { toast } from "sonner";
 import { createPurchaseSchema } from "@/common/schemas/purchase";
 import { createPurchaseAction } from "@/server/controllers/purchase";
 

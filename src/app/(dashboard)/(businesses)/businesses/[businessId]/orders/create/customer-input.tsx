@@ -64,7 +64,7 @@ export const CustomerInput: React.FC<CustomerInputProps> = ({
                 }))}
               />
             ) : (
-              <Skeleton className="h-9" />
+              <Skeleton className="h-10" />
             )}
           </FormControl>
           <FormDescription>The customer for this order.</FormDescription>

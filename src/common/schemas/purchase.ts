@@ -9,7 +9,7 @@ export const updatePurchaseSchema = z.object({
       z.object({
         id: z.string().uuid(),
         quantity: z.number().int().gt(0),
-        cost: z.number().int(),
+        cost: z.number().gt(0),
       }),
     )
     .min(1, "At least one product is reauired"),
@@ -23,7 +23,7 @@ export const createPurchaseSchema = z.object({
       z.object({
         id: z.string().uuid(),
         quantity: z.number().int().gt(0),
-        cost: z.number().int(),
+        cost: z.number().gt(0),
       }),
     )
     .min(1, "At least one product is reauired"),

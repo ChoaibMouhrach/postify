@@ -132,13 +132,13 @@ export const Create: React.FC<CreateProps> = ({ business }) => {
                 <FormControl>
                   <Input
                     {...field}
+                    step="0.001"
+                    type="number"
+                    placeholder="1"
                     onChange={(e) => {
                       const value = e.target.value;
                       field.onChange(parseInt(e.target.value) || value);
                     }}
-                    type="number"
-                    step="0.001"
-                    placeholder="1"
                   />
                 </FormControl>
                 <FormDescription>The tax of the product.</FormDescription>

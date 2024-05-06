@@ -91,14 +91,20 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
     );
   };
 
-  const updateQuantity = (id: string, value: number) => {
+  const updateQuantity = (id: string, value: string) => {
+    const quantity = parseInt(value);
+
+    if (!quantity) {
+      return;
+    }
+
     form.setValue(
       "products",
       form.getValues("products").map((product) => {
         if (product.id == id) {
           return {
             ...product,
-            quantity: value,
+            quantity,
           };
         }
 
@@ -135,7 +141,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
                   }))}
                 />
               ) : (
-                <Skeleton className="h-9" />
+                <Skeleton className="h-10" />
               )}
             </FormControl>
             <FormDescription>The products for this purchase.</FormDescription>
@@ -160,14 +166,11 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>
                     <Input
-                      value={String(product.quantity)}
+                      defaultValue={String(product.quantity)}
                       type="number"
                       step="1"
                       onChange={(e) =>
-                        updateQuantity(
-                          product.id,
-                          parseInt(e.target.value) || 1,
-                        )
+                        updateQuantity(product.id, e.target.value)
                       }
                     />
                   </TableCell>

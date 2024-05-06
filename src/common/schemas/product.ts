@@ -9,12 +9,12 @@ export const createProductSchema = z.object({
 
   // optional
   description: z.string(),
+  code: z.string(),
   categoryId: z.union([
     z.undefined(),
     z.literal("").transform(() => undefined),
     z.string().uuid(),
   ]),
-  code: z.string(),
 });
 
 export const updateProductSchema = z.object({
@@ -27,10 +27,10 @@ export const updateProductSchema = z.object({
 
   // optional
   description: z.string(),
+  code: z.string(),
   categoryId: z.union([
     z.undefined(),
     z.literal("").transform(() => undefined),
     z.string().uuid(),
   ]),
-  code: z.string(),
 });

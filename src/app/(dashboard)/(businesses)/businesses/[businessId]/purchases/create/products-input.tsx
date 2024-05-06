@@ -94,8 +94,20 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
   const updateProduct = (
     type: "cost" | "quantity",
     id: string,
-    value: number,
+    value: string,
   ) => {
+    let v;
+
+    if (type === "quantity") {
+      v = parseInt(value);
+    } else {
+      v = parseFloat(value);
+    }
+
+    if (!v) {
+      return;
+    }
+
     form.setValue(
       "products",
       form.getValues("products").map((product) => {
@@ -105,9 +117,9 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
           };
 
           if (type === "quantity") {
-            body["quantity"] = value;
+            body["quantity"] = v;
           } else {
-            body["cost"] = value;
+            body["cost"] = v;
           }
 
           return body;
@@ -118,11 +130,11 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
     );
   };
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = (id: string, quantity: string) => {
     updateProduct("quantity", id, quantity);
   };
 
-  const updateCost = (id: string, cost: number) => {
+  const updateCost = (id: string, cost: string) => {
     updateProduct("cost", id, cost);
   };
 
@@ -154,7 +166,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
                   }))}
                 />
               ) : (
-                <Skeleton className="h-9" />
+                <Skeleton className="h-10" />
               )}
             </FormControl>
             <FormDescription>The products for this purchase.</FormDescription>
@@ -180,25 +192,20 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>
                     <Input
-                      value={String(product.quantity)}
-                      type="number"
                       step="1"
+                      type="number"
+                      defaultValue={String(product.quantity)}
                       onChange={(e) =>
-                        updateQuantity(
-                          product.id,
-                          parseInt(e.target.value) || 1,
-                        )
+                        updateQuantity(product.id, e.target.value)
                       }
                     />
                   </TableCell>
                   <TableCell>
                     <Input
-                      value={String(product.cost)}
+                      step="0.001"
                       type="number"
-                      step="1"
-                      onChange={(e) =>
-                        updateCost(product.id, parseFloat(e.target.value) || 1)
-                      }
+                      defaultValue={String(product.cost)}
+                      onChange={(e) => updateCost(product.id, e.target.value)}
                     />
                   </TableCell>
 

@@ -151,7 +151,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
                   }))}
                 />
               ) : (
-                <Skeleton className="h-9" />
+                <Skeleton className="h-10" />
               )}
             </FormControl>
             <FormDescription>The products for this purchase.</FormDescription>
