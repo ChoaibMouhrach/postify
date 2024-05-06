@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { action, auth } from "../lib/action";
+import { action, auth, rscAuth } from "../lib/action";
 import { createOrderSchema, updateOrderSchema } from "@/common/schemas/order";
 import { customerRepository } from "../repositories/customer";
 import { orderRepository } from "../repositories/order";
@@ -44,6 +44,10 @@ const indexSchema = z.object({
 export const getOrdersAction = async (input: unknown) => {
   const { page, trash, query, from, to, businessId } = indexSchema.parse(input);
 
+  const user = await rscAuth();
+
+  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
+
   const customersRequest = db
     .select({
       id: customers.id,
@@ -51,7 +55,7 @@ export const getOrdersAction = async (input: unknown) => {
     .from(customers)
     .where(
       and(
-        eq(customers.businessId, businessId),
+        eq(customers.businessId, business.id),
         ilike(customers.name, `%${query}%`),
       ),
     );
@@ -104,11 +108,14 @@ export const getOrdersAction = async (input: unknown) => {
   return {
     // data
     data,
+    business,
+
     // meta
-    trash,
     query,
+    trash,
     from,
     to,
+
     // pagination
     page,
     lastPage,

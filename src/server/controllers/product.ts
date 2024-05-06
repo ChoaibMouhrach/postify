@@ -85,13 +85,19 @@ export const getProductsAction = async (input: unknown) => {
   const lastPage = Math.ceil(count / 8);
 
   return {
+    // data
     data,
-    page,
+    business,
+
+    // meta
     query,
     trash,
-    lastPage,
     from,
     to,
+
+    // pagination
+    page,
+    lastPage,
   };
 };
 

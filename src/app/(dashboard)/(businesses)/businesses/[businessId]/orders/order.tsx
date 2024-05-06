@@ -5,7 +5,7 @@ import {
   CardTitle,
 } from "@/client/components/ui/card";
 import { db } from "@/server/db";
-import { TBusiness, orders } from "@/server/db/schema";
+import { orders } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import {
@@ -18,13 +18,19 @@ import {
 } from "@/client/components/ui/table";
 import React from "react";
 import { Skeleton } from "@/client/components/ui/skeleton";
+import { businessRepository } from "@/server/repositories/business";
+import { rscAuth } from "@/server/lib/action";
 
 interface OrderProps {
   id: string;
-  business: TBusiness;
+  businessId: string;
 }
 
-export const Order: React.FC<OrderProps> = async ({ business, id }) => {
+export const Order: React.FC<OrderProps> = async ({ businessId, id }) => {
+  const user = await rscAuth();
+
+  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
+
   const order = await db.query.orders.findFirst({
     where: and(eq(orders.businessId, business.id), eq(orders.id, id)),
     with: {

@@ -9,35 +9,35 @@ import React, { Suspense } from "react";
 import { Products } from "./products";
 import { SearchParams } from "@/types/nav";
 import { DataTableSkeleton } from "@/client/components/data-table";
-import { rscAuth } from "@/server/lib/action";
-import { businessRepository } from "@/server/repositories/business";
-import { TBusiness } from "@/server/db/schema";
 import { getProductsAction } from "@/server/controllers/product";
 
 interface ProductsWrapperProps {
   searchParams: SearchParams;
-  business: TBusiness;
+  businessId: string;
 }
 
 const ProductsWrapper: React.FC<ProductsWrapperProps> = async ({
   searchParams,
-  business,
+  businessId,
 }) => {
-  const { data, lastPage, page, trash, query, from, to } =
+  const { data, lastPage, page, trash, query, from, to, business } =
     await getProductsAction({
       ...searchParams,
-      businessId: business.id,
+      businessId: businessId,
       category: true,
     });
 
   return (
     <Products
+      // data
       data={data}
       business={business}
+      // meta
       query={query}
       trash={trash}
       from={from}
       to={to}
+      // pagination
       page={page}
       lastPage={lastPage}
     />
@@ -52,13 +52,6 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
-  const user = await rscAuth();
-
-  const business = await businessRepository.rscFindOrThrow(
-    params.businessId,
-    user.id,
-  );
-
   return (
     <Card>
       <CardHeader>
@@ -69,7 +62,10 @@ const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
       </CardHeader>
       <CardContent>
         <Suspense fallback={<DataTableSkeleton />}>
-          <ProductsWrapper business={business} searchParams={searchParams} />
+          <ProductsWrapper
+            businessId={params.businessId}
+            searchParams={searchParams}
+          />
         </Suspense>
       </CardContent>
     </Card>

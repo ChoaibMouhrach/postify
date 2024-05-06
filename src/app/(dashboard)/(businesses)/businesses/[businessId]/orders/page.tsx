@@ -11,24 +11,21 @@ import { DataTableSkeleton } from "@/client/components/data-table";
 import { SearchParams } from "@/types/nav";
 import { Order, OrderSkeleton } from "./order";
 import { cn } from "@/client/lib/utils";
-import { rscAuth } from "@/server/lib/action";
-import { businessRepository } from "@/server/repositories/business";
-import { TBusiness } from "@/server/db/schema";
 import { getOrdersAction } from "@/server/controllers/order";
 
 interface OrdersWrapperProps {
   searchParams: SearchParams;
-  business: TBusiness;
+  businessId: string;
 }
 
 const OrdersWrapper: React.FC<OrdersWrapperProps> = async ({
   searchParams,
-  business,
+  businessId,
 }) => {
-  const { data, lastPage, page, query, trash, from, to } =
+  const { data, lastPage, page, query, trash, from, to, business } =
     await getOrdersAction({
       ...searchParams,
-      businessId: business.id,
+      businessId,
     });
 
   return (
@@ -55,13 +52,6 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
-  const user = await rscAuth();
-
-  const business = await businessRepository.rscFindOrThrow(
-    params.businessId,
-    user.id,
-  );
-
   return (
     <div
       className={cn(
@@ -83,7 +73,10 @@ const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
         </CardHeader>
         <CardContent>
           <Suspense fallback={<DataTableSkeleton />}>
-            <OrdersWrapper business={business} searchParams={searchParams} />
+            <OrdersWrapper
+              businessId={params.businessId}
+              searchParams={searchParams}
+            />
           </Suspense>
         </CardContent>
       </Card>
@@ -95,7 +88,7 @@ const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
           )}
         >
           <Suspense fallback={<OrderSkeleton />}>
-            <Order id={searchParams.id} business={business} />
+            <Order businessId={params.businessId} id={searchParams.id} />
           </Suspense>
         </Card>
       )}

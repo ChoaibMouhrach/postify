@@ -4,7 +4,7 @@ import {
   createSupplierSchema,
   updateSupplierSchema,
 } from "@/common/schemas/supplier";
-import { action, auth, TakenError } from "@/server/lib/action";
+import { action, auth, rscAuth, TakenError } from "@/server/lib/action";
 import { supplierRepository } from "@/server/repositories/supplier";
 import { revalidatePath } from "next/cache";
 import { db } from "../db";
@@ -44,8 +44,12 @@ const schema = z.object({
 export const getSuppliersAction = async (input: unknown) => {
   const { page, query, trash, from, to, businessId } = schema.parse(input);
 
+  const user = await rscAuth();
+
+  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
+
   const where = and(
-    eq(suppliers.businessId, businessId),
+    eq(suppliers.businessId, business.id),
     trash ? isNotNull(suppliers.deletedAt) : isNull(suppliers.deletedAt),
     from || to
       ? and(
@@ -70,9 +74,9 @@ export const getSuppliersAction = async (input: unknown) => {
 
   const dataPromise = db.query.suppliers.findMany({
     where,
-    orderBy: desc(suppliers.createdAt),
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
+    orderBy: desc(suppliers.createdAt),
   });
 
   const countPromise = db

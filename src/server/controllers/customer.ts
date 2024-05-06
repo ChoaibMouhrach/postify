@@ -4,7 +4,13 @@ import {
   createCustomerSchema,
   updateCustomerSchema,
 } from "@/common/schemas/customer";
-import { CustomError, TakenError, action, auth } from "@/server/lib/action";
+import {
+  CustomError,
+  TakenError,
+  action,
+  auth,
+  rscAuth,
+} from "@/server/lib/action";
 import { customerRepository } from "@/server/repositories/customer";
 import {
   and,
@@ -44,10 +50,12 @@ const indexSchema = z.object({
 export const getCustomersAction = async (input: unknown) => {
   const { page, query, trash, from, to, businessId } = indexSchema.parse(input);
 
-  // todo: add check if the business exists first
+  const user = await rscAuth();
+
+  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
 
   const where = and(
-    eq(customers.businessId, businessId),
+    eq(customers.businessId, business.id),
     trash ? isNotNull(customers.deletedAt) : isNull(customers.deletedAt),
     from || to
       ? and(
