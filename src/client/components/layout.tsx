@@ -12,8 +12,8 @@ import {
 } from "@/client/components/ui/dropdown-menu";
 import { ScrollArea } from "./ui/scroll-area";
 import { db } from "@/server/db";
-import { eq } from "drizzle-orm";
-import { businesses } from "@/server/db/schema";
+import { and, eq, sql } from "drizzle-orm";
+import { businesses, notifications } from "@/server/db/schema";
 import { BusinessesSwitchCMP } from "./layout-client";
 
 interface LayoutSidebarWrapperProps {
@@ -33,10 +33,23 @@ export const LayoutSidebarWrapper: React.FC<LayoutSidebarWrapperProps> = ({
 const Profile = async () => {
   const user = await rscAuth();
 
+  const notificationsCount = await db
+    .select({
+      count: sql<string>`COUNT(*)`,
+    })
+    .from(notifications)
+    .where(
+      and(eq(notifications.userId, user.id), eq(notifications.read, false)),
+    )
+    .then((recs) => parseInt(recs[0].count));
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="bg-primary text-primary-foreground w-8 h-8 rounded-full ml-auto">
+      <DropdownMenuTrigger className="bg-primary text-primary-foreground w-8 h-8 rounded-full ml-auto relative">
         {user.name?.charAt(0).toUpperCase() || "Y"}
+        {!!notificationsCount && (
+          <div className="bg-red-700 w-2 h-2 rounded-full ml-2 absolute top-0 right-0" />
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLabel className="flex flex-col">
@@ -45,7 +58,12 @@ const Profile = async () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/notifications">Notifications</Link>
+          <Link href="/notifications">
+            Notifications
+            {!!notificationsCount && (
+              <div className="bg-red-700 w-2 h-2 rounded-full ml-2" />
+            )}
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/settings">Settings</Link>

@@ -25,7 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ children, params }) => {
         <LayoutSidebarWrapper>
           <Bar />
         </LayoutSidebarWrapper>
-        <LayoutContent> {children}</LayoutContent>
+        <LayoutContent>{children}</LayoutContent>
       </LayoutBody>
     </LayoutWrapper>
   );

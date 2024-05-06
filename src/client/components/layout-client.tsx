@@ -54,9 +54,9 @@ export const LayoutSidebarItem: React.FC<LayoutSidebarItemProps> = ({
   return (
     <Button
       asChild
+      size="sm"
       variant={active ? "secondary" : "ghost"}
       className={cn("justify-start", active ? "" : "text-muted-foreground")}
-      size="sm"
     >
       <Link onClick={onNavigate} href={link.href}>
         <link.icon className="w-4 h-4" />
