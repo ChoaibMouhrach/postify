@@ -1,19 +1,20 @@
 import { TRole, TUser } from "@/server/db/schema";
-import { DefaultSession } from "next-auth";
+
+interface T extends TUser {
+  role: TRole;
+}
 
 declare module "next-auth" {
   // eslint-disable-next-line no-unused-vars
   interface Session {
-    user: TUser & { role: TRole } & DefaultSession["user"];
+    user: T;
   }
 
   // eslint-disable-next-line no-unused-vars
-  interface User {}
+  interface User extends T {}
 }
 
 declare module "next-auth/jwt" {
   // eslint-disable-next-line no-unused-vars
-  type JWT = TUser & {
-    role: TRole;
-  };
+  interface JWT extends T {}
 }
