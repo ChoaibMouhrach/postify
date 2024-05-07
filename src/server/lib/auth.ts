@@ -32,6 +32,18 @@ export const authOptions: AuthOptions = {
   ],
   callbacks: {
     signIn: async (params) => {
+      if (!params.user.email) {
+        return false;
+      }
+
+      const user = await db.query.users.findFirst({
+        where: eq(users.email, params.user.email),
+      });
+
+      if (user) {
+        return true;
+      }
+
       const role = await db.query.roles.findFirst({
         where: eq(roles.name, ROLES.MEMBER),
       });
@@ -62,6 +74,9 @@ export const authOptions: AuthOptions = {
 
       const u = await db.query.users.findFirst({
         where: eq(users.id, id),
+        with: {
+          role: true,
+        },
       });
 
       if (!u) {

@@ -7,6 +7,7 @@ import {
 } from "@/client/components/layout";
 import React from "react";
 import { Bar, MobileBar } from "./links";
+import { rscAuth } from "@/server/lib/action";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,15 +16,17 @@ interface LayoutProps {
   };
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, params }) => {
+const Layout: React.FC<LayoutProps> = async ({ children, params }) => {
+  const user = await rscAuth();
+
   return (
     <LayoutWrapper>
       <LayoutHead businessId={params.businessId}>
-        <MobileBar />
+        <MobileBar user={user} />
       </LayoutHead>
       <LayoutBody>
         <LayoutSidebarWrapper>
-          <Bar />
+          <Bar user={user} />
         </LayoutSidebarWrapper>
         <LayoutContent>{children}</LayoutContent>
       </LayoutBody>

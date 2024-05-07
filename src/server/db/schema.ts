@@ -27,6 +27,8 @@ export const roles = pgTable("roles", {
   name: text("name").notNull(),
 });
 
+export type TRole = typeof roles.$inferSelect;
+
 export const users = pgTable("user", {
   id: id(),
   name: text("name"),
