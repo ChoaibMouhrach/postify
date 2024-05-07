@@ -1,8 +1,8 @@
 import { inArray } from "drizzle-orm";
-import { taskStatuses, taskTypes } from "./server/db/schema";
+import { roles, taskStatuses, taskTypes } from "./server/db/schema";
 import { db } from "./server/db";
 import { randomUUID } from "crypto";
-import { TASK_STATUSES, TASK_TYPES } from "./common/constants";
+import { ROLES, TASK_STATUSES, TASK_TYPES } from "./common/constants";
 
 export const seed = async () => {
   const types = [TASK_TYPES.BUG, TASK_TYPES.FEATURE];
@@ -20,9 +20,9 @@ export const seed = async () => {
   }
 
   const status = [
-    TASK_STATUSES.DONE,
-    TASK_STATUSES.IN_PROGRESS,
     TASK_STATUSES.NOT_STARTED,
+    TASK_STATUSES.IN_PROGRESS,
+    TASK_STATUSES.DONE,
   ];
 
   const st = await db.query.taskStatuses.findMany({
@@ -40,5 +40,15 @@ export const seed = async () => {
         };
       }),
     );
+  }
+
+  const cr = [ROLES.MEMBER, ROLES.ADMIN];
+
+  const rs = await db.query.roles.findMany({
+    where: inArray(roles.name, cr),
+  });
+
+  if (rs.length !== cr.length) {
+    await db.insert(roles).values(cr.map((name) => ({ name })));
   }
 };

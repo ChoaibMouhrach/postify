@@ -5,7 +5,8 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "../db";
 import { env } from "@/common/env.mjs";
 import { eq } from "drizzle-orm";
-import { users } from "../db/schema";
+import { roles, users } from "../db/schema";
+import { ROLES } from "@/common/constants";
 
 export const authOptions: AuthOptions = {
   adapter: DrizzleAdapter(db) as never,
@@ -30,6 +31,24 @@ export const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
+    signIn: async (params) => {
+      const role = await db.query.roles.findFirst({
+        where: eq(roles.name, ROLES.MEMBER),
+      });
+
+      if (!role) {
+        return false;
+      }
+
+      await db.insert(users).values({
+        name: params.user.name,
+        image: params.user.image,
+        email: params.user.email!,
+        roleId: role.id,
+      });
+
+      return true;
+    },
     jwt: async ({ user, token }) => {
       let id: string = "";
 

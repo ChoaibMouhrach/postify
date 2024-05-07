@@ -22,12 +22,22 @@ const deletedAt = () => {
   return timestamp("deletedAt", { mode: "string" });
 };
 
+export const roles = pgTable("roles", {
+  id: id(),
+  name: text("name").notNull(),
+});
+
 export const users = pgTable("user", {
   id: id(),
   name: text("name"),
+  image: text("image"),
   email: text("email").notNull(),
   emailVerified: timestamp("emailVerified", { mode: "date" }),
-  image: text("image"),
+
+  // roles
+  roleId: text("roleId")
+    .notNull()
+    .references(() => roles.id, { onDelete: "cascade" }),
 });
 
 export type TUser = typeof users.$inferSelect;
@@ -363,9 +373,17 @@ export const productRelations = relations(products, ({ one, many }) => ({
   }),
 }));
 
-export const userRelations = relations(users, ({ many }) => ({
+export const rolesRelations = relations(roles, ({ many }) => ({
+  users: many(users),
+}));
+
+export const userRelations = relations(users, ({ many, one }) => ({
   user: many(products),
   businesses: many(businesses),
+  role: one(roles, {
+    fields: [users.roleId],
+    references: [roles.id],
+  }),
 }));
 
 export const customersRelations = relations(customers, ({ many, one }) => ({
