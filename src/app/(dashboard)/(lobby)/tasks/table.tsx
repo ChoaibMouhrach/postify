@@ -42,8 +42,7 @@ const indexSchema = z.object({
 });
 
 export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
-  const { page, query, trash, to, from } =
-    await indexSchema.parse(searchParams);
+  const { page, query, trash, to, from } = indexSchema.parse(searchParams);
 
   const user = await rscAuth();
 

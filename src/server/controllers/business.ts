@@ -121,17 +121,6 @@ export const createBusinessAction = action(
       }
     }
 
-    const businessByPhone = await db.query.businesses.findFirst({
-      where: and(
-        eq(businesses.phone, input.phone),
-        eq(businesses.userId, user.id),
-      ),
-    });
-
-    if (businessByPhone) {
-      throw new TakenError("Business phone number");
-    }
-
     await businessRepository.create({
       name: input.name,
       phone: input.phone,
@@ -164,17 +153,6 @@ export const updateBusinessAction = action(
       if (businessByEmail && businessByEmail.id !== business.id) {
         throw new TakenError("Business email address");
       }
-    }
-
-    const businessByPhone = await db.query.businesses.findFirst({
-      where: and(
-        eq(businesses.phone, input.phone),
-        eq(businesses.userId, user.id),
-      ),
-    });
-
-    if (businessByPhone && businessByPhone.id !== business.id) {
-      throw new TakenError("Business phone number");
     }
 
     await businessRepository.update(business.id, user.id, {

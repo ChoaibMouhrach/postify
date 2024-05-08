@@ -1,13 +1,13 @@
 "use server";
 
 import { z } from "zod";
-import { action, auth } from "../lib/action";
+import { action, adminAuth } from "../lib/action";
 import { taskRepository } from "../repositories/task";
 import { revalidatePath } from "next/cache";
 import { createTaskSchema, updateTaskSchema } from "@/common/schemas/task";
 
 export const createTaskAction = action(createTaskSchema, async (input) => {
-  const user = await auth();
+  const user = await adminAuth();
 
   const task = await taskRepository.findTypeOrThrow(input.typeId);
 
@@ -22,7 +22,7 @@ export const createTaskAction = action(createTaskSchema, async (input) => {
 });
 
 export const updateTaskAction = action(updateTaskSchema, async (input) => {
-  const user = await auth();
+  const user = await adminAuth();
 
   const task = await taskRepository.findOrThrow(input.id, user.id);
 
@@ -41,7 +41,7 @@ const schema = z.object({
 });
 
 export const removeTaskAction = action(schema, async (input) => {
-  const user = await auth();
+  const user = await adminAuth();
 
   const task = await taskRepository.findOrThrow(input.id, user.id);
 
@@ -57,7 +57,7 @@ export const removeTaskAction = action(schema, async (input) => {
 });
 
 export const restoreTaskAction = action(schema, async (input) => {
-  const user = await auth();
+  const user = await adminAuth();
 
   const task = await taskRepository.findOrThrow(input.id, user.id);
 

@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { createSafeActionClient, DEFAULT_SERVER_ERROR } from "next-safe-action";
 import { authOptions } from "./auth";
 import { redirect } from "next/navigation";
+import { ROLES } from "@/common/constants";
 
 export class CustomError extends Error {}
 
@@ -41,6 +42,16 @@ export const auth = async () => {
   }
 
   return session.user;
+};
+
+export const adminAuth = async () => {
+  const user = await auth();
+
+  if (user.role.name !== ROLES.ADMIN) {
+    redirect("/403");
+  }
+
+  return user;
 };
 
 export const rscAuth = async () => {

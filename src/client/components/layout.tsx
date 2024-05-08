@@ -24,7 +24,7 @@ export const LayoutSidebarWrapper: React.FC<LayoutSidebarWrapperProps> = ({
   children,
 }) => {
   return (
-    <ScrollArea className="w-48 border-r  shrink-0  hidden lg:block">
+    <ScrollArea className="w-64 border-r  shrink-0  hidden lg:block">
       <div className="p-4">{children}</div>
     </ScrollArea>
   );
