@@ -155,10 +155,15 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
   });
 
   const totalPrice = items
-    .map((item) => item.price * item.quantity)
+    .map((item) => {
+      const tbt = item.price * item.quantity;
+      return tbt + (tbt * item.tax) / 100;
+    })
     .reduce((a, b) => a + b);
 
   const order = await orderRepository.create({
+    note: input.note || null,
+    shippingAddress: input.shippingAddress,
     customerId: customer.id,
     businessId: business.id,
     totalPrice,
@@ -168,9 +173,10 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
     items.map((item) => {
       return {
         orderId: order.id,
-        price: item.price,
         productId: item.id,
+        price: item.price,
         quantity: item.quantity,
+        tax: item.tax,
       };
     }),
   );
@@ -215,19 +221,21 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
 
   const order = await orderRepository.findOrThrow(input.id, business.id);
 
-  if (order.customerId !== input.customerId) {
-    const customer = await customerRepository.findOrThrow(
-      input.customerId,
-      business.id,
-    );
-
-    await orderRepository.update(order.id, business.id, {
-      customerId: customer.id,
-    });
+  if (order.customerId && order.customerId !== input.customerId) {
+    await customerRepository.findOrThrow(input.customerId, business.id);
   }
+
+  await orderRepository.update(order.id, business.id, {
+    note: input.note,
+    customerId: input.customerId,
+    shippingAddress: input.shippingAddress,
+  });
 
   const oldItems = await db.query.ordersItems.findMany({
     where: eq(ordersItems.orderId, order.id),
+    with: {
+      product: true,
+    },
   });
 
   await db.delete(ordersItems).where(eq(ordersItems.orderId, order.id));
@@ -262,11 +270,22 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
 
   await db.insert(ordersItems).values(
     items.map((product) => {
+      if ("old" in product) {
+        return {
+          orderId: order.id,
+          productId: product.id,
+          price: product.price,
+          quantity: product.new.quantity,
+          tax: product.old.tax,
+        };
+      }
+
       return {
         orderId: order.id,
         productId: product.id,
         price: product.price,
         quantity: product.new.quantity,
+        tax: product.tax,
       };
     }),
   );

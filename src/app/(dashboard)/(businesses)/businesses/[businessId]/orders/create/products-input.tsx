@@ -26,20 +26,21 @@ import { Skeleton } from "@/client/components/ui/skeleton";
 import debounce from "debounce";
 import { Button } from "@/client/components/ui/button";
 import { Payload } from "./create";
+import { TBusiness } from "@/server/db/schema";
 
 interface ProductsInputProps {
   form: UseFormReturn<Payload, any, undefined>;
-  businessId: string;
+  business: TBusiness;
 }
 
 export const ProductsInput: React.FC<ProductsInputProps> = ({
   form,
-  businessId,
+  business,
 }) => {
   const [query, setQuery] = useState("");
   const { data, isSuccess } = useQuery({
     queryKey: ["products", query],
-    queryFn: () => getProductsAction({ query, businessId }),
+    queryFn: () => getProductsAction({ query, businessId: business.id }),
     placeholderData: (ph) => ph,
   });
 
@@ -71,9 +72,9 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
         form.setValue("products", [
           ...form.getValues("products"),
           {
-            id,
-            name: product.name,
+            ...product,
             quantity: 1,
+            id,
           },
         ]);
 
@@ -156,35 +157,61 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Quantity</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Total before tax</TableHead>
+              <TableHead>Tax</TableHead>
+              <TableHead>Actions</TableHead>
+              <TableHead className="text-right">Total</TableHead>
             </TableRow>
           </TableHeader>
           {form.watch("products").length ? (
             <TableBody>
-              {form.watch("products").map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>
-                    <Input
-                      defaultValue={String(product.quantity)}
-                      type="number"
-                      step="1"
-                      onChange={(e) =>
-                        updateQuantity(product.id, e.target.value)
-                      }
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => removeProduct(product.id)}
-                    >
-                      <Trash className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {form.watch("products").map((product) => {
+                return (
+                  <TableRow key={product.id}>
+                    <TableCell className="font-medium">
+                      {product.name}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        defaultValue={String(product.quantity)}
+                        type="number"
+                        step="1"
+                        onChange={(e) =>
+                          updateQuantity(product.id, e.target.value)
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      {product.price} {business.currency}
+                    </TableCell>
+
+                    <TableCell>
+                      {product.price * product.quantity} {business.currency}
+                    </TableCell>
+
+                    <TableCell>{product.tax}</TableCell>
+
+                    <TableCell>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => removeProduct(product.id)}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+
+                    <TableCell>
+                      {product.price * product.quantity +
+                        (product.price * product.quantity * product.tax) /
+                          100}{" "}
+                      {business.currency}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           ) : (
             <TableCaption>No results</TableCaption>

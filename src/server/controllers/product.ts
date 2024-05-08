@@ -121,12 +121,12 @@ export const createProductAction = action(
       price: input.price,
       name: input.name,
       unit: input.unit,
+      tax: input.tax,
 
       // optional
       description: input.description || null,
       categoryId: input.categoryId || null,
       code: input.code || null,
-      tax: input.tax || null,
     });
 
     revalidatePath("/products");
@@ -155,12 +155,12 @@ export const updateProductAction = action(
       name: input.name,
       price: input.price,
       unit: input.unit,
+      tax: input.tax,
 
       // optional
       description: input.description || null,
       categoryId: input.categoryId || null,
       code: input.code || null,
-      tax: input.tax || null,
     });
 
     revalidatePath("/products");

@@ -56,15 +56,10 @@ const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
     <div
       className={cn(
         "flex flex-col gap-4",
-        searchParams.id ? "lg:grid lg:grid-cols-5" : "",
+        searchParams.id ? "lg:grid lg:grid-cols-2" : "",
       )}
     >
-      <Card
-        className={cn(
-          "h-fit",
-          searchParams.id ? "lg:col-start-1 lg:col-end-4" : "",
-        )}
-      >
+      <Card className="h-fit">
         <CardHeader>
           <CardTitle>Orders</CardTitle>
           <CardDescription>
@@ -81,12 +76,7 @@ const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
         </CardContent>
       </Card>
       {searchParams.id && !(searchParams.id instanceof Array) && (
-        <Card
-          className={cn(
-            "h-fit",
-            searchParams.id ? "lg:col-start-4 lg:col-end-6" : "",
-          )}
-        >
+        <Card className="h-fit">
           <Suspense fallback={<OrderSkeleton />}>
             <Order businessId={params.businessId} id={searchParams.id} />
           </Suspense>

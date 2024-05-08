@@ -121,11 +121,11 @@ export const products = pgTable("products", {
   price: real("price").notNull(),
   stock: integer("stock").notNull().default(0),
   unit: text("unit").notNull(),
+  tax: real("tax").notNull(),
 
   // optional
   description: text("description"),
   code: text("code"),
-  tax: real("tax"),
 
   // meta
   businessId: text("businessId")
@@ -207,14 +207,15 @@ export type TSupplierInsert = typeof suppliers.$inferInsert;
 export const orders = pgTable("orders", {
   id: id(),
 
-  // info
+  note: text("note"),
+  shippingAddress: text("shippingAddress").notNull(),
+
   customerId: text("customerId").references(() => customers.id, {
     onDelete: "cascade",
   }),
 
   totalPrice: real("totalPrice").notNull(),
 
-  // meta
   businessId: text("businessId")
     .notNull()
     .references(() => businesses.id, { onDelete: "cascade" }),
@@ -228,16 +229,20 @@ export type TOrderInsert = typeof orders.$inferInsert;
 export const ordersItems = pgTable("ordersItems", {
   id: id(),
 
-  // info
   orderId: text("orderId")
     .notNull()
     .references(() => orders.id, { onDelete: "cascade" }),
+
   productId: text("productId")
     .notNull()
     .references(() => products.id, { onDelete: "cascade" }),
+
   quantity: integer("quantity").notNull(),
   price: real("price").notNull(),
+  tax: real("tax").notNull(),
 });
+
+export type TOrderItem = typeof ordersItems.$inferSelect;
 
 export const purchases = pgTable("purchases", {
   id: id(),
@@ -246,6 +251,7 @@ export const purchases = pgTable("purchases", {
   supplierId: text("supplierId")
     .notNull()
     .references(() => suppliers.id, { onDelete: "cascade" }),
+
   totalCost: real("totalCost").notNull(),
 
   // meta

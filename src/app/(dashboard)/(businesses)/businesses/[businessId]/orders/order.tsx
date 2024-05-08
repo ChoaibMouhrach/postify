@@ -1,25 +1,13 @@
-import {
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/client/components/ui/card";
+import { CardContent, CardHeader } from "@/client/components/ui/card";
 import { db } from "@/server/db";
 import { orders } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/client/components/ui/table";
 import React from "react";
 import { Skeleton } from "@/client/components/ui/skeleton";
 import { businessRepository } from "@/server/repositories/business";
 import { rscAuth } from "@/server/lib/action";
+import { PrintOrder } from "./print-order";
 
 interface OrderProps {
   id: string;
@@ -47,71 +35,7 @@ export const Order: React.FC<OrderProps> = async ({ businessId, id }) => {
     redirect("/orders");
   }
 
-  return (
-    <>
-      <CardHeader>
-        <CardTitle>Order # {order.id}</CardTitle>
-        <CardDescription>
-          {new Date(order.createdAt).toUTCString()}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <span className="font-semibold">{business.name}</span>
-        <section className="flex flex-col text-sm">
-          <span>Phone</span>
-          <span className="text-muted-foreground">{business.phone}</span>
-          <span className="mt-3">Email address</span>
-          <span className="text-muted-foreground">
-            {business.email || "N/A"}
-          </span>
-          <span className="mt-3">Address</span>
-          <span className="text-muted-foreground">
-            {business.address || "N/A"}
-          </span>
-        </section>
-        <span className="font-semibold">Customer {order.customer?.name}</span>
-        <section className="flex flex-col text-sm">
-          <span>Phone</span>
-          <span className="text-muted-foreground">{order.customer?.phone}</span>
-          <span className="mt-3">Email address</span>
-          <span className="text-muted-foreground">
-            {order.customer?.email || "N/A"}
-          </span>
-          <span className="mt-3">Address</span>
-          <span className="text-muted-foreground">
-            {order.customer?.address || "N/A"}
-          </span>
-        </section>
-        <span className="font-semibold mt-2">Items</span>
-        <section className="flex flex-col text-sm gap-2 border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {order.items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.product.name}</TableCell>
-                  <TableCell>{item.quantity}</TableCell>
-                  <TableCell>
-                    {item.price} {business.currency}
-                  </TableCell>
-                  <TableCell>
-                    {item.price * item.quantity} {business.currency}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </section>
-      </CardContent>
-    </>
-  );
+  return <PrintOrder order={order} business={business} />;
 };
 
 export const OrderSkeleton = () => {

@@ -12,7 +12,7 @@ import { UseFormReturn } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { Combobox } from "@/client/components/ui/combobox";
 import { Skeleton } from "@/client/components/ui/skeleton";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import debounce from "debounce";
 import { Payload } from "./create";
 import { getCustomersAction } from "@/server/controllers/customer";
@@ -44,6 +44,18 @@ export const CustomerInput: React.FC<CustomerInputProps> = ({
   const onValueChange = (value: string) => {
     form.setValue("customerId", value);
   };
+
+  useEffect(() => {
+    const customerId = form.getValues("customerId");
+
+    if (isSuccess && customerId && !form.getValues("shippingAddress")) {
+      const customer = data.data.find((customer) => customer.id, customerId)!;
+
+      if (customer.address) {
+        form.setValue("shippingAddress", customer.address);
+      }
+    }
+  }, [form.watch("customerId")]);
 
   return (
     <FormField

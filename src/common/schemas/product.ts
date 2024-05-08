@@ -5,7 +5,7 @@ export const createProductSchema = z.object({
   name: z.string().min(3),
   price: z.number().gte(1),
   unit: z.string().min(1),
-  tax: z.union([z.literal(""), z.number().gt(0)]),
+  tax: z.number(),
 
   // optional
   description: z.string(),
@@ -23,7 +23,7 @@ export const updateProductSchema = z.object({
   name: z.string().min(3),
   price: z.number().gte(1),
   unit: z.string().min(1),
-  tax: z.union([z.literal(""), z.number().gt(0)]),
+  tax: z.number(),
 
   // optional
   description: z.string(),

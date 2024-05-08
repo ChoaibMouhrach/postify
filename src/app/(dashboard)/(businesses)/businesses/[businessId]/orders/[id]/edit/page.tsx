@@ -46,6 +46,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
           <CardDescription>You can edit this order from here.</CardDescription>
         </CardHeader>
         <Edit
+          business={business}
           order={{
             ...order,
             items,
