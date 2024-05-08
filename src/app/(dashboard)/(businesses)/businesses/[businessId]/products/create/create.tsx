@@ -38,7 +38,7 @@ export const Create: React.FC<CreateProps> = ({ business }) => {
       name: "",
       price: 1,
       unit: "",
-      tax: "",
+      tax: 0,
 
       description: "",
       categoryId: "",

@@ -49,7 +49,7 @@ export const Edit: React.FC<EditProps> = ({ product }) => {
       price: product.price,
       unit: product.unit,
 
-      tax: product.tax || "",
+      tax: product.tax,
       description: product.description || "",
       categoryId: product.categoryId || "",
       code: product.code || "",
