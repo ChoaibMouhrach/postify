@@ -86,6 +86,10 @@ export const PrintOrder: React.FC<PrintOrderProps> = ({ order, business }) => {
                 <span className="text-muted-foreground">
                   {order.customer?.address || "N/A"}
                 </span>
+                <span className="mt-3">Shipping Address</span>
+                <span className="text-muted-foreground">
+                  {order.shippingAddress || "N/A"}
+                </span>
               </section>
             </section>
           </section>

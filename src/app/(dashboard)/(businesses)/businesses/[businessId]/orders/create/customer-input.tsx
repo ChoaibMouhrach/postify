@@ -45,9 +45,9 @@ export const CustomerInput: React.FC<CustomerInputProps> = ({
     form.setValue("customerId", value);
   };
 
-  useEffect(() => {
-    const customerId = form.getValues("customerId");
+  const customerId = form.watch("customerId");
 
+  useEffect(() => {
     if (isSuccess && customerId && !form.getValues("shippingAddress")) {
       const customer = data.data.find((customer) => customer.id, customerId)!;
 
@@ -55,7 +55,7 @@ export const CustomerInput: React.FC<CustomerInputProps> = ({
         form.setValue("shippingAddress", customer.address);
       }
     }
-  }, [data, form, isSuccess]);
+  }, [data, customerId, isSuccess, form]);
 
   return (
     <FormField
