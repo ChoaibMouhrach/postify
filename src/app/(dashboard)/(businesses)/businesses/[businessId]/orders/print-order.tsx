@@ -58,14 +58,30 @@ export const PrintOrder: React.FC<PrintOrderProps> = ({ order, business }) => {
               <section className="flex flex-col text-sm">
                 <span>Phone</span>
                 <span className="text-muted-foreground">{business.phone}</span>
-                <span className="mt-3">Email address</span>
-                <span className="text-muted-foreground">
-                  {business.email || "N/A"}
-                </span>
-                <span className="mt-3">Address</span>
-                <span className="text-muted-foreground">
-                  {business.address || "N/A"}
-                </span>
+                {business.email && (
+                  <>
+                    <span className="mt-3">Email address</span>
+                    <span className="text-muted-foreground">
+                      {business.email}
+                    </span>
+                  </>
+                )}
+                {business.address && (
+                  <>
+                    <span className="mt-3">Address</span>
+                    <span className="text-muted-foreground">
+                      {business.address}
+                    </span>
+                  </>
+                )}
+                {business.code && (
+                  <>
+                    <span className="mt-3">Code</span>
+                    <span className="text-muted-foreground">
+                      {business.code}
+                    </span>
+                  </>
+                )}
               </section>
             </section>
 
@@ -78,18 +94,39 @@ export const PrintOrder: React.FC<PrintOrderProps> = ({ order, business }) => {
                 <span className="text-muted-foreground">
                   {order.customer?.phone}
                 </span>
-                <span className="mt-3">Email address</span>
-                <span className="text-muted-foreground">
-                  {order.customer?.email || "N/A"}
-                </span>
-                <span className="mt-3">Address</span>
-                <span className="text-muted-foreground">
-                  {order.customer?.address || "N/A"}
-                </span>
-                <span className="mt-3">Shipping Address</span>
-                <span className="text-muted-foreground">
-                  {order.shippingAddress || "N/A"}
-                </span>
+                {order.customer?.email && (
+                  <>
+                    <span className="mt-3">Email address</span>
+                    <span className="text-muted-foreground">
+                      {order.customer?.email}
+                    </span>
+                  </>
+                )}
+                {order.customer?.address && (
+                  <>
+                    <span className="mt-3">Address</span>
+                    <span className="text-muted-foreground">
+                      {order.customer?.address}
+                    </span>
+                  </>
+                )}
+                {order.shippingAddress && (
+                  <>
+                    <span className="mt-3">Shipping Address</span>
+                    <span className="text-muted-foreground">
+                      {order.shippingAddress}
+                    </span>
+                  </>
+                )}
+
+                {order.customer?.code && (
+                  <>
+                    <span className="mt-3">Code</span>
+                    <span className="text-muted-foreground">
+                      {order.customer.code}
+                    </span>
+                  </>
+                )}
               </section>
             </section>
           </section>
