@@ -15,15 +15,13 @@ import {
   suppliers,
 } from "@/server/db/schema";
 import { eq, sql } from "drizzle-orm";
-import React from "react";
+import React, { Suspense } from "react";
 
 interface ProductCardProps {
   businessId: string;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = async ({
-  businessId,
-}) => {
+const ProductCard: React.FC<ProductCardProps> = async ({ businessId }) => {
   const count = await db
     .select({
       count: sql<string>`COUNT(*)`,
@@ -48,9 +46,7 @@ interface SupplierCardProps {
   businessId: string;
 }
 
-export const SupplierCard: React.FC<SupplierCardProps> = async ({
-  businessId,
-}) => {
+const SupplierCard: React.FC<SupplierCardProps> = async ({ businessId }) => {
   const count = await db
     .select({
       count: sql<string>`COUNT(*)`,
@@ -75,9 +71,7 @@ interface CustomerCardProps {
   businessId: string;
 }
 
-export const CustomerCard: React.FC<CustomerCardProps> = async ({
-  businessId,
-}) => {
+const CustomerCard: React.FC<CustomerCardProps> = async ({ businessId }) => {
   const count = await db
     .select({
       count: sql<string>`COUNT(*)`,
@@ -102,7 +96,7 @@ interface OrderCardProps {
   businessId: string;
 }
 
-export const OrderCard: React.FC<OrderCardProps> = async ({ businessId }) => {
+const OrderCard: React.FC<OrderCardProps> = async ({ businessId }) => {
   const count = await db
     .select({
       count: sql<string>`COUNT(*)`,
@@ -127,9 +121,7 @@ interface PurchaseCardProps {
   businessId: string;
 }
 
-export const PurchaseCard: React.FC<PurchaseCardProps> = async ({
-  businessId,
-}) => {
+const PurchaseCard: React.FC<PurchaseCardProps> = async ({ businessId }) => {
   const count = await db
     .select({
       count: sql<string>`COUNT(*)`,
@@ -154,9 +146,7 @@ interface CategoryCardProps {
   businessId: string;
 }
 
-export const CategoryCard: React.FC<CategoryCardProps> = async ({
-  businessId,
-}) => {
+const CategoryCard: React.FC<CategoryCardProps> = async ({ businessId }) => {
   const count = await db
     .select({
       count: sql<string>`COUNT(*)`,
@@ -177,7 +167,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = async ({
   );
 };
 
-export const CardSkeleton = () => {
+const CardSkeleton = () => {
   return (
     <Card>
       <CardHeader>
@@ -185,5 +175,39 @@ export const CardSkeleton = () => {
         <Skeleton className="w-20 h-2" />
       </CardHeader>
     </Card>
+  );
+};
+
+interface CardsProps {
+  businessId: string;
+}
+
+export const Cards: React.FC<CardsProps> = async ({ businessId }) => {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
+      <Suspense fallback={<CardSkeleton />}>
+        <OrderCard businessId={businessId} />
+      </Suspense>
+
+      <Suspense fallback={<CardSkeleton />}>
+        <PurchaseCard businessId={businessId} />
+      </Suspense>
+
+      <Suspense fallback={<CardSkeleton />}>
+        <CustomerCard businessId={businessId} />
+      </Suspense>
+
+      <Suspense fallback={<CardSkeleton />}>
+        <SupplierCard businessId={businessId} />
+      </Suspense>
+
+      <Suspense fallback={<CardSkeleton />}>
+        <ProductCard businessId={businessId} />
+      </Suspense>
+
+      <Suspense fallback={<CardSkeleton />}>
+        <CategoryCard businessId={businessId} />
+      </Suspense>
+    </div>
   );
 };
