@@ -127,6 +127,7 @@ export const createBusinessAction = action(
       currency: input.currency,
       email: input.email || null,
       address: input.address || null,
+      code: input.code || null,
       userId: user.id,
     });
 
@@ -161,6 +162,7 @@ export const updateBusinessAction = action(
       currency: input.currency,
       email: input.email || null,
       address: input.address || null,
+      code: input.code || null,
     });
 
     revalidatePath("/businesses");

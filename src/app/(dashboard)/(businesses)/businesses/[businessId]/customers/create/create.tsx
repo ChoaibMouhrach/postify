@@ -37,6 +37,7 @@ export const Create: React.FC<CreateProps> = ({ businessId }) => {
       email: "",
       phone: "",
       address: "",
+      code: "",
     },
   });
 
@@ -75,6 +76,21 @@ export const Create: React.FC<CreateProps> = ({ businessId }) => {
               </FormItem>
             )}
           />
+
+          <FormField
+            name="code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Code</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="3239482398" />
+                </FormControl>
+                <FormDescription>The code of this customer.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             name="email"
             render={({ field }) => (
@@ -94,6 +110,7 @@ export const Create: React.FC<CreateProps> = ({ businessId }) => {
               </FormItem>
             )}
           />
+
           <FormField
             name="phone"
             render={({ field }) => (

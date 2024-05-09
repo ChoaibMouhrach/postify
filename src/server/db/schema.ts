@@ -90,10 +90,12 @@ export const verificationTokens = pgTable(
 
 export const businesses = pgTable("businesses", {
   id: id(),
+
   // meta
   name: text("name").notNull(),
   phone: text("phone").notNull(),
   currency: text("currency").notNull(),
+  code: text("code"),
 
   // optional
   address: text("description"),
@@ -165,11 +167,11 @@ export const customers = pgTable("customers", {
 
   // info
   name: text("name").notNull(),
-  address: text("address"),
-
-  // contact
-  email: text("email"),
   phone: text("phone").notNull(),
+
+  code: text("code"),
+  email: text("email"),
+  address: text("address"),
 
   // meta
   businessId: text("businessId")

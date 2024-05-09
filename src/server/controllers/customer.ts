@@ -167,6 +167,7 @@ export const createCustomerAction = action(
       phone: input.phone,
       address: input.address || undefined,
       businessId: business.id,
+      code: input.code || null,
     });
 
     revalidatePath("/customers");
@@ -249,6 +250,7 @@ export const updateCustomerAction = action(
       email: input.email || null,
       phone: input.phone,
       address: input.address || null,
+      code: input.code || null,
     });
 
     revalidatePath("/customers");

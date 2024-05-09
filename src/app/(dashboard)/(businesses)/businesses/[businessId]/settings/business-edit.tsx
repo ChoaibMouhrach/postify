@@ -35,6 +35,7 @@ export const BusinessEdit: React.FC<BusinessEditProps> = ({ business }) => {
     values: {
       id: business.id,
       name: business.name,
+      code: business.code || "",
       phone: business.phone,
       currency: business.currency,
       email: business.email || "",
@@ -73,6 +74,20 @@ export const BusinessEdit: React.FC<BusinessEditProps> = ({ business }) => {
                   <Input {...field} placeholder="Yera..." />
                 </FormControl>
                 <FormDescription>The name of the business.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Code</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="3239482398" />
+                </FormControl>
+                <FormDescription>The code of this customer.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

@@ -5,6 +5,7 @@ export const createBusinessSchema = z.object({
   name: z.string().min(3),
   phone: z.string().refine(isMobilePhone),
   currency: z.string().min(1),
+  code: z.string(),
   email: z.union([
     z.literal("").transform(() => undefined),
     z.undefined(),
@@ -22,6 +23,7 @@ export const updateBusinessSchema = z.object({
   name: z.string().min(3),
   phone: z.string().refine(isMobilePhone),
   currency: z.string().min(1),
+  code: z.string(),
   email: z.union([
     z.literal("").transform(() => undefined),
     z.undefined(),

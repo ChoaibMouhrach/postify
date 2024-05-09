@@ -39,6 +39,7 @@ export const Edit: React.FC<EditProps> = ({ customer }) => {
       address: customer.address || "",
       email: customer.email || "",
       phone: customer.phone,
+      code: customer.code || "",
     },
   });
 
@@ -76,6 +77,21 @@ export const Edit: React.FC<EditProps> = ({ customer }) => {
               </FormItem>
             )}
           />
+
+          <FormField
+            name="code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Code</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="3239482398" />
+                </FormControl>
+                <FormDescription>The code of this customer.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             name="email"
             render={({ field }) => (

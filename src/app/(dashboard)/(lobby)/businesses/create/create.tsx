@@ -28,6 +28,7 @@ export const Create = () => {
   const form = useForm<Payload>({
     resolver: zodResolver(createBusinessSchema),
     values: {
+      code: "",
       name: "",
       phone: "",
       currency: "",
@@ -67,6 +68,20 @@ export const Create = () => {
                   <Input {...field} placeholder="Yera..." />
                 </FormControl>
                 <FormDescription>The name of the business.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="code"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Code</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="3239482398" />
+                </FormControl>
+                <FormDescription>The code of this customer.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
