@@ -27,6 +27,7 @@ import debounce from "debounce";
 import { Button } from "@/client/components/ui/button";
 import { Payload } from "./edit";
 import { TBusiness } from "@/server/db/schema";
+import { toast } from "sonner";
 
 interface ProductsInputProps {
   form: UseFormReturn<Payload, any, undefined>;
@@ -52,19 +53,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
         const p = form.getValues("products").find((p) => p.id === id);
 
         if (p) {
-          form.setValue(
-            "products",
-            form.getValues("products").map((product) => {
-              if (product.id === id) {
-                return {
-                  ...product,
-                  quantity: product.quantity + 1,
-                };
-              }
-
-              return product;
-            }),
-          );
+          toast.error("Item already selected");
 
           break;
         }
@@ -154,7 +143,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
       <div className="border rounded-md">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="whitespace-nowrap">
               <TableHead>Name</TableHead>
               <TableHead>Quantity</TableHead>
               <TableHead>Price</TableHead>
@@ -166,48 +155,52 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
           </TableHeader>
           {form.watch("products").length ? (
             <TableBody>
-              {form.watch("products").map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>
-                    <Input
-                      defaultValue={String(product.quantity)}
-                      type="number"
-                      step="1"
-                      onChange={(e) =>
-                        updateQuantity(product.id, e.target.value)
-                      }
-                    />
-                  </TableCell>
+              {form.watch("products").map((product) => {
+                const tbt = product.price * product.quantity;
 
-                  <TableCell>
-                    {product.price} {business.currency}
-                  </TableCell>
+                return (
+                  <TableRow key={product.id} className="whitespace-nowrap">
+                    <TableCell className="font-medium">
+                      {product.name}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        defaultValue={String(product.quantity)}
+                        type="number"
+                        step="1"
+                        onChange={(e) =>
+                          updateQuantity(product.id, e.target.value)
+                        }
+                      />
+                    </TableCell>
 
-                  <TableCell>
-                    {product.price * product.quantity} {business.currency}
-                  </TableCell>
+                    <TableCell>
+                      {product.price} {business.currency}
+                    </TableCell>
 
-                  <TableCell>{product.tax}</TableCell>
+                    <TableCell>
+                      {product.price * product.quantity} {business.currency}
+                    </TableCell>
 
-                  <TableCell>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => removeProduct(product.id)}
-                    >
-                      <Trash className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
+                    <TableCell>{product.tax}</TableCell>
 
-                  <TableCell>
-                    {product.price * product.quantity +
-                      (product.price * product.quantity * product.tax) /
-                        100}{" "}
-                    {business.currency}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    <TableCell>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => removeProduct(product.id)}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+
+                    <TableCell className="text-end">
+                      {(tbt + (tbt * product.tax) / 100).toFixed(2)}{" "}
+                      {business.currency}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           ) : (
             <TableCaption>No results</TableCaption>

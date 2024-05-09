@@ -12,6 +12,12 @@ export class UnauthenticatedError extends CustomError {
   }
 }
 
+export class RequiredError extends CustomError {
+  constructor(name: string) {
+    super(`${name} is required`);
+  }
+}
+
 export class NotfoundError extends CustomError {
   constructor(name: string) {
     super(`${name} not found`);

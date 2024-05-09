@@ -55,7 +55,7 @@ export const CustomerInput: React.FC<CustomerInputProps> = ({
         form.setValue("shippingAddress", customer.address);
       }
     }
-  }, [form.watch("customerId")]);
+  }, [data, form, isSuccess]);
 
   return (
     <FormField

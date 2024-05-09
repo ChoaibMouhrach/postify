@@ -1,8 +1,13 @@
 import { inArray } from "drizzle-orm";
-import { roles, taskStatuses, taskTypes } from "./server/db/schema";
+import { orderTypes, roles, taskStatuses, taskTypes } from "./server/db/schema";
 import { db } from "./server/db";
 import { randomUUID } from "crypto";
-import { ROLES, TASK_STATUSES, TASK_TYPES } from "./common/constants";
+import {
+  ORDER_TYPES,
+  ROLES,
+  TASK_STATUSES,
+  TASK_TYPES,
+} from "./common/constants";
 
 export const seed = async () => {
   const types = [TASK_TYPES.BUG, TASK_TYPES.FEATURE];
@@ -50,5 +55,19 @@ export const seed = async () => {
 
   if (rs.length !== cr.length) {
     await db.insert(roles).values(cr.map((name) => ({ name })));
+  }
+
+  const orderTypesArr = [ORDER_TYPES.CUSTOMER, ORDER_TYPES.WALKING_CUSTOMER];
+
+  const orderTypesDB = await db.query.orderTypes.findMany({
+    where: inArray(orderTypes.name, orderTypesArr),
+  });
+
+  if (ts.length !== orderTypesDB.length) {
+    await db.insert(orderTypes).values(
+      orderTypesArr.map((name) => ({
+        name,
+      })),
+    );
   }
 };

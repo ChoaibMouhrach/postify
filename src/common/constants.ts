@@ -15,3 +15,8 @@ export const TASK_TYPES = {
   BUG: "Bug",
   FEATURE: "Feature",
 };
+
+export const ORDER_TYPES = {
+  CUSTOMER: "customer",
+  WALKING_CUSTOMER: "walking customer",
+};

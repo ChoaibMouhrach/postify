@@ -204,21 +204,37 @@ export const suppliers = pgTable("suppliers", {
 export type TSupplier = typeof suppliers.$inferSelect;
 export type TSupplierInsert = typeof suppliers.$inferInsert;
 
+export const orderTypes = pgTable("orderTypes", {
+  id: id(),
+  name: text("name").notNull(),
+});
+
+export type TOrderType = typeof orderTypes.$inferSelect;
+
 export const orders = pgTable("orders", {
   id: id(),
 
+  //
   note: text("note"),
-  shippingAddress: text("shippingAddress").notNull(),
-
+  shippingAddress: text("shippingAddress"),
   customerId: text("customerId").references(() => customers.id, {
     onDelete: "cascade",
   }),
 
+  //
   totalPrice: real("totalPrice").notNull(),
-
   businessId: text("businessId")
     .notNull()
-    .references(() => businesses.id, { onDelete: "cascade" }),
+    .references(() => businesses.id, {
+      onDelete: "cascade",
+    }),
+  orderTypeId: text("orderTypeId")
+    .notNull()
+    .references(() => orderTypes.id, {
+      onDelete: "cascade",
+    }),
+
+  //
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
@@ -402,8 +418,16 @@ export const customersRelations = relations(customers, ({ many, one }) => ({
   }),
 }));
 
+export const orderTypesRelations = relations(orderTypes, ({ many }) => ({
+  orders: many(orders),
+}));
+
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   items: many(ordersItems),
+  type: one(orderTypes, {
+    fields: [orders.orderTypeId],
+    references: [orderTypes.id],
+  }),
   business: one(businesses, {
     fields: [orders.businessId],
     references: [businesses.id],

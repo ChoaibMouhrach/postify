@@ -9,10 +9,10 @@ import {
   FormMessage,
   Form,
 } from "@/client/components/ui/form";
+import { z } from "zod";
 import { Input } from "@/client/components/ui/input";
 import { useForm } from "react-hook-form";
 import { createCustomerSchema } from "@/common/schemas/customer";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Textarea } from "@/client/components/ui/textarea";
 import { CardContent, CardFooter } from "@/client/components/ui/card";
@@ -46,7 +46,7 @@ export const Create: React.FC<CreateProps> = ({ businessId }) => {
       toast.success("Customer created successfully");
     },
     onError: (err) => {
-      toast.error(err.serverError);
+      toast.error(err.serverError || "Something went wrong");
     },
   });
 

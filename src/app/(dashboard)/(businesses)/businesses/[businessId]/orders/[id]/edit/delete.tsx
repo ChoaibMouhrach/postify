@@ -18,7 +18,7 @@ export const Delete: React.FC<DeleteProps> = ({ order }) => {
   const { execute, status } = useAction(deleteOrderAction, {
     onSuccess: () => {
       toast.success("Order deleted successfully");
-      router.push(`/businesses/${order.id}/orders`);
+      router.push(`/businesses/${order.businessId}/orders`);
     },
     onError: (err) => {
       toast.error(err.serverError || "Something went wrong");

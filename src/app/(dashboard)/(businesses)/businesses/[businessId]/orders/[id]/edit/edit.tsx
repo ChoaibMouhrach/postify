@@ -2,7 +2,7 @@
 
 import { CardContent, CardFooter } from "@/client/components/ui/card";
 import { updateOrderAction } from "@/server/controllers/order";
-import { TBusiness, TOrder, TProduct } from "@/server/db/schema";
+import { TBusiness, TOrder, TOrderItem, TProduct } from "@/server/db/schema";
 import { Button } from "@/client/components/ui/button";
 import { useAction } from "next-safe-action/hooks";
 import {
@@ -33,10 +33,7 @@ export interface Payload extends RawPayload {
 interface EditProps {
   business: TBusiness;
   order: TOrder & {
-    items: {
-      quantity: number;
-      product: TProduct;
-    }[];
+    items: (TOrderItem & { product: TProduct })[];
   };
 }
 
@@ -47,12 +44,14 @@ export const Edit: React.FC<EditProps> = ({ order, business }) => {
       id: order.id,
       businessId: order.businessId,
       customerId: order.customerId || "",
-      shippingAddress: order.shippingAddress,
+      shippingAddress: order.shippingAddress || "",
       note: order.note || "",
       products: order.items.map((item) => ({
         ...item.product,
         id: item.product.id,
         quantity: item.quantity,
+        price: item.price,
+        tax: item.tax,
       })),
     },
   });

@@ -5,11 +5,11 @@ import { Button } from "@/client/components/ui/button";
 import Link from "next/link";
 import React from "react";
 import { columns } from "./columns";
-import { TBusiness, TCustomer, TOrder } from "@/server/db/schema";
+import { TBusiness, TCustomer, TOrder, TOrderType } from "@/server/db/schema";
 
 interface OrdersProps {
   business: TBusiness;
-  data: (TOrder & { customer: TCustomer | null })[];
+  data: (TOrder & { customer: TCustomer | null; type: TOrderType })[];
   // meta
   query: string;
   trash: boolean;
@@ -34,7 +34,7 @@ export const Orders: React.FC<OrdersProps> = async ({
   lastPage,
 }) => {
   return (
-    <DataTable<TOrder & { customer: TCustomer | null }>
+    <DataTable<TOrder & { customer: TCustomer | null; type: TOrderType }>
       // data
       data={data}
       columns={columns(business.currency)}

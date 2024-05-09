@@ -118,7 +118,7 @@ export const createProductAction = action(
     const product = await productRepository.create({
       // info
       businessId: business.id,
-      price: input.price,
+      price: parseFloat(String(input.price)),
       name: input.name,
       unit: input.unit,
       tax: input.tax,
@@ -153,7 +153,7 @@ export const updateProductAction = action(
 
     await productRepository.update(product.id, business.id, {
       name: input.name,
-      price: input.price,
+      price: parseFloat(String(input.price)),
       unit: input.unit,
       tax: input.tax,
 

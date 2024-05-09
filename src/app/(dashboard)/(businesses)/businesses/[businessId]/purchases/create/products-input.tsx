@@ -26,6 +26,7 @@ import { Skeleton } from "@/client/components/ui/skeleton";
 import debounce from "debounce";
 import { Button } from "@/client/components/ui/button";
 import { Payload } from "./create";
+import { toast } from "sonner";
 
 interface ProductsInputProps {
   form: UseFormReturn<Payload, any, undefined>;
@@ -53,20 +54,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
       const p = form.getValues("products").find((p) => p.id === id);
 
       if (p) {
-        form.setValue(
-          "products",
-          form.getValues("products").map((product) => {
-            if (product.id === id) {
-              return {
-                ...product,
-                quantity: product.quantity + 1,
-              };
-            }
-
-            return product;
-          }),
-        );
-
+        toast.error("Item already selected");
         break;
       }
 
@@ -178,7 +166,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
       <div className="border rounded-md">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="whitespace-nowrap">
               <TableHead>Name</TableHead>
               <TableHead>Quantity</TableHead>
               <TableHead>Cost</TableHead>
@@ -188,7 +176,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
           {form.watch("products").length ? (
             <TableBody>
               {form.watch("products").map((product) => (
-                <TableRow key={product.id}>
+                <TableRow key={product.id} className="whitespace-nowrap">
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>
                     <Input

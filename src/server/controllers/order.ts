@@ -1,7 +1,13 @@
 "use server";
 
 import { z } from "zod";
-import { action, auth, rscAuth } from "../lib/action";
+import {
+  NotfoundError,
+  RequiredError,
+  action,
+  auth,
+  rscAuth,
+} from "../lib/action";
 import { createOrderSchema, updateOrderSchema } from "@/common/schemas/order";
 import { customerRepository } from "../repositories/customer";
 import { orderRepository } from "../repositories/order";
@@ -19,7 +25,13 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { customers, orders, ordersItems, products } from "../db/schema";
+import {
+  customers,
+  orderTypes,
+  orders,
+  ordersItems,
+  products,
+} from "../db/schema";
 import {
   fromSchema,
   pageSchema,
@@ -27,7 +39,7 @@ import {
   toSchema,
   trashSchema,
 } from "@/common/schemas";
-import { RECORDS_LIMIT } from "@/common/constants";
+import { ORDER_TYPES, RECORDS_LIMIT } from "@/common/constants";
 import { revalidatePath } from "next/cache";
 import { notificationRepository } from "../repositories/notification";
 import { businessRepository } from "../repositories/business";
@@ -87,6 +99,7 @@ export const getOrdersAction = async (input: unknown) => {
     where,
     with: {
       customer: true,
+      type: true,
     },
     orderBy: desc(orders.createdAt),
     limit: RECORDS_LIMIT,
@@ -130,10 +143,13 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
     user.id,
   );
 
-  const customer = await customerRepository.findOrThrow(
-    input.customerId,
-    business.id,
-  );
+  if (input.customerId) {
+    await customerRepository.findOrThrow(input.customerId, business.id);
+
+    if (!input.shippingAddress) {
+      throw new RequiredError("Shipping address");
+    }
+  }
 
   const ps = await db.query.products.findMany({
     where: and(
@@ -159,14 +175,26 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
       const tbt = item.price * item.quantity;
       return tbt + (tbt * item.tax) / 100;
     })
-    .reduce((a, b) => a + b);
+    .reduce((a, b) => a + b)
+    .toFixed(2);
+
+  const orderType = await db.query.orderTypes.findFirst({
+    where: input.customerId
+      ? eq(orderTypes.name, ORDER_TYPES.CUSTOMER)
+      : eq(orderTypes.name, ORDER_TYPES.WALKING_CUSTOMER),
+  });
+
+  if (!orderType) {
+    throw new NotfoundError("Order type");
+  }
 
   const order = await orderRepository.create({
+    shippingAddress: input.shippingAddress || null,
+    customerId: input.customerId || null,
+    orderTypeId: orderType.id,
     note: input.note || null,
-    shippingAddress: input.shippingAddress,
-    customerId: customer.id,
     businessId: business.id,
-    totalPrice,
+    totalPrice: parseFloat(totalPrice),
   });
 
   await db.insert(ordersItems).values(
@@ -208,7 +236,6 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
   revalidatePath(`/orders`);
   revalidatePath("/notifications");
   revalidatePath(`/dashboard`);
-  revalidatePath(`/orders/${order.id}/edit`);
 });
 
 export const updateOrderAction = action(updateOrderSchema, async (input) => {
@@ -221,15 +248,25 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
 
   const order = await orderRepository.findOrThrow(input.id, business.id);
 
-  if (order.customerId && order.customerId !== input.customerId) {
-    await customerRepository.findOrThrow(input.customerId, business.id);
+  if (input.customerId) {
+    if (input.customerId !== order.customerId) {
+      await customerRepository.findOrThrow(input.customerId, business.id);
+    }
+
+    if (!input.shippingAddress) {
+      throw new RequiredError("Shipping address");
+    }
   }
 
-  await orderRepository.update(order.id, business.id, {
-    note: input.note,
-    customerId: input.customerId,
-    shippingAddress: input.shippingAddress,
+  const orderType = await db.query.orderTypes.findFirst({
+    where: input.customerId
+      ? eq(orderTypes.name, ORDER_TYPES.CUSTOMER)
+      : eq(orderTypes.name, ORDER_TYPES.WALKING_CUSTOMER),
   });
+
+  if (!orderType) {
+    throw new NotfoundError("Order type");
+  }
 
   const oldItems = await db.query.ordersItems.findMany({
     where: eq(ordersItems.orderId, order.id),
@@ -268,18 +305,24 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
     };
   });
 
+  const totalPrice = items
+    .map((item) => {
+      const tbt = item.new.quantity * item.price;
+      return tbt + (tbt * item.tax) / 100;
+    })
+    .reduce((a, b) => a + b)
+    .toFixed(2);
+
+  await orderRepository.update(order.id, business.id, {
+    note: input.note,
+    customerId: input.customerId || null,
+    shippingAddress: input.shippingAddress || null,
+    orderTypeId: orderType.id,
+    totalPrice: parseFloat(totalPrice),
+  });
+
   await db.insert(ordersItems).values(
     items.map((product) => {
-      if ("old" in product) {
-        return {
-          orderId: order.id,
-          productId: product.id,
-          price: product.price,
-          quantity: product.new.quantity,
-          tax: product.old.tax,
-        };
-      }
-
       return {
         orderId: order.id,
         productId: product.id,
@@ -384,7 +427,6 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
   revalidatePath("/products");
   revalidatePath("/notifications");
   revalidatePath("/dashboard");
-  revalidatePath(`/orders?${order.id}/edit`);
 });
 
 const schema = z.object({

@@ -1,6 +1,6 @@
 "use client";
 
-import { TCustomer, TOrder } from "@/server/db/schema";
+import { TCustomer, TOrder, TOrderType } from "@/server/db/schema";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   DropdownMenu,
@@ -15,6 +15,8 @@ import { Button } from "@/client/components/ui/button";
 import Link from "next/link";
 import { toast } from "sonner";
 import { restoreOrderAction } from "@/server/controllers/order";
+import { ORDER_TYPES } from "@/common/constants";
+import { Badge } from "@/client/components/ui/badge";
 
 interface ActionsProps {
   order: TOrder;
@@ -83,12 +85,24 @@ const Actions: React.FC<ActionsProps> = ({ order }) => {
 type Columns = (
   // eslint-disable-next-line no-unused-vars
   currency: string,
-) => ColumnDef<TOrder & { customer: TCustomer | null }>[];
+) => ColumnDef<TOrder & { customer: TCustomer | null; type: TOrderType }>[];
 
 export const columns: Columns = (currency) => [
   {
     header: "Customer",
-    cell: ({ row }) => row.original.customer?.name,
+    cell: ({ row }) => row.original.customer?.name || "N/A",
+  },
+  {
+    header: "Type",
+    cell: ({ row }) => {
+      const type = row.original.type.name;
+
+      return (
+        <Badge variant={type === ORDER_TYPES.CUSTOMER ? "default" : "outline"}>
+          {type.charAt(0).toUpperCase() + type.slice(1)}
+        </Badge>
+      );
+    },
   },
   {
     header: "Total price",

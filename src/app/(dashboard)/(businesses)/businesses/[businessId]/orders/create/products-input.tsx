@@ -27,6 +27,7 @@ import debounce from "debounce";
 import { Button } from "@/client/components/ui/button";
 import { Payload } from "./create";
 import { TBusiness } from "@/server/db/schema";
+import { toast } from "sonner";
 
 interface ProductsInputProps {
   form: UseFormReturn<Payload, any, undefined>;
@@ -52,20 +53,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
         const p = form.getValues("products").find((p) => p.id === id);
 
         if (p) {
-          form.setValue(
-            "products",
-            form.getValues("products").map((product) => {
-              if (product.id === id) {
-                return {
-                  ...product,
-                  quantity: product.quantity + 1,
-                };
-              }
-
-              return product;
-            }),
-          );
-
+          toast.error("Item already selected");
           break;
         }
 
@@ -154,7 +142,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
       <div className="border rounded-md">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="whitespace-nowrap">
               <TableHead>Name</TableHead>
               <TableHead>Quantity</TableHead>
               <TableHead>Price</TableHead>
@@ -167,8 +155,10 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
           {form.watch("products").length ? (
             <TableBody>
               {form.watch("products").map((product) => {
+                const tbt = product.price * product.quantity;
+
                 return (
-                  <TableRow key={product.id}>
+                  <TableRow key={product.id} className="whitespace-nowrap">
                     <TableCell className="font-medium">
                       {product.name}
                     </TableCell>
@@ -188,7 +178,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
                     </TableCell>
 
                     <TableCell>
-                      {product.price * product.quantity} {business.currency}
+                      {tbt} {business.currency}
                     </TableCell>
 
                     <TableCell>{product.tax}</TableCell>
@@ -203,10 +193,8 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
                       </Button>
                     </TableCell>
 
-                    <TableCell>
-                      {product.price * product.quantity +
-                        (product.price * product.quantity * product.tax) /
-                          100}{" "}
+                    <TableCell className="text-end">
+                      {(tbt + (tbt * product.tax) / 100).toFixed(2)}{" "}
                       {business.currency}
                     </TableCell>
                   </TableRow>

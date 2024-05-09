@@ -118,7 +118,8 @@ export const PrintOrder: React.FC<PrintOrderProps> = ({ order, business }) => {
                       </TableCell>
                       <TableCell>{item.tax} %</TableCell>
                       <TableCell>
-                        {tbt + (tbt * item.tax) / 100} {business.currency}
+                        {(tbt + (tbt * item.tax) / 100).toFixed(2)}{" "}
+                        {business.currency}
                       </TableCell>
                     </TableRow>
                   );
