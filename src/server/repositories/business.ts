@@ -4,6 +4,12 @@ import { NotfoundError } from "../lib/action";
 import { TBusinessInsert, businesses } from "../db/schema";
 import { redirect } from "next/navigation";
 
+const all = async (userId: string) => {
+  return db.query.businesses.findMany({
+    where: eq(businesses.userId, userId),
+  });
+};
+
 const find = (id: string, userId: string) => {
   return db.query.businesses.findFirst({
     where: and(eq(businesses.userId, userId), eq(businesses.id, id)),
@@ -74,6 +80,7 @@ const permRemove = (id: string, userId: string) => {
 };
 
 export const businessRepository = {
+  all,
   find,
   findOrThrow,
   rscFindOrThrow,

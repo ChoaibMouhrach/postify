@@ -1,5 +1,7 @@
+import { Cards } from "./cards";
+
 const Page = () => {
-  return <div>Page</div>;
+  return <Cards />;
 };
 
 export default Page;
