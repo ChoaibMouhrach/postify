@@ -130,13 +130,7 @@ export const PrintOrder: React.FC<PrintOrderProps> = ({ order, business }) => {
                     Total
                   </TableCell>
                   <TableCell>
-                    {order.items
-                      .map((item) => {
-                        const tbt = item.price * item.quantity;
-                        return tbt + (tbt * item.tax) / 100;
-                      })
-                      .reduce((a, b) => a + b)}{" "}
-                    {business.currency}
+                    {order.totalPrice} {business.currency}
                   </TableCell>
                 </TableRow>
               </TableBody>
