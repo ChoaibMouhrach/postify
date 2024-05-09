@@ -53,7 +53,7 @@ const Profile = async () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLabel className="flex flex-col">
-          My Account
+          {user.name || "My Account"}
           <span className="text-muted-foreground">{user.email}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
