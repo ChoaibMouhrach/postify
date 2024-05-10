@@ -16,14 +16,18 @@ interface OrdersProps {
 }
 
 const Orders: React.FC<OrdersProps> = async ({ businesses }) => {
-  const response = await db
-    .select({
-      count: sql<string>`COUNT(*)`,
-    })
-    .from(orders)
-    .where(inArray(orders.businessId, businesses));
+  let count: number = 0;
 
-  const count = parseInt(response.at(0)!.count);
+  if (businesses.length) {
+    const response = await db
+      .select({
+        count: sql<string>`COUNT(*)`,
+      })
+      .from(orders)
+      .where(inArray(orders.businessId, businesses));
+
+    count = parseInt(response.at(0)!.count);
+  }
 
   return (
     <Card>
@@ -40,14 +44,18 @@ interface PurchasesProps {
 }
 
 const Purchases: React.FC<PurchasesProps> = async ({ businesses }) => {
-  const data = await db
-    .select({
-      count: sql<string>`COUNT(*)`,
-    })
-    .from(purchases)
-    .where(inArray(purchases.businessId, businesses));
+  let count = 0;
 
-  const count = parseInt(data.at(0)!.count);
+  if (businesses.length) {
+    const data = await db
+      .select({
+        count: sql<string>`COUNT(*)`,
+      })
+      .from(purchases)
+      .where(inArray(purchases.businessId, businesses));
+
+    count = parseInt(data.at(0)!.count);
+  }
 
   return (
     <Card>
@@ -64,14 +72,18 @@ interface CustomersProps {
 }
 
 const Customers: React.FC<CustomersProps> = async ({ businesses }) => {
-  const data = await db
-    .select({
-      count: sql<string>`COUNT(*)`,
-    })
-    .from(customers)
-    .where(inArray(customers.businessId, businesses));
+  let count = 0;
 
-  const count = parseInt(data.at(0)!.count);
+  if (businesses.length) {
+    const data = await db
+      .select({
+        count: sql<string>`COUNT(*)`,
+      })
+      .from(customers)
+      .where(inArray(customers.businessId, businesses));
+
+    count = parseInt(data.at(0)!.count);
+  }
 
   return (
     <Card>
@@ -88,14 +100,18 @@ interface SuppliersProps {
 }
 
 const Suppliers: React.FC<SuppliersProps> = async ({ businesses }) => {
-  const data = await db
-    .select({
-      count: sql<string>`COUNT(*)`,
-    })
-    .from(suppliers)
-    .where(inArray(suppliers.businessId, businesses));
+  let count = 0;
 
-  const count = parseInt(data.at(0)!.count);
+  if (businesses.length) {
+    const data = await db
+      .select({
+        count: sql<string>`COUNT(*)`,
+      })
+      .from(suppliers)
+      .where(inArray(suppliers.businessId, businesses));
+
+    count = parseInt(data.at(0)!.count);
+  }
 
   return (
     <Card>

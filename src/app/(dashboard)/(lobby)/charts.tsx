@@ -16,33 +16,37 @@ interface OrdersProps {
 }
 
 const Orders: React.FC<OrdersProps> = async ({ businesses }) => {
-  const data = await db
-    .select({
-      count: sql<string>`COUNT(*)`,
-      month: sql<string>`EXTRACT(MONTH FROM ${orders.createdAt}) AS month`,
-    })
-    .from(orders)
-    .where(inArray(orders.businessId, businesses))
-    .groupBy(sql<string>`month`)
-    .orderBy(asc(sql<string>`month`))
-    .then((recs) => {
-      let data = [];
+  let data: { count: string; month: string }[] = [];
 
-      for (let i = 1; i <= 12; i++) {
-        const item = recs.find((rec) => parseInt(rec.month) === i);
+  if (businesses.length) {
+    data = await db
+      .select({
+        count: sql<string>`COUNT(*)`,
+        month: sql<string>`EXTRACT(MONTH FROM ${orders.createdAt}) AS month`,
+      })
+      .from(orders)
+      .where(inArray(orders.businessId, businesses))
+      .groupBy(sql<string>`month`)
+      .orderBy(asc(sql<string>`month`))
+      .then((recs) => {
+        let data = [];
 
-        if (item) {
-          data.push(item);
+        for (let i = 1; i <= 12; i++) {
+          const item = recs.find((rec) => parseInt(rec.month) === i);
+
+          if (item) {
+            data.push(item);
+          }
+
+          data.push({
+            count: "0",
+            month: String(i),
+          });
         }
 
-        data.push({
-          count: "0",
-          month: String(i),
-        });
-      }
-
-      return data;
-    });
+        return data;
+      });
+  }
 
   return (
     <Card>
@@ -62,33 +66,37 @@ interface PurchasesProps {
 }
 
 const Purchases: React.FC<PurchasesProps> = async ({ businesses }) => {
-  const data = await db
-    .select({
-      count: sql<string>`COUNT(*)`,
-      month: sql<string>`EXTRACT(MONTH FROM ${orders.createdAt}) AS month`,
-    })
-    .from(purchases)
-    .where(inArray(purchases.businessId, businesses))
-    .groupBy(sql<string>`month`)
-    .orderBy(asc(sql<string>`month`))
-    .then((recs) => {
-      let data = [];
+  let data: { count: string; month: string }[] = [];
 
-      for (let i = 1; i <= 12; i++) {
-        const item = recs.find((rec) => parseInt(rec.month) === i);
+  if (businesses.length) {
+    data = await db
+      .select({
+        count: sql<string>`COUNT(*)`,
+        month: sql<string>`EXTRACT(MONTH FROM ${orders.createdAt}) AS month`,
+      })
+      .from(purchases)
+      .where(inArray(purchases.businessId, businesses))
+      .groupBy(sql<string>`month`)
+      .orderBy(asc(sql<string>`month`))
+      .then((recs) => {
+        let data = [];
 
-        if (item) {
-          data.push(item);
+        for (let i = 1; i <= 12; i++) {
+          const item = recs.find((rec) => parseInt(rec.month) === i);
+
+          if (item) {
+            data.push(item);
+          }
+
+          data.push({
+            count: "0",
+            month: String(i),
+          });
         }
 
-        data.push({
-          count: "0",
-          month: String(i),
-        });
-      }
-
-      return data;
-    });
+        return data;
+      });
+  }
 
   return (
     <Card>
@@ -110,33 +118,37 @@ interface CustomersProps {
 }
 
 const Customers: React.FC<CustomersProps> = async ({ businesses }) => {
-  const data = await db
-    .select({
-      count: sql<string>`COUNT(*)`,
-      month: sql<string>`EXTRACT(MONTH FROM ${orders.createdAt}) AS month`,
-    })
-    .from(customers)
-    .where(inArray(customers.businessId, businesses))
-    .groupBy(sql<string>`month`)
-    .orderBy(asc(sql<string>`month`))
-    .then((recs) => {
-      let data = [];
+  let data: { count: string; month: string }[] = [];
 
-      for (let i = 1; i <= 12; i++) {
-        const item = recs.find((rec) => parseInt(rec.month) === i);
+  if (businesses.length) {
+    await db
+      .select({
+        count: sql<string>`COUNT(*)`,
+        month: sql<string>`EXTRACT(MONTH FROM ${orders.createdAt}) AS month`,
+      })
+      .from(customers)
+      .where(inArray(customers.businessId, businesses))
+      .groupBy(sql<string>`month`)
+      .orderBy(asc(sql<string>`month`))
+      .then((recs) => {
+        let data = [];
 
-        if (item) {
-          data.push(item);
+        for (let i = 1; i <= 12; i++) {
+          const item = recs.find((rec) => parseInt(rec.month) === i);
+
+          if (item) {
+            data.push(item);
+          }
+
+          data.push({
+            count: "0",
+            month: String(i),
+          });
         }
 
-        data.push({
-          count: "0",
-          month: String(i),
-        });
-      }
-
-      return data;
-    });
+        return data;
+      });
+  }
 
   return (
     <Card>
@@ -158,33 +170,37 @@ interface SuppliersProps {
 }
 
 const Suppliers: React.FC<SuppliersProps> = async ({ businesses }) => {
-  const data = await db
-    .select({
-      count: sql<string>`COUNT(*)`,
-      month: sql<string>`EXTRACT(MONTH FROM ${orders.createdAt}) AS month`,
-    })
-    .from(suppliers)
-    .where(inArray(suppliers.businessId, businesses))
-    .groupBy(sql<string>`month`)
-    .orderBy(asc(sql<string>`month`))
-    .then((recs) => {
-      let data = [];
+  let data: { month: string; count: string }[] = [];
 
-      for (let i = 1; i <= 12; i++) {
-        const item = recs.find((rec) => parseInt(rec.month) === i);
+  if (businesses.length) {
+    data = await db
+      .select({
+        count: sql<string>`COUNT(*)`,
+        month: sql<string>`EXTRACT(MONTH FROM ${orders.createdAt}) AS month`,
+      })
+      .from(suppliers)
+      .where(inArray(suppliers.businessId, businesses))
+      .groupBy(sql<string>`month`)
+      .orderBy(asc(sql<string>`month`))
+      .then((recs) => {
+        let data = [];
 
-        if (item) {
-          data.push(item);
+        for (let i = 1; i <= 12; i++) {
+          const item = recs.find((rec) => parseInt(rec.month) === i);
+
+          if (item) {
+            data.push(item);
+          }
+
+          data.push({
+            count: "0",
+            month: String(i),
+          });
         }
 
-        data.push({
-          count: "0",
-          month: String(i),
-        });
-      }
-
-      return data;
-    });
+        return data;
+      });
+  }
 
   return (
     <Card>
