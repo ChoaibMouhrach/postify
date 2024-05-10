@@ -14,14 +14,13 @@ import { orderRepository } from "../repositories/order";
 import { db } from "../db";
 import {
   and,
+  between,
   desc,
   eq,
-  gte,
   ilike,
   inArray,
   isNotNull,
   isNull,
-  lte,
   or,
   sql,
 } from "drizzle-orm";
@@ -75,18 +74,13 @@ export const getOrdersAction = async (input: unknown) => {
   const where = and(
     eq(orders.businessId, businessId),
     trash ? isNotNull(orders.deletedAt) : isNull(orders.deletedAt),
-    from || to
-      ? and(
-          from
-            ? gte(orders.createdAt, new Date(parseInt(from)).toDateString())
-            : undefined,
-          lte(
-            orders.createdAt,
-            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
-          ),
+    from && to
+      ? between(
+          orders.createdAt,
+          new Date(parseInt(from)).toISOString().slice(0, 10),
+          new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
-
     query
       ? or(
           ilike(orders.id, query),

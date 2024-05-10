@@ -11,13 +11,12 @@ import {
 import { rscAuth } from "@/server/lib/action";
 import {
   and,
+  between,
   desc,
   eq,
-  gte,
   ilike,
   isNotNull,
   isNull,
-  lte,
   or,
   sql,
 } from "drizzle-orm";
@@ -48,15 +47,11 @@ export const getBusinessesAction = async (input: unknown) => {
   const where = and(
     eq(businesses.userId, user.id),
     trash ? isNotNull(businesses.deletedAt) : isNull(businesses.deletedAt),
-    from || to
-      ? and(
-          from
-            ? gte(businesses.createdAt, new Date(parseInt(from)).toDateString())
-            : undefined,
-          lte(
-            businesses.createdAt,
-            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
-          ),
+    from && to
+      ? between(
+          businesses.createdAt,
+          new Date(parseInt(from)).toISOString().slice(0, 10),
+          new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query

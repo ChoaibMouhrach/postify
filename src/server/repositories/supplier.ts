@@ -2,7 +2,6 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { TSupplierInsert, suppliers } from "../db/schema";
 import { NotfoundError } from "../lib/action";
-import { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { redirect } from "next/navigation";
 
 const find = (id: string, businessId: string) => {
@@ -43,7 +42,7 @@ const create = async (input: TSupplierInsert) => {
 const update = (
   id: string,
   businessId: string,
-  input: PgUpdateSetSource<typeof suppliers>,
+  input: Partial<TSupplierInsert>,
 ) => {
   return db
     .update(suppliers)

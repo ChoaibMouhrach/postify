@@ -1,40 +1,40 @@
 import { randomUUID } from "crypto";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
-  timestamp,
-  pgTable,
+  sqliteTable,
   text,
   primaryKey,
   integer,
   real,
-  boolean,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
 
 const id = () => {
   return text("id").notNull().primaryKey().$defaultFn(randomUUID);
 };
 
 const createdAt = () => {
-  return timestamp("createdAt", { mode: "string" }).notNull().defaultNow();
+  return text("createdAT")
+    .default(sql`(CURRENT_TIMESTAMP)`)
+    .notNull();
 };
 
 const deletedAt = () => {
-  return timestamp("deletedAt", { mode: "string" });
+  return text("deletedAt");
 };
 
-export const roles = pgTable("roles", {
+export const roles = sqliteTable("roles", {
   id: id(),
   name: text("name").notNull(),
 });
 
 export type TRole = typeof roles.$inferSelect;
 
-export const users = pgTable("user", {
+export const users = sqliteTable("user", {
   id: id(),
   name: text("name"),
   image: text("image"),
   email: text("email").notNull(),
-  emailVerified: timestamp("emailVerified", { mode: "date" }),
+  emailVerified: text("emailVerified"),
 
   // roles
   roleId: text("roleId")
@@ -44,7 +44,7 @@ export const users = pgTable("user", {
 
 export type TUser = typeof users.$inferSelect;
 
-export const accounts = pgTable(
+export const accounts = sqliteTable(
   "account",
   {
     userId: text("userId")
@@ -68,27 +68,27 @@ export const accounts = pgTable(
   }),
 );
 
-export const sessions = pgTable("session", {
+export const sessions = sqliteTable("session", {
   sessionToken: text("sessionToken").notNull().primaryKey(),
   userId: text("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  expires: timestamp("expires", { mode: "date" }).notNull(),
+  expires: text("expires").notNull(),
 });
 
-export const verificationTokens = pgTable(
+export const verificationTokens = sqliteTable(
   "verificationToken",
   {
     identifier: text("identifier").notNull(),
     token: text("token").notNull(),
-    expires: timestamp("expires", { mode: "date" }).notNull(),
+    expires: text("expires").notNull(),
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
   }),
 );
 
-export const businesses = pgTable("businesses", {
+export const businesses = sqliteTable("businesses", {
   id: id(),
 
   // meta
@@ -115,7 +115,7 @@ export const businesses = pgTable("businesses", {
 export type TBusiness = typeof businesses.$inferSelect;
 export type TBusinessInsert = typeof businesses.$inferInsert;
 
-export const products = pgTable("products", {
+export const products = sqliteTable("products", {
   id: id(),
 
   // info
@@ -145,7 +145,7 @@ export const products = pgTable("products", {
 export type TProduct = typeof products.$inferSelect;
 export type TProductInsert = typeof products.$inferInsert;
 
-export const categories = pgTable("categories", {
+export const categories = sqliteTable("categories", {
   id: id(),
 
   // info
@@ -162,7 +162,7 @@ export const categories = pgTable("categories", {
 export type TCategory = typeof categories.$inferSelect;
 export type TCategoryInsert = typeof categories.$inferInsert;
 
-export const customers = pgTable("customers", {
+export const customers = sqliteTable("customers", {
   id: id(),
 
   // info
@@ -184,7 +184,7 @@ export const customers = pgTable("customers", {
 export type TCustomer = typeof customers.$inferSelect;
 export type TCustomerInsert = typeof customers.$inferInsert;
 
-export const suppliers = pgTable("suppliers", {
+export const suppliers = sqliteTable("suppliers", {
   id: id(),
 
   // info
@@ -206,14 +206,14 @@ export const suppliers = pgTable("suppliers", {
 export type TSupplier = typeof suppliers.$inferSelect;
 export type TSupplierInsert = typeof suppliers.$inferInsert;
 
-export const orderTypes = pgTable("orderTypes", {
+export const orderTypes = sqliteTable("orderTypes", {
   id: id(),
   name: text("name").notNull(),
 });
 
 export type TOrderType = typeof orderTypes.$inferSelect;
 
-export const orders = pgTable("orders", {
+export const orders = sqliteTable("orders", {
   id: id(),
 
   //
@@ -244,7 +244,7 @@ export const orders = pgTable("orders", {
 export type TOrder = typeof orders.$inferSelect;
 export type TOrderInsert = typeof orders.$inferInsert;
 
-export const ordersItems = pgTable("ordersItems", {
+export const ordersItems = sqliteTable("ordersItems", {
   id: id(),
 
   orderId: text("orderId")
@@ -262,7 +262,7 @@ export const ordersItems = pgTable("ordersItems", {
 
 export type TOrderItem = typeof ordersItems.$inferSelect;
 
-export const purchases = pgTable("purchases", {
+export const purchases = sqliteTable("purchases", {
   id: id(),
 
   // info
@@ -283,7 +283,7 @@ export const purchases = pgTable("purchases", {
 export type TPurchase = typeof purchases.$inferSelect;
 export type TPurchaseInsert = typeof purchases.$inferInsert;
 
-export const purchasesItems = pgTable("purchasesItems", {
+export const purchasesItems = sqliteTable("purchasesItems", {
   id: id(),
 
   // info
@@ -297,13 +297,17 @@ export const purchasesItems = pgTable("purchasesItems", {
   cost: real("cost").notNull(),
 });
 
-export const notifications = pgTable("notifications", {
+export const notifications = sqliteTable("notifications", {
   id: id(),
 
   // info
   title: text("title").notNull(),
   description: text("description"),
-  read: boolean("read").notNull().default(false),
+  read: integer("read", {
+    mode: "boolean",
+  })
+    .default(false)
+    .notNull(),
 
   // meta
   userId: text("userId")
@@ -316,21 +320,21 @@ export const notifications = pgTable("notifications", {
 export type TNotification = typeof notifications.$inferSelect;
 export type TNotificationInsert = typeof notifications.$inferInsert;
 
-export const taskTypes = pgTable("taskTypes", {
+export const taskTypes = sqliteTable("taskTypes", {
   id: id(),
   name: text("name").notNull(),
 });
 
 export type TTaskType = typeof taskTypes.$inferSelect;
 
-export const taskStatuses = pgTable("taskStatuses", {
+export const taskStatuses = sqliteTable("taskStatuses", {
   id: id(),
   name: text("name").notNull(),
 });
 
 export type TTaskStatus = typeof taskStatuses.$inferSelect;
 
-export const tasks = pgTable("tasks", {
+export const tasks = sqliteTable("tasks", {
   id: id(),
   title: text("title").notNull(),
   description: text("description"),

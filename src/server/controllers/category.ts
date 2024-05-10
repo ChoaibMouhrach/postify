@@ -8,12 +8,11 @@ import { action, auth, rscAuth, TakenError } from "@/server/lib/action";
 import { categoryRepository } from "@/server/repositories/category";
 import {
   and,
+  between,
   eq,
-  gte,
   ilike,
   isNotNull,
   isNull,
-  lte,
   or,
   sql,
 } from "drizzle-orm";
@@ -50,15 +49,11 @@ export const getCategoriesAction = async (input: unknown) => {
   const where = and(
     eq(categories.businessId, business.id),
     trash ? isNotNull(categories.deletedAt) : isNull(categories.deletedAt),
-    from || to
-      ? and(
-          from
-            ? gte(categories.createdAt, new Date(parseInt(from)).toDateString())
-            : undefined,
-          lte(
-            categories.createdAt,
-            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
-          ),
+    from && to
+      ? between(
+          categories.createdAt,
+          new Date(parseInt(from)).toISOString().slice(0, 10),
+          new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query ? or(ilike(categories.name, `%${query}%`)) : undefined,

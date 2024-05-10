@@ -17,13 +17,12 @@ import { action, auth, NotfoundError, rscAuth } from "@/server/lib/action";
 import { productRepository } from "@/server/repositories/product";
 import {
   and,
+  between,
   desc,
   eq,
-  gte,
   ilike,
   isNotNull,
   isNull,
-  lte,
   or,
 } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -51,15 +50,11 @@ export const getProductsAction = async (input: unknown) => {
   const where = and(
     eq(products.businessId, business.id),
     trash ? isNotNull(products.deletedAt) : isNull(products.deletedAt),
-    from || to
-      ? and(
-          from
-            ? gte(products.createdAt, new Date(parseInt(from)).toDateString())
-            : undefined,
-          lte(
-            products.createdAt,
-            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
-          ),
+    from && to
+      ? between(
+          products.createdAt,
+          new Date(parseInt(from)).toISOString().slice(0, 10),
+          new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query

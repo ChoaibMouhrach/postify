@@ -14,13 +14,12 @@ import {
 import { customerRepository } from "@/server/repositories/customer";
 import {
   and,
+  between,
   desc,
   eq,
-  gte,
   ilike,
   isNotNull,
   isNull,
-  lte,
   or,
   sql,
 } from "drizzle-orm";
@@ -57,15 +56,11 @@ export const getCustomersAction = async (input: unknown) => {
   const where = and(
     eq(customers.businessId, business.id),
     trash ? isNotNull(customers.deletedAt) : isNull(customers.deletedAt),
-    from || to
-      ? and(
-          from
-            ? gte(customers.createdAt, new Date(parseInt(from)).toDateString())
-            : undefined,
-          lte(
-            customers.createdAt,
-            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
-          ),
+    from && to
+      ? between(
+          customers.createdAt,
+          new Date(parseInt(from)).toISOString().slice(0, 10),
+          new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query

@@ -19,8 +19,7 @@ import {
   ilike,
   desc,
   sql,
-  lte,
-  gte,
+  between,
 } from "drizzle-orm";
 import {
   fromSchema,
@@ -51,15 +50,11 @@ export const getSuppliersAction = async (input: unknown) => {
   const where = and(
     eq(suppliers.businessId, business.id),
     trash ? isNotNull(suppliers.deletedAt) : isNull(suppliers.deletedAt),
-    from || to
-      ? and(
-          from
-            ? gte(suppliers.createdAt, new Date(parseInt(from)).toDateString())
-            : undefined,
-          lte(
-            suppliers.createdAt,
-            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
-          ),
+    from && to
+      ? between(
+          suppliers.createdAt,
+          new Date(parseInt(from)).toISOString().slice(0, 10),
+          new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query

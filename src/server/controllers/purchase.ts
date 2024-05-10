@@ -15,14 +15,13 @@ import { action, auth, rscAuth } from "@/server/lib/action";
 import { purchaseRepository } from "@/server/repositories/purchase";
 import {
   and,
+  between,
   desc,
   eq,
-  gte,
   ilike,
   inArray,
   isNotNull,
   isNull,
-  lte,
   sql,
 } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -69,15 +68,11 @@ export const getPurchasesActiopn = async (input: unknown) => {
   const where = and(
     eq(purchases.businessId, business.id),
     trash ? isNotNull(purchases.deletedAt) : isNull(purchases.deletedAt),
-    from || to
-      ? and(
-          from
-            ? gte(purchases.createdAt, new Date(parseInt(from)).toDateString())
-            : undefined,
-          lte(
-            purchases.createdAt,
-            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
-          ),
+    from && to
+      ? between(
+          purchases.createdAt,
+          new Date(parseInt(from)).toISOString().slice(0, 10),
+          new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query ? inArray(purchases.supplierId, suppliersReauest) : undefined,
