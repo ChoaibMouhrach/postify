@@ -5,7 +5,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "../db";
 import { env } from "@/common/env.mjs";
 import { eq } from "drizzle-orm";
-import { roles, users } from "../db/schema";
+import { TRole, roles, users } from "../db/schema";
 import { ROLES } from "@/common/constants";
 
 export const authOptions: AuthOptions = {
@@ -30,37 +30,25 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
-  callbacks: {
-    signIn: async (params) => {
-      if (!params.user.email) {
-        return false;
-      }
-
-      const user = await db.query.users.findFirst({
-        where: eq(users.email, params.user.email),
-      });
-
-      if (user) {
-        return true;
-      }
-
+  events: {
+    createUser: async ({ user }) => {
       const role = await db.query.roles.findFirst({
         where: eq(roles.name, ROLES.MEMBER),
       });
 
       if (!role) {
-        return false;
+        throw new Error("Role not found");
       }
 
-      await db.insert(users).values({
-        name: params.user.name,
-        image: params.user.image,
-        email: params.user.email!,
-        roleId: role.id,
-      });
-
-      return true;
+      await db
+        .update(users)
+        .set({
+          roleId: role.id,
+        })
+        .where(eq(users.id, user.id));
     },
+  },
+  callbacks: {
     jwt: async ({ user, token }) => {
       let id: string = "";
 
@@ -83,7 +71,9 @@ export const authOptions: AuthOptions = {
         throw new Error("User not found");
       }
 
-      return u;
+      return u as typeof u & {
+        role: TRole;
+      };
     },
     session: ({ session, token }) => {
       // @ts-ignore

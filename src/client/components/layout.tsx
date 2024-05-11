@@ -15,6 +15,7 @@ import { db } from "@/server/db";
 import { and, eq, sql } from "drizzle-orm";
 import { businesses, notifications } from "@/server/db/schema";
 import { BusinessesSwitchCMP } from "./layout-client";
+import { capitalize } from "@/common/utils";
 
 interface LayoutSidebarWrapperProps {
   children: React.ReactNode;
@@ -53,7 +54,8 @@ const Profile = async () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLabel className="flex flex-col">
-          {user.name || "My Account"}
+          {user.name ? capitalize(user.name) : "My Account"} (
+          {capitalize(user.role.name)})
           <span className="text-muted-foreground">{user.email}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

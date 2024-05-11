@@ -37,9 +37,7 @@ export const users = sqliteTable("user", {
   emailVerified: text("emailVerified"),
 
   // roles
-  roleId: text("roleId")
-    .notNull()
-    .references(() => roles.id, { onDelete: "cascade" }),
+  roleId: text("roleId").references(() => roles.id, { onDelete: "cascade" }),
 });
 
 export type TUser = typeof users.$inferSelect;

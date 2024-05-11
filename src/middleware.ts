@@ -5,12 +5,8 @@ import {
   withAuth,
 } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import { ROLES } from "./common/constants";
-import { env } from "./common/env.mjs";
 import { z } from "zod";
-import { cookies } from "next/headers";
-
-const ADMIN_PATHS = ["/tasks"];
+import { ROLES } from "./common/constants";
 
 const schema = z.object({
   found: z.boolean(),
@@ -23,28 +19,26 @@ const getAuth = async (req: NextRequestWithAuth) => {
     return null;
   }
 
-  const c = cookies();
+  const { email } = user;
 
-  const response = await fetch(
-    new URL("/api/auth/server-session-custom", env.NEXTAUTH_URL).toString(),
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: c
-          .getAll()
-          .map((cookie) => `${cookie.name}=${cookie.value}`)
-          .join("; "),
-      },
-      body: JSON.stringify({
-        email: user.email,
-      }),
-    },
-  );
+  const url = new URL("/api/auth/server-session-custom", req.url);
 
-  const body = await response.json();
+  const response = await fetch(url, {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+    }),
+  });
 
-  const { found } = schema.parse(body);
+  const data = await response.json();
+
+  const validation = schema.safeParse(data);
+
+  if (!validation.success) {
+    return null;
+  }
+
+  const { found } = validation.data;
 
   if (!found) {
     return null;
@@ -55,28 +49,23 @@ const getAuth = async (req: NextRequestWithAuth) => {
 
 const middleware: NextMiddlewareWithAuth = async (req) => {
   const user = await getAuth(req);
-  const isAuth = !!user;
   const isGuestOnly = ["/sign-in"].includes(req.nextUrl.pathname);
+  const isAdminOnly = ["/tasks"].includes(req.nextUrl.pathname);
+
+  if (!user) {
+    if (isGuestOnly) {
+      return NextResponse.next();
+    }
+
+    return NextResponse.redirect(new URL("/sign-in", req.url));
+  }
 
   if (isGuestOnly) {
-    if (isAuth) {
-      return NextResponse.redirect(new URL("/", req.url).toString());
-    }
-
-    return NextResponse.next();
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
-  if (!isAuth) {
-    return NextResponse.redirect(new URL("/sign-in", req.url).toString());
-  }
-
-  for (let path of ADMIN_PATHS) {
-    if (
-      req.nextUrl.pathname.startsWith(path) &&
-      user.role.name !== ROLES.ADMIN
-    ) {
-      return NextResponse.redirect(new URL("/403", req.url).toString());
-    }
+  if (isAdminOnly && user.role.name !== ROLES.ADMIN) {
+    return NextResponse.redirect(new URL("/403", req.url));
   }
 
   return NextResponse.next();
