@@ -406,36 +406,34 @@ export const deletePurchaseAction = action(
       business.id,
     );
 
-    const items = await db.query.purchasesItems.findMany({
-      where: eq(purchasesItems.purchaseId, purchase.id),
-    });
-
-    await Promise.all(
-      items.map((item) => {
-        return db
-          .update(products)
-          .set({
-            stock: sql<string>`${products.stock} - ${item.quantity}`,
-          })
-          .where(
-            and(
-              eq(products.id, item.productId),
-              eq(products.businessId, business.id),
-            ),
-          );
-      }),
-    );
-
     if (purchase.deletedAt) {
       await purchaseRepository.permRemove(input.id, business.id);
     } else {
+      const items = await db.query.purchasesItems.findMany({
+        where: eq(purchasesItems.purchaseId, purchase.id),
+      });
+
+      await Promise.all(
+        items.map((item) => {
+          return db
+            .update(products)
+            .set({
+              stock: sql<string>`${products.stock} - ${item.quantity}`,
+            })
+            .where(
+              and(
+                eq(products.id, item.productId),
+                eq(products.businessId, business.id),
+              ),
+            );
+        }),
+      );
+
       await purchaseRepository.remove(input.id, business.id);
     }
 
     revalidatePath("/products");
-
     revalidatePath(`/dashboard`);
     revalidatePath(`/purchases`);
-    revalidatePath(`/purchases/${purchase.id}/edit`);
   },
 );

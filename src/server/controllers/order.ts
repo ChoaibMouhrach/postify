@@ -438,29 +438,29 @@ export const deleteOrderAction = action(schema, async (input) => {
 
   const order = await orderRepository.findOrThrow(input.id, business.id);
 
-  const items = await db.query.ordersItems.findMany({
-    where: eq(ordersItems.orderId, order.id),
-  });
-
-  await Promise.all(
-    items.map((item) => {
-      return db
-        .update(products)
-        .set({
-          stock: sql`${products.stock} + ${item.quantity}`,
-        })
-        .where(
-          and(
-            eq(products.id, item.productId),
-            eq(products.businessId, business.id),
-          ),
-        );
-    }),
-  );
-
   if (order.deletedAt) {
     await orderRepository.permRemove(input.id, business.id);
   } else {
+    const items = await db.query.ordersItems.findMany({
+      where: eq(ordersItems.orderId, order.id),
+    });
+
+    await Promise.all(
+      items.map((item) => {
+        return db
+          .update(products)
+          .set({
+            stock: sql`${products.stock} + ${item.quantity}`,
+          })
+          .where(
+            and(
+              eq(products.id, item.productId),
+              eq(products.businessId, business.id),
+            ),
+          );
+      }),
+    );
+
     await orderRepository.remove(input.id, business.id);
   }
 
