@@ -9,8 +9,6 @@ import {
   rscAuth,
 } from "../lib/action";
 import { createOrderSchema, updateOrderSchema } from "@/common/schemas/order";
-import { customerRepository } from "../repositories/customer";
-import { orderRepository } from "../repositories/order";
 import { db } from "../db";
 import {
   and,
@@ -40,8 +38,11 @@ import {
 } from "@/common/schemas";
 import { ORDER_TYPES, RECORDS_LIMIT } from "@/common/constants";
 import { revalidatePath } from "next/cache";
-import { notificationRepository } from "../repositories/notification";
-import { businessRepository } from "../repositories/business";
+import { BusinessRepo } from "../repositories/business";
+import { redirect } from "next/navigation";
+import { CustomerRepo } from "../repositories/customer";
+import { OrderRepo } from "../repositories/order";
+import { NotificationRepo } from "../repositories/notification";
 
 const indexSchema = z.object({
   businessId: z.string().uuid(),
@@ -57,7 +58,14 @@ export const getOrdersAction = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
+  const business = await BusinessRepo.find({
+    id: businessId,
+    userId: user.id,
+  });
+
+  if (!business) {
+    redirect("/businesses");
+  }
 
   const customersRequest = db
     .select({
@@ -66,7 +74,7 @@ export const getOrdersAction = async (input: unknown) => {
     .from(customersTable)
     .where(
       and(
-        eq(customersTable.businessId, business.id),
+        eq(customersTable.businessId, business.data.id),
         ilike(customersTable.name, `%${query}%`),
       ),
     );
@@ -89,7 +97,7 @@ export const getOrdersAction = async (input: unknown) => {
       : undefined,
   );
 
-  const dataPromise = db.query.orders.findMany({
+  const dataPromise = db.query.ordersTable.findMany({
     where,
     with: {
       customer: true,
@@ -129,326 +137,413 @@ export const getOrdersAction = async (input: unknown) => {
   };
 };
 
-export const createOrderAction = action(createOrderSchema, async (input) => {
-  const user = await auth();
+export const createOrderAction = action
+  .schema(createOrderSchema)
+  .action(async ({ parsedInput }) => {
+    const user = await auth();
 
-  const business = await businessRepository.findOrThrow(
-    input.businessId,
-    user.id,
-  );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-  if (input.customerId) {
-    await customerRepository.findOrThrow(input.customerId, business.id);
-
-    if (!input.shippingAddress) {
-      throw new RequiredError("Shipping address");
-    }
-  }
-
-  const ps = await db.query.products.findMany({
-    where: and(
-      eq(productsTable.businessId, business.id),
-      inArray(
-        productsTable.id,
-        input.products.map((product) => product.id),
-      ),
-    ),
-  });
-
-  const items = ps.map((product) => {
-    const p = input.products.find((p) => p.id === product.id)!;
-
-    return {
-      ...product,
-      quantity: p.quantity,
-    };
-  });
-
-  const totalPrice = items
-    .map((item) => {
-      const tbt = item.price * item.quantity;
-      return tbt + (tbt * item.tax) / 100;
-    })
-    .reduce((a, b) => a + b)
-    .toFixed(2);
-
-  const orderType = await db.query.orderTypes.findFirst({
-    where: input.customerId
-      ? eq(orderTypes.name, ORDER_TYPES.CUSTOMER)
-      : eq(orderTypes.name, ORDER_TYPES.WALKING_CUSTOMER),
-  });
-
-  if (!orderType) {
-    throw new NotfoundError("Order type");
-  }
-
-  const order = await orderRepository.create({
-    shippingAddress: input.shippingAddress || null,
-    customerId: input.customerId || null,
-    orderTypeId: orderType.id,
-    note: input.note || null,
-    businessId: business.id,
-    totalPrice: parseFloat(totalPrice),
-  });
-
-  await db.insert(ordersItems).values(
-    items.map((item) => {
-      return {
-        orderId: order.id,
-        productId: item.id,
-        price: item.price,
-        quantity: item.quantity,
-        tax: item.tax,
-      };
-    }),
-  );
-
-  await Promise.all(
-    items.map((item) => {
-      return new Promise(async (res) => {
-        await db
-          .update(productsTable)
-          .set({
-            stock: sql`${productsTable.stock} - ${item.quantity}`,
-          })
-          .where(
-            and(
-              eq(productsTable.id, item.id),
-              eq(productsTable.businessId, business.id),
-            ),
-          );
-
-        if (item.stock - item.quantity <= 5) {
-          await notificationRepository.create({
-            title: `${item.name} is about to go out of stock`,
-            userId: user.id,
-          });
-        }
-
-        res("");
+    if (parsedInput.customerId) {
+      await CustomerRepo.findOrThrow({
+        id: parsedInput.customerId,
+        businessId: business.data.id,
       });
-    }),
-  );
 
-  revalidatePath(`/orders`);
-  revalidatePath("/notifications");
-  revalidatePath(`/dashboard`);
-});
-
-export const updateOrderAction = action(updateOrderSchema, async (input) => {
-  const user = await auth();
-
-  const business = await businessRepository.findOrThrow(
-    input.businessId,
-    user.id,
-  );
-
-  const order = await orderRepository.findOrThrow(input.id, business.id);
-
-  if (input.customerId) {
-    if (input.customerId !== order.customerId) {
-      await customerRepository.findOrThrow(input.customerId, business.id);
+      if (!parsedInput.shippingAddress) {
+        throw new RequiredError("Shipping address");
+      }
     }
 
-    if (!input.shippingAddress) {
-      throw new RequiredError("Shipping address");
-    }
-  }
-
-  const orderType = await db.query.orderTypes.findFirst({
-    where: input.customerId
-      ? eq(orderTypes.name, ORDER_TYPES.CUSTOMER)
-      : eq(orderTypes.name, ORDER_TYPES.WALKING_CUSTOMER),
-  });
-
-  if (!orderType) {
-    throw new NotfoundError("Order type");
-  }
-
-  const oldItems = await db.query.ordersItems.findMany({
-    where: eq(ordersItems.orderId, order.id),
-    with: {
-      product: true,
-    },
-  });
-
-  await db.delete(ordersItems).where(eq(ordersItems.orderId, order.id));
-
-  const newItems = await db.query.products.findMany({
-    where: and(
-      eq(productsTable.businessId, business.id),
-      inArray(
-        productsTable.id,
-        input.products.map((product) => product.id),
+    const ps = await db.query.productsTable.findMany({
+      where: and(
+        eq(productsTable.businessId, business.data.id),
+        inArray(
+          productsTable.id,
+          parsedInput.products.map((product) => product.id),
+        ),
       ),
-    ),
-  });
+    });
 
-  const items = newItems.map((item) => {
-    const product = input.products.find((product) => product.id === item.id)!;
-    const old = oldItems.find((old) => old.productId === item.id);
+    const items = ps.map((product) => {
+      const p = parsedInput.products.find((p) => p.id === product.id)!;
 
-    if (old) {
       return {
-        ...item,
-        new: product,
-        old,
+        ...product,
+        quantity: p.quantity,
       };
+    });
+
+    const totalPrice = items
+      .map((item) => {
+        const tbt = item.price * item.quantity;
+        return tbt + (tbt * item.tax) / 100;
+      })
+      .reduce((a, b) => a + b)
+      .toFixed(2);
+
+    const orderType = await db.query.orderTypes.findFirst({
+      where: parsedInput.customerId
+        ? eq(orderTypes.name, ORDER_TYPES.CUSTOMER)
+        : eq(orderTypes.name, ORDER_TYPES.WALKING_CUSTOMER),
+    });
+
+    if (!orderType) {
+      throw new NotfoundError("Order type");
     }
 
-    return {
-      ...item,
-      new: product,
-    };
-  });
+    const [order] = await OrderRepo.create([
+      {
+        shippingAddress: parsedInput.shippingAddress || null,
+        customerId: parsedInput.customerId || null,
+        orderTypeId: orderType.id,
+        note: parsedInput.note || null,
+        businessId: business.data.id,
+        totalPrice: parseFloat(totalPrice),
+      },
+    ]);
 
-  const totalPrice = items
-    .map((item) => {
-      const tbt = item.new.quantity * item.price;
-      return tbt + (tbt * item.tax) / 100;
-    })
-    .reduce((a, b) => a + b)
-    .toFixed(2);
+    await db.insert(ordersItems).values(
+      items.map((item) => {
+        return {
+          orderId: order.data.id,
+          productId: item.id,
+          price: item.price,
+          quantity: item.quantity,
+          tax: item.tax,
+        };
+      }),
+    );
 
-  await orderRepository.update(order.id, business.id, {
-    note: input.note,
-    customerId: input.customerId || null,
-    shippingAddress: input.shippingAddress || null,
-    orderTypeId: orderType.id,
-    totalPrice: parseFloat(totalPrice),
-  });
-
-  await db.insert(ordersItems).values(
-    items.map((product) => {
-      return {
-        orderId: order.id,
-        productId: product.id,
-        price: product.price,
-        quantity: product.new.quantity,
-        tax: product.tax,
-      };
-    }),
-  );
-
-  await Promise.all([
-    ...items.map((item) => {
-      if ("old" in item) {
-        if (item.old.quantity === item.new.quantity) {
-          return;
-        }
-
-        const q = Math.abs(item.old.quantity - item.new.quantity);
-
-        if (item.old.quantity > item.new.quantity) {
-          return db
+    await Promise.all(
+      items.map((item) => {
+        return new Promise(async (res) => {
+          await db
             .update(productsTable)
             .set({
-              stock: sql<string>`${productsTable.stock} + ${q}`,
+              stock: sql`${productsTable.stock} - ${item.quantity}`,
             })
             .where(
               and(
                 eq(productsTable.id, item.id),
-                eq(productsTable.businessId, business.id),
+                eq(productsTable.businessId, business.data.id),
               ),
             );
+
+          if (item.stock - item.quantity <= 5) {
+            await NotificationRepo.create([
+              {
+                title: `${item.name} is about to go out of stock`,
+                userId: user.id,
+              },
+            ]);
+          }
+
+          res("");
+        });
+      }),
+    );
+
+    revalidatePath(`/orders`);
+    revalidatePath("/notifications");
+    revalidatePath(`/dashboard`);
+  });
+
+export const updateOrderAction = action
+  .schema(updateOrderSchema)
+  .action(async ({ parsedInput }) => {
+    const user = await auth();
+
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
+
+    const order = await OrderRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
+
+    if (parsedInput.customerId) {
+      if (parsedInput.customerId !== order.data.customerId) {
+        await CustomerRepo.findOrThrow({
+          id: parsedInput.customerId,
+          businessId: business.data.id,
+        });
+      }
+
+      if (!parsedInput.shippingAddress) {
+        throw new RequiredError("Shipping address");
+      }
+    }
+
+    const orderType = await db.query.orderTypes.findFirst({
+      where: parsedInput.customerId
+        ? eq(orderTypes.name, ORDER_TYPES.CUSTOMER)
+        : eq(orderTypes.name, ORDER_TYPES.WALKING_CUSTOMER),
+    });
+
+    if (!orderType) {
+      throw new NotfoundError("Order type");
+    }
+
+    const oldItems = await db.query.ordersItems.findMany({
+      where: eq(ordersItems.orderId, order.data.id),
+      with: {
+        product: true,
+      },
+    });
+
+    await db.delete(ordersItems).where(eq(ordersItems.orderId, order.data.id));
+
+    const newItems = await db.query.productsTable.findMany({
+      where: and(
+        eq(productsTable.businessId, business.data.id),
+        inArray(
+          productsTable.id,
+          parsedInput.products.map((product) => product.id),
+        ),
+      ),
+    });
+
+    const items = newItems.map((item) => {
+      const product = parsedInput.products.find(
+        (product) => product.id === item.id,
+      )!;
+      const old = oldItems.find((old) => old.productId === item.id);
+
+      if (old) {
+        return {
+          ...item,
+          new: product,
+          old,
+        };
+      }
+
+      return {
+        ...item,
+        new: product,
+      };
+    });
+
+    const totalPrice = items
+      .map((item) => {
+        const tbt = item.new.quantity * item.price;
+        return tbt + (tbt * item.tax) / 100;
+      })
+      .reduce((a, b) => a + b)
+      .toFixed(2);
+
+    await OrderRepo.update(
+      {
+        id: order.data.id,
+        businessId: business.data.id,
+      },
+      {
+        note: parsedInput.note,
+        customerId: parsedInput.customerId || null,
+        shippingAddress: parsedInput.shippingAddress || null,
+        orderTypeId: orderType.id,
+        totalPrice: parseFloat(totalPrice),
+      },
+    );
+
+    await db.insert(ordersItems).values(
+      items.map((product) => {
+        return {
+          orderId: order.data.id,
+          productId: product.id,
+          price: product.price,
+          quantity: product.new.quantity,
+          tax: product.tax,
+        };
+      }),
+    );
+
+    await Promise.all([
+      ...items.map((item) => {
+        if ("old" in item) {
+          if (item.old.quantity === item.new.quantity) {
+            return;
+          }
+
+          const q = Math.abs(item.old.quantity - item.new.quantity);
+
+          if (item.old.quantity > item.new.quantity) {
+            return db
+              .update(productsTable)
+              .set({
+                stock: sql<string>`${productsTable.stock} + ${q}`,
+              })
+              .where(
+                and(
+                  eq(productsTable.id, item.id),
+                  eq(productsTable.businessId, business.data.id),
+                ),
+              );
+          }
+
+          return new Promise(async (res) => {
+            await db
+              .update(productsTable)
+              .set({
+                stock: sql<string>`${productsTable.stock} - ${q}`,
+              })
+              .where(
+                and(
+                  eq(productsTable.id, item.id),
+                  eq(productsTable.businessId, business.data.id),
+                ),
+              );
+
+            if (item.stock - q <= 5) {
+              await NotificationRepo.create([
+                {
+                  title: `${item.name} is about to go out of stock`,
+                  userId: user.id,
+                },
+              ]);
+            }
+
+            res(true);
+          });
         }
 
         return new Promise(async (res) => {
           await db
             .update(productsTable)
             .set({
-              stock: sql<string>`${productsTable.stock} - ${q}`,
+              stock: sql<string>`${productsTable.stock} - ${item.new.quantity}`,
             })
             .where(
               and(
                 eq(productsTable.id, item.id),
-                eq(productsTable.businessId, business.id),
+                eq(productsTable.businessId, business.data.id),
               ),
             );
 
-          if (item.stock - q <= 5) {
-            await notificationRepository.create({
-              title: `${item.name} is about to go out of stock`,
-              userId: user.id,
-            });
+          if (item.stock - item.new.quantity <= 5) {
+            await NotificationRepo.create([
+              {
+                title: `${item.name} is about to go out of stock`,
+                userId: user.id,
+              },
+            ]);
           }
 
           res(true);
         });
-      }
+      }),
+      ...oldItems.map((item) => {
+        const product = parsedInput.products.find(
+          (product) => product.id === item.productId,
+        );
 
-      return new Promise(async (res) => {
-        await db
+        if (product) {
+          return;
+        }
+
+        return db
           .update(productsTable)
           .set({
-            stock: sql<string>`${productsTable.stock} - ${item.new.quantity}`,
+            stock: sql<string>`${productsTable.stock} + ${item.quantity}`,
           })
           .where(
             and(
-              eq(productsTable.id, item.id),
-              eq(productsTable.businessId, business.id),
+              eq(productsTable.id, item.productId),
+              eq(productsTable.businessId, business.data.id),
             ),
           );
+      }),
+    ]);
 
-        if (item.stock - item.new.quantity <= 5) {
-          await notificationRepository.create({
-            title: `${item.name} is about to go out of stock`,
-            userId: user.id,
-          });
-        }
-
-        res(true);
-      });
-    }),
-    ...oldItems.map((item) => {
-      const product = input.products.find(
-        (product) => product.id === item.productId,
-      );
-
-      if (product) {
-        return;
-      }
-
-      return db
-        .update(productsTable)
-        .set({
-          stock: sql<string>`${productsTable.stock} + ${item.quantity}`,
-        })
-        .where(
-          and(
-            eq(productsTable.id, item.productId),
-            eq(productsTable.businessId, business.id),
-          ),
-        );
-    }),
-  ]);
-
-  revalidatePath("/orders");
-  revalidatePath("/products");
-  revalidatePath("/notifications");
-  revalidatePath("/dashboard");
-});
+    revalidatePath("/orders");
+    revalidatePath("/products");
+    revalidatePath("/notifications");
+    revalidatePath("/dashboard");
+  });
 
 const schema = z.object({
   businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
-export const deleteOrderAction = action(schema, async (input) => {
-  const user = await auth();
+export const deleteOrderAction = action
+  .schema(schema)
+  .action(async ({ parsedInput }) => {
+    const user = await auth();
 
-  const business = await businessRepository.findOrThrow(
-    input.businessId,
-    user.id,
-  );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-  const order = await orderRepository.findOrThrow(input.id, business.id);
+    const order = await OrderRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-  if (order.deletedAt) {
-    await orderRepository.permRemove(input.id, business.id);
-  } else {
+    if (order.data.deletedAt) {
+      await OrderRepo.permRemove({
+        id: parsedInput.id,
+        businessId: business.data.id,
+      });
+    } else {
+      const items = await db.query.ordersItems.findMany({
+        where: eq(ordersItems.orderId, order.data.id),
+      });
+
+      await Promise.all(
+        items.map((item) => {
+          return db
+            .update(productsTable)
+            .set({
+              stock: sql`${productsTable.stock} + ${item.quantity}`,
+            })
+            .where(
+              and(
+                eq(productsTable.id, item.productId),
+                eq(productsTable.businessId, business.data.id),
+              ),
+            );
+        }),
+      );
+
+      await OrderRepo.remove({
+        id: parsedInput.id,
+        businessId: business.data.id,
+      });
+    }
+
+    revalidatePath(`/orders`);
+    revalidatePath(`/dashboard`);
+    revalidatePath(`/orders/${order.data.id}/edit`);
+  });
+
+export const restoreOrderAction = action
+  .schema(schema)
+  .action(async ({ parsedInput }) => {
+    const user = await auth();
+
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
+
+    const order = await OrderRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
+
+    if (!order.data.deletedAt) {
+      return;
+    }
+
     const items = await db.query.ordersItems.findMany({
-      where: eq(ordersItems.orderId, order.id),
+      where: eq(ordersItems.orderId, order.data.id),
     });
 
     await Promise.all(
@@ -461,56 +556,17 @@ export const deleteOrderAction = action(schema, async (input) => {
           .where(
             and(
               eq(productsTable.id, item.productId),
-              eq(productsTable.businessId, business.id),
+              eq(productsTable.businessId, business.data.id),
             ),
           );
       }),
     );
 
-    await orderRepository.remove(input.id, business.id);
-  }
+    await OrderRepo.restore({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-  revalidatePath(`/orders`);
-  revalidatePath(`/dashboard`);
-  revalidatePath(`/orders/${order.id}/edit`);
-});
-
-export const restoreOrderAction = action(schema, async (input) => {
-  const user = await auth();
-
-  const business = await businessRepository.findOrThrow(
-    input.businessId,
-    user.id,
-  );
-
-  const order = await orderRepository.findOrThrow(input.id, business.id);
-
-  if (!order.deletedAt) {
-    return;
-  }
-
-  const items = await db.query.ordersItems.findMany({
-    where: eq(ordersItems.orderId, order.id),
+    revalidatePath(`/orders`);
+    revalidatePath(`/orders/${order.data.id}/edit`);
   });
-
-  await Promise.all(
-    items.map((item) => {
-      return db
-        .update(productsTable)
-        .set({
-          stock: sql`${productsTable.stock} + ${item.quantity}`,
-        })
-        .where(
-          and(
-            eq(productsTable.id, item.productId),
-            eq(productsTable.businessId, business.id),
-          ),
-        );
-    }),
-  );
-
-  await orderRepository.restore(input.id, business.id);
-
-  revalidatePath(`/orders`);
-  revalidatePath(`/orders/${order.id}/edit`);
-});

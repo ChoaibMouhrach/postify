@@ -1,5 +1,8 @@
 import { getServerSession } from "next-auth";
-import { createSafeActionClient, DEFAULT_SERVER_ERROR } from "next-safe-action";
+import {
+  createSafeActionClient,
+  DEFAULT_SERVER_ERROR_MESSAGE,
+} from "next-safe-action";
 import { authOptions } from "./auth";
 import { redirect } from "next/navigation";
 import { ROLES } from "@/common/constants";
@@ -31,12 +34,12 @@ export class TakenError extends CustomError {
 }
 
 export const action = createSafeActionClient({
-  handleReturnedServerError: (err) => {
+  handleServerError: (err) => {
     if (err instanceof CustomError) {
       return err.message;
     }
 
-    return DEFAULT_SERVER_ERROR;
+    return DEFAULT_SERVER_ERROR_MESSAGE;
   },
 });
 

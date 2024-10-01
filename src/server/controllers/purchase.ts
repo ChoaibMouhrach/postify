@@ -12,7 +12,6 @@ import {
   suppliersTable,
 } from "@/server/db/schema";
 import { action, auth, rscAuth } from "@/server/lib/action";
-import { purchaseRepository } from "@/server/repositories/purchase";
 import {
   and,
   between,
@@ -26,8 +25,6 @@ import {
 } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { businessRepository } from "../repositories/business";
-import { supplierRepository } from "../repositories/supplier";
 import {
   fromSchema,
   pageSchema,
@@ -36,6 +33,9 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
+import { BusinessRepo } from "../repositories/business";
+import { PurchaseRepo } from "../repositories/purchase";
+import { SupplierRepo } from "../repositories/supplier";
 
 const schema = z.object({
   businessId: z.string().uuid(),
@@ -51,7 +51,10 @@ export const getPurchasesActiopn = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await businessRepository.findOrThrow(businessId, user.id);
+  const business = await BusinessRepo.findOrThrow({
+    id: businessId,
+    userId: user.id,
+  });
 
   const suppliersReauest = db
     .select({
@@ -60,13 +63,13 @@ export const getPurchasesActiopn = async (input: unknown) => {
     .from(suppliersTable)
     .where(
       and(
-        eq(suppliersTable.businessId, business.id),
+        eq(suppliersTable.businessId, business.data.id),
         ilike(suppliersTable.name, `%${query}%`),
       ),
     );
 
   const where = and(
-    eq(purchasesTable.businessId, business.id),
+    eq(purchasesTable.businessId, business.data.id),
     trash
       ? isNotNull(purchasesTable.deletedAt)
       : isNull(purchasesTable.deletedAt),
@@ -80,7 +83,7 @@ export const getPurchasesActiopn = async (input: unknown) => {
     query ? inArray(purchasesTable.supplierId, suppliersReauest) : undefined,
   );
 
-  const dataPromise = db.query.purchases.findMany({
+  const dataPromise = db.query.purchasesTable.findMany({
     where,
     orderBy: desc(purchasesTable.createdAt),
     limit: RECORDS_LIMIT,
@@ -122,27 +125,27 @@ const restorePurchaseSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const restorePurchaseAction = action(
-  restorePurchaseSchema,
-  async (input) => {
+export const restorePurchaseAction = action
+  .schema(restorePurchaseSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const purchase = await purchaseRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const purchase = await PurchaseRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (!purchase.deletedAt) {
+    if (!purchase.data.deletedAt) {
       return;
     }
 
     const items = await db.query.purchasesItems.findMany({
-      where: eq(purchasesItems.purchaseId, purchase.id),
+      where: eq(purchasesItems.purchaseId, purchase.data.id),
     });
 
     await Promise.all(
@@ -155,7 +158,7 @@ export const restorePurchaseAction = action(
           .where(
             and(
               eq(productsTable.id, item.productId),
-              eq(productsTable.businessId, business.id),
+              eq(productsTable.businessId, business.data.id),
             ),
           );
       }),
@@ -168,38 +171,39 @@ export const restorePurchaseAction = action(
       })
       .where(
         and(
-          eq(purchasesTable.id, input.id),
-          eq(purchasesTable.businessId, business.id),
+          eq(purchasesTable.id, parsedInput.id),
+          eq(purchasesTable.businessId, business.data.id),
         ),
       );
 
     revalidatePath("/purchases");
-    revalidatePath(`/purchases/${purchase.id}/edit`);
-  },
-);
+    revalidatePath(`/purchases/${purchase.data.id}/edit`);
+  });
 
-export const createPurchaseAction = action(
-  createPurchaseSchema,
-  async (input) => {
+export const createPurchaseAction = action
+  .schema(createPurchaseSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    let ps = await db.query.products.findMany({
+    let ps = await db.query.productsTable.findMany({
       where: and(
-        eq(productsTable.businessId, business.id),
+        eq(productsTable.businessId, business.data.id),
         inArray(
           productsTable.id,
-          input.products.map((product) => product.id),
+          parsedInput.products.map((product) => product.id),
         ),
       ),
     });
 
     const items = ps.map((p) => {
-      const product = input.products.find((product) => product.id === p.id)!;
+      const product = parsedInput.products.find(
+        (product) => product.id === p.id,
+      )!;
 
       return {
         ...p,
@@ -212,19 +216,18 @@ export const createPurchaseAction = action(
       .map((p) => p.quantity * p.cost)
       .reduce((a, b) => a + b);
 
-    const purchaseId = await purchaseRepository
-      .create({
-        supplierId: input.supplierId,
-        businessId: business.id,
+    const [purchase] = await PurchaseRepo.create([
+      {
+        supplierId: parsedInput.supplierId,
+        businessId: business.data.id,
         totalCost,
-      })
-      .returning({ id: purchasesTable.id })
-      .then((ps) => ps[0].id);
+      },
+    ]);
 
     await db.insert(purchasesItems).values(
       items.map((p) => {
         return {
-          purchaseId,
+          purchaseId: purchase.data.id,
           cost: p.cost,
           productId: p.id,
           quantity: p.quantity,
@@ -249,66 +252,71 @@ export const createPurchaseAction = action(
     // revalidate purchases
     revalidatePath("/purchases");
     revalidatePath(`/dashboard`);
-    revalidatePath(`/purchases/${purchaseId}/edit`);
-  },
-);
+    revalidatePath(`/purchases/${purchase.data.id}/edit`);
+  });
 
-export const updatePurchaseAction = action(
-  updatePurchaseSchema,
-  async (input) => {
+export const updatePurchaseAction = action
+  .schema(updatePurchaseSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const purchase = await purchaseRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const purchase = await PurchaseRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (purchase.supplierId !== input.supplierId) {
-      const supplier = await supplierRepository.findOrThrow(
-        input.supplierId,
-        business.id,
-      );
-
-      await purchaseRepository.update(purchase.id, business.id, {
-        supplierId: supplier.id,
+    if (purchase.data.supplierId !== parsedInput.supplierId) {
+      const supplier = await SupplierRepo.findOrThrow({
+        id: parsedInput.supplierId,
+        businessId: business.data.id,
       });
+
+      await PurchaseRepo.update(
+        {
+          id: parsedInput.id,
+          businessId: business.data.id,
+        },
+        {
+          supplierId: supplier.data.id,
+        },
+      );
     }
 
     const oldItems = await db.query.purchasesItems.findMany({
-      where: eq(purchasesItems.purchaseId, purchase.id),
+      where: eq(purchasesItems.purchaseId, purchase.data.id),
     });
 
     await db
       .delete(purchasesItems)
-      .where(eq(purchasesItems.purchaseId, purchase.id));
+      .where(eq(purchasesItems.purchaseId, purchase.data.id));
 
     await db.insert(purchasesItems).values(
-      input.products.map((product) => ({
+      parsedInput.products.map((product) => ({
         productId: product.id,
-        purchaseId: purchase.id,
+        purchaseId: purchase.data.id,
         cost: product.cost,
         quantity: product.quantity,
       })),
     );
 
-    const newItems = await db.query.products.findMany({
+    const newItems = await db.query.productsTable.findMany({
       where: and(
-        eq(productsTable.businessId, business.id),
+        eq(productsTable.businessId, business.data.id),
         inArray(
           productsTable.id,
-          input.products.map((product) => product.id),
+          parsedInput.products.map((product) => product.id),
         ),
       ),
     });
 
     await Promise.all([
       ...newItems.map((item) => {
-        const product = input.products.find(
+        const product = parsedInput.products.find(
           (product) => product.id === item.id,
         )!;
 
@@ -332,7 +340,7 @@ export const updatePurchaseAction = action(
               .where(
                 and(
                   eq(productsTable.id, product.id),
-                  eq(productsTable.businessId, business.id),
+                  eq(productsTable.businessId, business.data.id),
                 ),
               );
           }
@@ -345,7 +353,7 @@ export const updatePurchaseAction = action(
             .where(
               and(
                 eq(productsTable.id, product.id),
-                eq(productsTable.businessId, business.id),
+                eq(productsTable.businessId, business.data.id),
               ),
             );
         }
@@ -358,12 +366,12 @@ export const updatePurchaseAction = action(
           .where(
             and(
               eq(productsTable.id, product.id),
-              eq(productsTable.businessId, business.id),
+              eq(productsTable.businessId, business.data.id),
             ),
           );
       }),
       ...oldItems.map((oldItem) => {
-        const product = input.products.find(
+        const product = parsedInput.products.find(
           (product) => product.id === oldItem.productId,
         );
 
@@ -378,7 +386,7 @@ export const updatePurchaseAction = action(
           })
           .where(
             and(
-              eq(productsTable.businessId, business.id),
+              eq(productsTable.businessId, business.data.id),
               eq(productsTable.id, oldItem.productId),
             ),
           );
@@ -387,35 +395,37 @@ export const updatePurchaseAction = action(
 
     revalidatePath("/products");
     revalidatePath("/purchases");
-    revalidatePath(`/purchases/${purchase.id}/edit`);
-  },
-);
+    revalidatePath(`/purchases/${purchase.data.id}/edit`);
+  });
 
 const deletePurchaseSchema = z.object({
   businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
-export const deletePurchaseAction = action(
-  deletePurchaseSchema,
-  async (input) => {
+export const deletePurchaseAction = action
+  .schema(deletePurchaseSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const purchase = await purchaseRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const purchase = await PurchaseRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (purchase.deletedAt) {
-      await purchaseRepository.permRemove(input.id, business.id);
+    if (purchase.data.deletedAt) {
+      await PurchaseRepo.permRemove({
+        id: parsedInput.id,
+        businessId: business.data.id,
+      });
     } else {
       const items = await db.query.purchasesItems.findMany({
-        where: eq(purchasesItems.purchaseId, purchase.id),
+        where: eq(purchasesItems.purchaseId, purchase.data.id),
       });
 
       await Promise.all(
@@ -428,17 +438,19 @@ export const deletePurchaseAction = action(
             .where(
               and(
                 eq(productsTable.id, item.productId),
-                eq(productsTable.businessId, business.id),
+                eq(productsTable.businessId, business.data.id),
               ),
             );
         }),
       );
 
-      await purchaseRepository.remove(input.id, business.id);
+      await PurchaseRepo.remove({
+        id: parsedInput.id,
+        businessId: business.data.id,
+      });
     }
 
     revalidatePath("/products");
     revalidatePath(`/dashboard`);
     revalidatePath(`/purchases`);
-  },
-);
+  });

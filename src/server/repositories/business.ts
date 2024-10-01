@@ -12,6 +12,20 @@ export class Repo<T> {
 }
 
 export class BusinessRepo extends Repo<TBusiness> {
+  public static async findByEmail(where: {
+    email: string;
+    userId: string;
+  }): Promise<BusinessRepo | null> {
+    const business = await db.query.businessesTable.findFirst({
+      where: and(
+        eq(businessesTable.userId, where.userId),
+        eq(businessesTable.email, where.email),
+      ),
+    });
+
+    return business ? new this(business) : null;
+  }
+
   public static async find(where: {
     id: string;
     userId: string;
@@ -113,5 +127,36 @@ export class BusinessRepo extends Repo<TBusiness> {
           eq(businessesTable.id, where.id),
         ),
       );
+  }
+
+  public async save(): Promise<void> {
+    return BusinessRepo.update(
+      {
+        id: this.data.id,
+        userId: this.data.userId,
+      },
+      this.data,
+    );
+  }
+
+  public async remove(): Promise<void> {
+    return BusinessRepo.remove({
+      id: this.data.id,
+      userId: this.data.userId,
+    });
+  }
+
+  public async permRemove(): Promise<void> {
+    return BusinessRepo.permRemove({
+      id: this.data.id,
+      userId: this.data.userId,
+    });
+  }
+
+  public async restore(): Promise<void> {
+    return BusinessRepo.restore({
+      id: this.data.id,
+      userId: this.data.userId,
+    });
   }
 }

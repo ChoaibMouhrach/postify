@@ -5,6 +5,20 @@ import { Repo } from "./business";
 import { db } from "../db";
 
 export class CustomerRepo extends Repo<TCustomer> {
+  public static async findByEmail(where: {
+    email: string;
+    businessId: string;
+  }): Promise<CustomerRepo | null> {
+    const customer = await db.query.customersTable.findFirst({
+      where: and(
+        eq(customersTable.email, where.email),
+        eq(customersTable.businessId, where.businessId),
+      ),
+    });
+
+    return customer ? new this(customer) : null;
+  }
+
   public static async find(where: {
     id: string;
     businessId: string;
@@ -32,7 +46,9 @@ export class CustomerRepo extends Repo<TCustomer> {
     return customer;
   }
 
-  public static async create(input: TCustomerInsert): Promise<CustomerRepo[]> {
+  public static async create(
+    input: TCustomerInsert[],
+  ): Promise<CustomerRepo[]> {
     const customers = await db.insert(customersTable).values(input).returning();
     return customers.map((customer) => new this(customer));
   }
@@ -101,5 +117,22 @@ export class CustomerRepo extends Repo<TCustomer> {
           eq(customersTable.businessId, where.businessId),
         ),
       );
+  }
+
+  public async restore() {
+    await CustomerRepo.restore({
+      businessId: this.data.businessId,
+      id: this.data.id,
+    });
+  }
+
+  public async save() {
+    await CustomerRepo.update(
+      {
+        businessId: this.data.businessId,
+        id: this.data.id,
+      },
+      this.data,
+    );
   }
 }

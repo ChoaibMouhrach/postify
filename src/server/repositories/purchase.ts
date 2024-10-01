@@ -32,7 +32,9 @@ export class PurchaseRepo extends Repo<TPurchase> {
     return purchase;
   }
 
-  public static async create(input: TPurchaseInsert): Promise<PurchaseRepo[]> {
+  public static async create(
+    input: TPurchaseInsert[],
+  ): Promise<PurchaseRepo[]> {
     const purchases = await db.insert(purchasesTable).values(input).returning();
     return purchases.map((purchase) => new this(purchase));
   }

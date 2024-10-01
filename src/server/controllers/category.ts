@@ -5,7 +5,6 @@ import {
   updateCategorySchema,
 } from "@/common/schemas/category";
 import { action, auth, rscAuth, TakenError } from "@/server/lib/action";
-import { categoryRepository } from "@/server/repositories/category";
 import {
   and,
   between,
@@ -20,7 +19,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "../db";
 import { categoriesTable } from "../db/schema";
-import { businessRepository } from "../repositories/business";
 import {
   fromSchema,
   pageSchema,
@@ -29,6 +27,9 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
+import { BusinessRepo } from "../repositories/business";
+import { redirect } from "next/navigation";
+import { CategoryRepo } from "../repositories/category";
 
 const schema = z.object({
   businessId: z.string().uuid(),
@@ -44,10 +45,17 @@ export const getCategoriesAction = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
+  const business = await BusinessRepo.find({
+    id: businessId,
+    userId: user.id,
+  });
+
+  if (!business) {
+    redirect("/businesses");
+  }
 
   const where = and(
-    eq(categoriesTable.businessId, business.id),
+    eq(categoriesTable.businessId, business.data.id),
     trash
       ? isNotNull(categoriesTable.deletedAt)
       : isNull(categoriesTable.deletedAt),
@@ -61,7 +69,7 @@ export const getCategoriesAction = async (input: unknown) => {
     query ? or(ilike(categoriesTable.name, `%${query}%`)) : undefined,
   );
 
-  const dataPromise = db.query.categories.findMany({
+  const dataPromise = db.query.categoriesTable.findMany({
     where,
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
@@ -100,137 +108,124 @@ const restoreCategorySchema = z.object({
   id: z.string().uuid(),
 });
 
-export const restoreCategoryAction = action(
-  restoreCategorySchema,
-  async (input) => {
+export const restoreCategoryAction = action
+  .schema(restoreCategorySchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const category = await categoryRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const category = await CategoryRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (!category.deletedAt) {
+    if (!category.data.deletedAt) {
       return;
     }
 
-    await categoryRepository.restore(category.id, user.id);
+    await category.restore();
 
     revalidatePath("/categories");
-    revalidatePath(`/categories/${input.id}/edit`);
-  },
-);
+    revalidatePath(`/categories/${parsedInput.id}/edit`);
+  });
 
-export const createCategoryAction = action(
-  createCategorySchema,
-  async (input) => {
+export const createCategoryAction = action
+  .schema(createCategorySchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const category = await db.query.categories.findFirst({
-      where: and(
-        eq(categoriesTable.name, input.name),
-        eq(categoriesTable.businessId, business.id),
-      ),
+    const category = await CategoryRepo.findByName({
+      name: parsedInput.name,
+      businessId: business.data.id,
     });
 
     if (category) {
       throw new TakenError("Category");
     }
 
-    const newCategory = await db
-      .insert(categoriesTable)
-      .values({
-        name: input.name,
-        businessId: input.businessId,
-      })
-      .returning({
-        id: categoriesTable.id,
-      })
-      .then((cats) => cats[0]);
+    const [newCategory] = await CategoryRepo.create([
+      {
+        name: parsedInput.name,
+        businessId: parsedInput.businessId,
+      },
+    ]);
 
     revalidatePath("/categories");
     revalidatePath("/dashboard");
-    revalidatePath(`/categories/${newCategory.id}/edit`);
-  },
-);
+    revalidatePath(`/categories/${newCategory.data.id}/edit`);
+  });
 
-export const updateCategoryAction = action(
-  updateCategorySchema,
-  async (input) => {
+export const updateCategoryAction = action
+  .schema(updateCategorySchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const category = await categoryRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const category = await CategoryRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (category.name === input.name) {
+    if (category.data.name === parsedInput.name) {
       return;
     }
 
-    const categoryCheck = await db.query.categories.findFirst({
-      where: and(
-        eq(categoriesTable.businessId, business.id),
-        eq(categoriesTable.name, input.name),
-      ),
+    const categoryCheck = await CategoryRepo.findByName({
+      name: category.data.name,
+      businessId: business.data.id,
     });
 
-    if (categoryCheck && categoryCheck.id !== input.id) {
+    if (categoryCheck && categoryCheck.data.id !== parsedInput.id) {
       throw new TakenError("Category");
     }
 
-    await categoryRepository.update(input.id, business.id, {
-      name: input.name,
-    });
+    category.data.name = parsedInput.name;
+    await category.save();
 
     revalidatePath("/categories");
-    revalidatePath(`/categories/${category.id}/edit`);
-  },
-);
+    revalidatePath(`/categories/${category.data.id}/edit`);
+  });
 
 const deleteCategorySchema = z.object({
   businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
-export const deleteCategoryAction = action(
-  deleteCategorySchema,
-  async (input) => {
+export const deleteCategoryAction = action
+  .schema(deleteCategorySchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const category = await categoryRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const category = await CategoryRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (!category.deletedAt) {
-      await categoryRepository.remove(input.id, business.id);
+    if (!category.data.deletedAt) {
+      await category.remove();
     } else {
-      await categoryRepository.permRemove(input.id, business.id);
+      await category.permRemove();
     }
 
     revalidatePath("/dashboard");
     revalidatePath("/categories");
-    revalidatePath(`/categories/${category.id}/edit`);
-  },
-);
+    revalidatePath(`/categories/${category.data.id}/edit`);
+  });

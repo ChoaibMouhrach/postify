@@ -106,4 +106,25 @@ export class TaskRepo extends Repo<TTask> {
         and(eq(tasksTable.id, where.id), eq(tasksTable.userId, where.userId)),
       );
   }
+
+  public async restore() {
+    return TaskRepo.restore({
+      userId: this.data.userId,
+      id: this.data.id,
+    });
+  }
+
+  public async permRemove() {
+    return TaskRepo.permRemove({
+      userId: this.data.userId,
+      id: this.data.id,
+    });
+  }
+
+  public async remove() {
+    return TaskRepo.remove({
+      userId: this.data.userId,
+      id: this.data.id,
+    });
+  }
 }

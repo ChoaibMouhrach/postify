@@ -14,7 +14,6 @@ import {
 import { db } from "@/server/db";
 import { productsTable } from "@/server/db/schema";
 import { action, auth, NotfoundError, rscAuth } from "@/server/lib/action";
-import { productRepository } from "@/server/repositories/product";
 import {
   and,
   between,
@@ -24,11 +23,13 @@ import {
   isNotNull,
   isNull,
   or,
+  sql,
 } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { businessRepository } from "../repositories/business";
-import { categoryRepository } from "../repositories/category";
+import { BusinessRepo } from "../repositories/business";
+import { CategoryRepo } from "../repositories/category";
+import { ProductRepo } from "../repositories/product";
 
 const schema = z.object({
   category: z.boolean().default(false),
@@ -45,10 +46,13 @@ export const getProductsAction = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await businessRepository.findOrThrow(businessId, user.id);
+  const business = await BusinessRepo.findOrThrow({
+    id: businessId,
+    userId: user.id,
+  });
 
   const where = and(
-    eq(productsTable.businessId, business.id),
+    eq(productsTable.businessId, business.data.id),
     trash
       ? isNotNull(productsTable.deletedAt)
       : isNull(productsTable.deletedAt),
@@ -67,7 +71,7 @@ export const getProductsAction = async (input: unknown) => {
       : undefined,
   );
 
-  const data = await db.query.products.findMany({
+  const data = await db.query.productsTable.findMany({
     where,
     orderBy: desc(productsTable.createdAt),
     limit: 8,
@@ -77,7 +81,13 @@ export const getProductsAction = async (input: unknown) => {
     },
   });
 
-  const count = await productRepository.count(where);
+  const count = await db
+    .select({
+      count: sql<string>`COUTN(*)`,
+    })
+    .from(productsTable)
+    .where(where)
+    .then(([{ count }]) => parseInt(count));
 
   const lastPage = Math.ceil(count / 8);
 
@@ -98,130 +108,149 @@ export const getProductsAction = async (input: unknown) => {
   };
 };
 
-export const createProductAction = action(
-  createProductSchema,
-  async (input) => {
+export const createProductAction = action
+  .schema(createProductSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    if (input.categoryId) {
-      await categoryRepository.findOrThrow(input.categoryId, business.id);
+    if (parsedInput.categoryId) {
+      await CategoryRepo.findOrThrow({
+        id: parsedInput.categoryId,
+        businessId: business.data.id,
+      });
     }
 
-    const product = await productRepository.create({
-      // info
-      businessId: business.id,
-      price: parseFloat(String(input.price)),
-      name: input.name,
-      unit: input.unit,
-      tax: input.tax,
+    const [product] = await ProductRepo.create([
+      {
+        // info
+        businessId: business.data.id,
+        price: parseFloat(String(parsedInput.price)),
+        name: parsedInput.name,
+        unit: parsedInput.unit,
+        tax: parsedInput.tax,
 
-      // optional
-      description: input.description || null,
-      categoryId: input.categoryId || null,
-      code: input.code || null,
-    });
+        // optional
+        description: parsedInput.description || null,
+        categoryId: parsedInput.categoryId || null,
+        code: parsedInput.code || null,
+      },
+    ]);
 
     revalidatePath("/products");
     revalidatePath(`/dashboard`);
-    revalidatePath(`/products/${product.id}/edit`);
-  },
-);
+    revalidatePath(`/products/${product.data.id}/edit`);
+  });
 
-export const updateProductAction = action(
-  updateProductSchema,
-  async (input) => {
+export const updateProductAction = action
+  .schema(updateProductSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
-
-    const product = await productRepository.findOrThrow(input.id, business.id);
-
-    if (input.categoryId) {
-      await categoryRepository.findOrThrow(input.categoryId, business.id);
-    }
-
-    await productRepository.update(product.id, business.id, {
-      name: input.name,
-      price: parseFloat(String(input.price)),
-      unit: input.unit,
-      tax: input.tax,
-
-      // optional
-      description: input.description || null,
-      categoryId: input.categoryId || null,
-      code: input.code || null,
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
     });
 
+    const product = await ProductRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
+
+    if (parsedInput.categoryId) {
+      await CategoryRepo.findOrThrow({
+        id: parsedInput.categoryId,
+        businessId: business.data.id,
+      });
+    }
+
+    await ProductRepo.update(
+      {
+        id: product.data.id,
+        businessId: business.data.id,
+      },
+      {
+        name: parsedInput.name,
+        price: parseFloat(String(parsedInput.price)),
+        unit: parsedInput.unit,
+        tax: parsedInput.tax,
+
+        // optional
+        description: parsedInput.description || null,
+        categoryId: parsedInput.categoryId || null,
+        code: parsedInput.code || null,
+      },
+    );
+
     revalidatePath("/products");
-    revalidatePath(`/products/${input.id}/edit`);
-  },
-);
+    revalidatePath(`/products/${parsedInput.id}/edit`);
+  });
 
 const deleteProductSchema = z.object({
   businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
-export const deleteProductAction = action(
-  deleteProductSchema,
-  async (input) => {
+export const deleteProductAction = action
+  .schema(deleteProductSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const product = await productRepository.findOrThrow(input.id, business.id);
+    const product = await ProductRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (product.deletedAt) {
-      await productRepository.permRemove(product.id, business.id);
+    if (product.data.deletedAt) {
+      await product.permRemove();
     } else {
-      await productRepository.remove(product.id, business.id);
+      await product.remove();
     }
 
     revalidatePath("/products");
     revalidatePath(`/dashboard`);
-    revalidatePath(`/products/${input.id}/edit`);
-  },
-);
+    revalidatePath(`/products/${parsedInput.id}/edit`);
+  });
 
 const restoreProductSchema = z.object({
   businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
-export const restoreProductAction = action(
-  restoreProductSchema,
-  async (input) => {
+export const restoreProductAction = action
+  .schema(restoreProductSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const product = await productRepository.findOrThrow(input.id, business.id);
+    const product = await ProductRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
     if (!product) {
       throw new NotfoundError("Product");
     }
 
-    if (!product.deletedAt) {
+    if (!product.data.deletedAt) {
       return;
     }
 
-    await productRepository.restore(input.id, business.id);
+    await product.restore();
 
     revalidatePath("/products");
-    revalidatePath(`/products/${product.id}/edit`);
-  },
-);
+    revalidatePath(`/products/${product.data.id}/edit`);
+  });

@@ -5,7 +5,7 @@ import {
   updateSupplierSchema,
 } from "@/common/schemas/supplier";
 import { action, auth, rscAuth, TakenError } from "@/server/lib/action";
-import { supplierRepository } from "@/server/repositories/supplier";
+import { SupplierRepo } from "@/server/repositories/supplier";
 import { revalidatePath } from "next/cache";
 import { db } from "../db";
 import { suppliersTable } from "../db/schema";
@@ -29,7 +29,8 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { z } from "zod";
-import { businessRepository } from "../repositories/business";
+import { BusinessRepo } from "../repositories/business";
+import { redirect } from "next/navigation";
 
 const schema = z.object({
   businessId: z.string().uuid(),
@@ -45,10 +46,17 @@ export const getSuppliersAction = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
+  const business = await BusinessRepo.find({
+    id: businessId,
+    userId: user.id,
+  });
+
+  if (!business) {
+    redirect("/suppliers");
+  }
 
   const where = and(
-    eq(suppliersTable.businessId, business.id),
+    eq(suppliersTable.businessId, business.data.id),
     trash
       ? isNotNull(suppliersTable.deletedAt)
       : isNull(suppliersTable.deletedAt),
@@ -69,7 +77,7 @@ export const getSuppliersAction = async (input: unknown) => {
       : undefined,
   );
 
-  const dataPromise = db.query.suppliers.findMany({
+  const dataPromise = db.query.suppliersTable.findMany({
     where,
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
@@ -106,43 +114,45 @@ const restoreSupplierSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const restoreSupplierAction = action(
-  restoreSupplierSchema,
-  async (input) => {
+export const restoreSupplierAction = action
+  .schema(restoreSupplierSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const supplier = await supplierRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const supplier = await SupplierRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    await supplierRepository.restore(supplier.id, business.id);
+    await SupplierRepo.restore({
+      id: supplier.data.id,
+      businessId: business.data.id,
+    });
 
     revalidatePath("/suppliers");
-    revalidatePath(`/suppliers/${input.id}/edit`);
-  },
-);
+    revalidatePath(`/suppliers/${parsedInput.id}/edit`);
+  });
 
-export const createSupplierAction = action(
-  createSupplierSchema,
-  async (input) => {
+export const createSupplierAction = action
+  .schema(createSupplierSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    if (input.email) {
-      const supplierCheck = await db.query.suppliers.findFirst({
+    if (parsedInput.email) {
+      const supplierCheck = await db.query.suppliersTable.findFirst({
         where: and(
-          eq(suppliersTable.email, input.email),
-          eq(suppliersTable.businessId, business.id),
+          eq(suppliersTable.email, parsedInput.email),
+          eq(suppliersTable.businessId, business.data.id),
         ),
       });
 
@@ -151,9 +161,9 @@ export const createSupplierAction = action(
       }
     }
 
-    const supplierPhoneCheck = await db.query.suppliers.findFirst({
+    const supplierPhoneCheck = await db.query.suppliersTable.findFirst({
       where: and(
-        eq(suppliersTable.phone, input.phone),
+        eq(suppliersTable.phone, parsedInput.phone),
         eq(suppliersTable.businessId, user.id),
       ),
     });
@@ -162,97 +172,102 @@ export const createSupplierAction = action(
       throw new TakenError("Phone");
     }
 
-    const supplier = await supplierRepository.create({
-      name: input.name,
-      phone: input.phone,
-      email: input.email || null,
-      address: input.address || null,
-      businessId: business.id,
-    });
+    const [supplier] = await SupplierRepo.create([
+      {
+        name: parsedInput.name,
+        phone: parsedInput.phone,
+        email: parsedInput.email || null,
+        address: parsedInput.address || null,
+        businessId: business.data.id,
+      },
+    ]);
 
     revalidatePath("/suppliers");
     revalidatePath(`/dashboard`);
-    revalidatePath(`/suppliers/${supplier.id}/edit`);
-  },
-);
+    revalidatePath(`/suppliers/${supplier.data.id}/edit`);
+  });
 
 const deleteSupplierSchema = z.object({
   businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
-export const deleteSupplierAction = action(
-  deleteSupplierSchema,
-  async (input) => {
+export const deleteSupplierAction = action
+  .schema(deleteSupplierSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const supplier = await supplierRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const supplier = await SupplierRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (supplier.deletedAt) {
-      await supplierRepository.permRemove(input.id, business.id);
+    if (supplier.data.deletedAt) {
+      await supplier.permRemove();
     } else {
-      await supplierRepository.remove(input.id, business.id);
+      await supplier.remove();
     }
 
     revalidatePath("/suppliers");
     revalidatePath(`/dashboard`);
-  },
-);
+  });
 
-export const updateSupplierAction = action(
-  updateSupplierSchema,
-  async (input) => {
+export const updateSupplierAction = action
+  .schema(updateSupplierSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const supplier = await supplierRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const supplier = await SupplierRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (input.email) {
-      const supplierEmailCheck = await db.query.suppliers.findFirst({
+    if (parsedInput.email) {
+      const supplierEmailCheck = await db.query.suppliersTable.findFirst({
         where: and(
-          eq(suppliersTable.email, input.email),
-          eq(suppliersTable.businessId, business.id),
+          eq(suppliersTable.email, parsedInput.email),
+          eq(suppliersTable.businessId, business.data.id),
         ),
       });
 
-      if (supplierEmailCheck && supplierEmailCheck.id !== supplier.id) {
+      if (supplierEmailCheck && supplierEmailCheck.id !== supplier.data.id) {
         throw new TakenError("Email address");
       }
     }
 
-    const supplierPhoneCheck = await db.query.suppliers.findFirst({
+    const supplierPhoneCheck = await db.query.suppliersTable.findFirst({
       where: and(
-        eq(suppliersTable.phone, input.phone),
-        eq(suppliersTable.businessId, business.id),
+        eq(suppliersTable.phone, parsedInput.phone),
+        eq(suppliersTable.businessId, business.data.id),
       ),
     });
 
-    if (supplierPhoneCheck && supplierPhoneCheck.id !== supplier.id) {
+    if (supplierPhoneCheck && supplierPhoneCheck.id !== supplier.data.id) {
       throw new TakenError("Phone");
     }
 
-    await supplierRepository.update(supplier.id, business.id, {
-      name: input.name,
-      email: input.email || null,
-      phone: input.phone,
-      address: input.address || null,
-    });
+    await SupplierRepo.update(
+      {
+        id: supplier.data.id,
+        businessId: business.data.id,
+      },
+      {
+        name: parsedInput.name,
+        email: parsedInput.email || null,
+        phone: parsedInput.phone,
+        address: parsedInput.address || null,
+      },
+    );
 
     revalidatePath("/suppliers");
-  },
-);
+  });

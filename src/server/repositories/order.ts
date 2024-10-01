@@ -32,7 +32,7 @@ export class OrderRepo extends Repo<TOrder> {
     return order;
   }
 
-  public static async create(input: TOrderInsert): Promise<OrderRepo[]> {
+  public static async create(input: TOrderInsert[]): Promise<OrderRepo[]> {
     const orders = await db.insert(ordersTable).values(input).returning();
     return orders.map((order) => new this(order));
   }

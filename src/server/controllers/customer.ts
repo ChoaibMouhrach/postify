@@ -11,7 +11,6 @@ import {
   auth,
   rscAuth,
 } from "@/server/lib/action";
-import { customerRepository } from "@/server/repositories/customer";
 import {
   and,
   between,
@@ -35,7 +34,9 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
-import { businessRepository } from "../repositories/business";
+import { BusinessRepo } from "../repositories/business";
+import { redirect } from "next/navigation";
+import { CustomerRepo } from "../repositories/customer";
 
 const indexSchema = z.object({
   businessId: z.string().uuid(),
@@ -51,10 +52,17 @@ export const getCustomersAction = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
+  const business = await BusinessRepo.find({
+    id: businessId,
+    userId: user.id,
+  });
+
+  if (!business) {
+    redirect("/businesses");
+  }
 
   const where = and(
-    eq(customersTable.businessId, business.id),
+    eq(customersTable.businessId, business.data.id),
     trash
       ? isNotNull(customersTable.deletedAt)
       : isNull(customersTable.deletedAt),
@@ -75,7 +83,7 @@ export const getCustomersAction = async (input: unknown) => {
       : undefined,
   );
 
-  const data = await db.query.customers.findMany({
+  const data = await db.query.customersTable.findMany({
     where,
     orderBy: desc(customersTable.createdAt),
     limit: RECORDS_LIMIT,
@@ -107,48 +115,45 @@ const restoreCustomerSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const restoreCustomerAction = action(
-  restoreCustomerSchema,
-  async (input) => {
+export const restoreCustomerAction = action
+  .schema(restoreCustomerSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const customer = await customerRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const customer = await CustomerRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (!customer.deletedAt) {
+    if (!customer.data.deletedAt) {
       throw new CustomError("Customer is not deleted");
     }
 
-    await customerRepository.restore(customer.id, business.id);
+    await customer.restore();
 
     revalidatePath("/customers");
-    revalidatePath(`/customers/${customer.id}/edit`);
-  },
-);
+    revalidatePath(`/customers/${customer.data.id}/edit`);
+  });
 
-export const createCustomerAction = action(
-  createCustomerSchema,
-  async (input) => {
+export const createCustomerAction = action
+  .schema(createCustomerSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    if (input.email) {
-      const customer = await db.query.customers.findFirst({
-        where: and(
-          eq(customersTable.businessId, business.id),
-          eq(customersTable.email, input.email),
-        ),
+    if (parsedInput.email) {
+      const customer = await CustomerRepo.findByEmail({
+        email: parsedInput.email,
+        businessId: business.data.id,
       });
 
       if (customer) {
@@ -158,99 +163,98 @@ export const createCustomerAction = action(
 
     // todo: check phone number
 
-    const customer = await customerRepository.create({
-      name: input.name,
-      email: input.email || undefined,
-      phone: input.phone,
-      address: input.address || undefined,
-      businessId: business.id,
-      code: input.code || null,
-    });
+    const [newCustomer] = await CustomerRepo.create([
+      {
+        name: parsedInput.name,
+        email: parsedInput.email || undefined,
+        phone: parsedInput.phone,
+        address: parsedInput.address || undefined,
+        businessId: business.data.id,
+        code: parsedInput.code || null,
+      },
+    ]);
 
     revalidatePath("/customers");
     revalidatePath("/dashboard");
-    revalidatePath(`/customers/${customer.id}/edit`);
-  },
-);
+    revalidatePath(`/customers/${newCustomer.data.id}/edit`);
+  });
 
 const deleteCustomerSchema = z.object({
   businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
-export const deleteCustomerAction = action(
-  deleteCustomerSchema,
-  async (input) => {
+export const deleteCustomerAction = action
+  .schema(deleteCustomerSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
-
-    const customer = await customerRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
-
-    await customerRepository.update(customer.id, business.id, {
-      deletedAt: `NOW()`,
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
     });
+
+    const customer = await CustomerRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
+
+    customer.data.deletedAt = `NOW()`;
+
+    await customer.save();
 
     revalidatePath("/customers");
     revalidatePath("/dashboard");
-    revalidatePath(`/customers/${customer.id}/edit`);
-  },
-);
+    revalidatePath(`/customers/${customer.data.id}/edit`);
+  });
 
-export const updateCustomerAction = action(
-  updateCustomerSchema,
-  async (input) => {
+export const updateCustomerAction = action
+  .schema(updateCustomerSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(
-      input.businessId,
-      user.id,
-    );
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: user.id,
+    });
 
-    const customer = await customerRepository.findOrThrow(
-      input.id,
-      business.id,
-    );
+    const customer = await CustomerRepo.findOrThrow({
+      id: parsedInput.id,
+      businessId: business.data.id,
+    });
 
-    if (input.email) {
-      const customerCheck = await db.query.customers.findFirst({
+    if (parsedInput.email) {
+      const customerCheck = await db.query.customersTable.findFirst({
         where: and(
-          eq(customersTable.email, input.email),
-          eq(customersTable.businessId, business.id),
+          eq(customersTable.email, parsedInput.email),
+          eq(customersTable.businessId, business.data.id),
         ),
       });
 
-      if (customerCheck && customerCheck.id !== customer.id) {
+      if (customerCheck && customerCheck.id !== customer.data.id) {
         throw new TakenError("Email address");
       }
     }
 
-    const customerPhoneCheck = await db.query.customers.findFirst({
+    const customerPhoneCheck = await db.query.customersTable.findFirst({
       where: and(
-        eq(customersTable.phone, input.phone),
-        eq(customersTable.businessId, business.id),
+        eq(customersTable.phone, parsedInput.phone),
+        eq(customersTable.businessId, business.data.id),
       ),
     });
 
-    if (customerPhoneCheck && customerPhoneCheck.id !== customer.id) {
+    if (customerPhoneCheck && customerPhoneCheck.id !== customer.data.id) {
       throw new TakenError("Phone number");
     }
 
-    await customerRepository.update(customer.id, business.id, {
-      name: input.name,
-      email: input.email || null,
-      phone: input.phone,
-      address: input.address || null,
-      code: input.code || null,
-    });
+    customer.data.name = parsedInput.name;
+    customer.data.email = parsedInput.email || null;
+    customer.data.phone = parsedInput.phone;
+    customer.data.address = parsedInput.address || null;
+    customer.data.code = parsedInput.code || null;
+
+    await customer.save();
 
     revalidatePath("/customers");
-    revalidatePath(`/customers/${input.id}/edit`);
-  },
-);
+    revalidatePath(`/customers/${parsedInput.id}/edit`);
+  });

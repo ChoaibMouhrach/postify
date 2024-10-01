@@ -1,70 +1,96 @@
 "use server";
 
 import { z } from "zod";
-import { action, adminAuth } from "../lib/action";
-import { taskRepository } from "../repositories/task";
 import { revalidatePath } from "next/cache";
+import { action, adminAuth } from "../lib/action";
 import { createTaskSchema, updateTaskSchema } from "@/common/schemas/task";
+import { TaskRepo } from "../repositories/task";
 
-export const createTaskAction = action(createTaskSchema, async (input) => {
-  const user = await adminAuth();
+export const createTaskAction = action
+  .schema(createTaskSchema)
+  .action(async ({ parsedInput }) => {
+    const user = await adminAuth();
 
-  const task = await taskRepository.findTypeOrThrow(input.typeId);
+    const task = await TaskRepo.findTypeOrThrow(parsedInput.typeId);
 
-  await taskRepository.create({
-    ...input,
-    userId: user.id,
+    await TaskRepo.create([
+      {
+        ...parsedInput,
+        userId: user.id,
+      },
+    ]);
+
+    revalidatePath("/tasks");
+    revalidatePath("/dashboard");
+    revalidatePath(`/tasks/${task.id}/edit`);
   });
 
-  revalidatePath("/tasks");
-  revalidatePath("/dashboard");
-  revalidatePath(`/tasks/${task.id}/edit`);
-});
+export const updateTaskAction = action
+  .schema(updateTaskSchema)
+  .action(async ({ parsedInput }) => {
+    const user = await adminAuth();
 
-export const updateTaskAction = action(updateTaskSchema, async (input) => {
-  const user = await adminAuth();
+    const task = await TaskRepo.findOrThrow({
+      id: parsedInput.id,
+      userId: user.id,
+    });
 
-  const task = await taskRepository.findOrThrow(input.id, user.id);
+    if (task.data.typeId !== parsedInput.typeId) {
+      await TaskRepo.findTypeOrThrow(parsedInput.typeId);
+    }
 
-  if (task.typeId !== input.typeId) {
-    await taskRepository.findTypeOrThrow(input.typeId);
-  }
+    await TaskRepo.update(
+      {
+        id: parsedInput.id,
+        userId: user.id,
+      },
+      parsedInput,
+    );
 
-  await taskRepository.update(input.id, user.id, input);
-
-  revalidatePath("/tasks");
-  revalidatePath(`/tasks/${task.id}/edit`);
-});
+    revalidatePath("/tasks");
+    revalidatePath(`/tasks/${task.data.id}/edit`);
+  });
 
 const schema = z.object({
   id: z.string().uuid(),
 });
 
-export const removeTaskAction = action(schema, async (input) => {
-  const user = await adminAuth();
+export const removeTaskAction = action
+  .schema(schema)
+  .action(async ({ parsedInput }) => {
+    const user = await adminAuth();
 
-  const task = await taskRepository.findOrThrow(input.id, user.id);
+    const task = await TaskRepo.findOrThrow({
+      id: parsedInput.id,
+      userId: user.id,
+    });
 
-  if (task.deletedAt) {
-    await taskRepository.permRemove(input.id, user.id);
-  } else {
-    await taskRepository.remove(input.id, user.id);
-  }
-
-  revalidatePath("/tasks");
-  revalidatePath("/dashboard");
-  revalidatePath(`/tasks/${task.id}/edit`);
-});
-
-export const restoreTaskAction = action(schema, async (input) => {
-  const user = await adminAuth();
-
-  const task = await taskRepository.findOrThrow(input.id, user.id);
-
-  if (task.deletedAt) {
-    await taskRepository.restore(input.id, user.id);
+    if (task.data.deletedAt) {
+      await task.permRemove();
+    } else {
+      await task.remove();
+    }
 
     revalidatePath("/tasks");
-    revalidatePath(`/tasks/${task.id}/edit`);
-  }
-});
+    revalidatePath("/dashboard");
+    revalidatePath(`/tasks/${task.data.id}/edit`);
+  });
+
+export const restoreTaskAction = action
+  .schema(schema)
+  .action(async ({ parsedInput }) => {
+    const user = await adminAuth();
+
+    const task = await TaskRepo.findOrThrow({
+      id: parsedInput.id,
+      userId: user.id,
+    });
+
+    if (!task.data.deletedAt) {
+      return;
+    }
+
+    await task.restore();
+    revalidatePath("/tasks");
+    revalidatePath(`/tasks/${task.data.id}/edit`);
+  });

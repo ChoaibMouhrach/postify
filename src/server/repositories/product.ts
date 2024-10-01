@@ -102,4 +102,35 @@ export class ProductRepo extends Repo<TProduct> {
         ),
       );
   }
+
+  public async save(): Promise<void> {
+    return ProductRepo.update(
+      {
+        id: this.data.id,
+        businessId: this.data.businessId,
+      },
+      this.data,
+    );
+  }
+
+  public async remove(): Promise<void> {
+    return ProductRepo.remove({
+      id: this.data.id,
+      businessId: this.data.businessId,
+    });
+  }
+
+  public async permRemove(): Promise<void> {
+    return ProductRepo.permRemove({
+      id: this.data.id,
+      businessId: this.data.businessId,
+    });
+  }
+
+  public async restore(): Promise<void> {
+    return ProductRepo.restore({
+      id: this.data.id,
+      businessId: this.data.businessId,
+    });
+  }
 }

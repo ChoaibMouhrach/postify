@@ -5,6 +5,20 @@ import { categoriesTable, TCategory, TCategoryInsert } from "../db/schema";
 import { Repo } from "./business";
 
 export class CategoryRepo extends Repo<TCategory> {
+  public static async findByName(where: {
+    name: string;
+    businessId: string;
+  }): Promise<CategoryRepo | null> {
+    const category = await db.query.categoriesTable.findFirst({
+      where: and(
+        eq(categoriesTable.name, where.name),
+        eq(categoriesTable.businessId, where.businessId),
+      ),
+    });
+
+    return category ? new this(category) : null;
+  }
+
   public static async find(where: {
     id: string;
     businessId: string;
@@ -32,7 +46,9 @@ export class CategoryRepo extends Repo<TCategory> {
     return category;
   }
 
-  public static async create(input: TCategoryInsert): Promise<CategoryRepo[]> {
+  public static async create(
+    input: TCategoryInsert[],
+  ): Promise<CategoryRepo[]> {
     const categories = await db
       .insert(categoriesTable)
       .values(input)
@@ -104,5 +120,36 @@ export class CategoryRepo extends Repo<TCategory> {
           eq(categoriesTable.businessId, where.businessId),
         ),
       );
+  }
+
+  public async restore(): Promise<void> {
+    return CategoryRepo.restore({
+      id: this.data.id,
+      businessId: this.data.businessId,
+    });
+  }
+
+  public async save(): Promise<void> {
+    return CategoryRepo.update(
+      {
+        id: this.data.id,
+        businessId: this.data.businessId,
+      },
+      this.data,
+    );
+  }
+
+  public async remove(): Promise<void> {
+    return CategoryRepo.remove({
+      id: this.data.id,
+      businessId: this.data.businessId,
+    });
+  }
+
+  public async permRemove(): Promise<void> {
+    return CategoryRepo.permRemove({
+      id: this.data.id,
+      businessId: this.data.businessId,
+    });
   }
 }

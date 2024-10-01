@@ -37,7 +37,7 @@ export class NotificationRepo extends Repo<TNotification> {
   }
 
   public static async create(
-    input: TNotificationInsert,
+    input: TNotificationInsert[],
   ): Promise<NotificationRepo[]> {
     const notifications = await db
       .insert(notificationsTable)
@@ -65,12 +65,22 @@ export class NotificationRepo extends Repo<TNotification> {
       );
   }
 
-  public static async markAll(userId: string): Promise<void> {
+  public static async readAll(where: { userId: string }): Promise<void> {
     await db
       .update(notificationsTable)
       .set({
         read: true,
       })
-      .where(eq(notificationsTable.userId, userId));
+      .where(eq(notificationsTable.userId, where.userId));
+  }
+
+  public async save(): Promise<void> {
+    return NotificationRepo.update(
+      {
+        id: this.data.id,
+        userId: this.data.userId,
+      },
+      this.data,
+    );
   }
 }

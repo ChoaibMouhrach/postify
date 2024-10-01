@@ -100,17 +100,15 @@ export const getBusinessesAction = async (input: unknown) => {
   };
 };
 
-export const createBusinessAction = action(
-  createBusinessSchema,
-  async (input) => {
+export const createBusinessAction = action
+  .schema(createBusinessSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    if (input.email) {
-      const business = await db.query.businessesTable.findFirst({
-        where: and(
-          eq(businessesTable.email, input.email),
-          eq(businessesTable.userId, user.id),
-        ),
+    if (parsedInput.email) {
+      const business = await BusinessRepo.findByEmail({
+        email: parsedInput.email,
+        userId: user.id,
       });
 
       if (business) {
@@ -118,92 +116,94 @@ export const createBusinessAction = action(
       }
     }
 
-    await BusinessRepo.create({
-      name: input.name,
-      phone: input.phone,
-      currency: input.currency,
-      email: input.email || null,
-      address: input.address || null,
-      code: input.code || null,
+    await BusinessRepo.create([
+      {
+        name: parsedInput.name,
+        phone: parsedInput.phone,
+        currency: parsedInput.currency,
+        email: parsedInput.email || null,
+        address: parsedInput.address || null,
+        code: parsedInput.code || null,
+        userId: user.id,
+      },
+    ]);
+  });
+
+export const updateBusinessAction = action
+  .schema(updateBusinessSchema)
+  .action(async ({ parsedInput }) => {
+    const user = await auth();
+
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.id,
       userId: user.id,
     });
 
-    revalidatePath("/businesses");
-    revalidatePath("/");
-  },
-);
-
-export const updateBusinessAction = action(
-  updateBusinessSchema,
-  async (input) => {
-    const user = await auth();
-
-    const business = await businessRepository.findOrThrow(input.id, user.id);
-
-    if (input.email) {
-      const businessByEmail = await db.query.businesses.findFirst({
-        where: and(
-          eq(businessesTable.email, input.email),
-          eq(businessesTable.userId, user.id),
-        ),
+    if (parsedInput.email) {
+      const businessByEmail = await BusinessRepo.findByEmail({
+        email: parsedInput.email,
+        userId: user.id,
       });
 
-      if (businessByEmail && businessByEmail.id !== business.id) {
+      if (businessByEmail && businessByEmail.data.id !== business.data.id) {
         throw new TakenError("Business email address");
       }
     }
 
-    await businessRepository.update(business.id, user.id, {
-      name: input.name,
-      phone: input.phone,
-      currency: input.currency,
-      email: input.email || null,
-      address: input.address || null,
-      code: input.code || null,
-    });
+    business.data.name = parsedInput.name;
+    business.data.phone = parsedInput.phone;
+    business.data.currency = parsedInput.currency;
+    business.data.email = parsedInput.email || null;
+    business.data.address = parsedInput.address || null;
+    business.data.code = parsedInput.code || null;
+
+    await business.save();
 
     revalidatePath("/businesses");
-  },
-);
+  });
 
 const deleteBusinessSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const deleteBusinessAction = action(
-  deleteBusinessSchema,
-  async (input) => {
+export const deleteBusinessAction = action
+  .schema(deleteBusinessSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(input.id, user.id);
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.id,
+      userId: user.id,
+    });
 
-    if (business.deletedAt) {
-      await businessRepository.permRemove(business.id, user.id);
+    if (business.data.deletedAt) {
+      await business.permRemove();
     } else {
-      await businessRepository.remove(business.id, user.id);
+      await business.remove();
     }
 
     revalidatePath("/");
     revalidatePath("/business");
-  },
-);
+  });
 
 const restoreBusinessSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const restoreBusinessAction = action(
-  restoreBusinessSchema,
-  async (input) => {
+export const restoreBusinessAction = action
+  .schema(restoreBusinessSchema)
+  .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await businessRepository.findOrThrow(input.id, user.id);
+    const business = await BusinessRepo.findOrThrow({
+      id: parsedInput.id,
+      userId: user.id,
+    });
 
-    if (business.deletedAt) {
-      await businessRepository.restore(business.id, user.id);
+    if (business.data.deletedAt) {
+      await business.restore();
     }
 
     revalidatePath("/");
     revalidatePath("/business");
-  },
-);
+  });

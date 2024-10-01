@@ -2,32 +2,38 @@
 
 import { z } from "zod";
 import { action, auth } from "../lib/action";
-import { notificationRepository } from "../repositories/notification";
 import { revalidatePath } from "next/cache";
+import { NotificationRepo } from "../repositories/notification";
 
 const markAsReadSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const markAsReadAction = action(markAsReadSchema, async (input) => {
-  const user = await auth();
+export const markAsReadAction = action
+  .schema(markAsReadSchema)
+  .action(async ({ parsedInput }) => {
+    const user = await auth();
 
-  const notification = await notificationRepository.findOrThrow(
-    input.id,
-    user.id,
-  );
+    const notification = await NotificationRepo.findOrThrow({
+      id: parsedInput.id,
+      userId: user.id,
+    });
 
-  await notificationRepository.update(notification.id, user.id, {
-    read: true,
+    notification.data.read = true;
+
+    await notification.save();
+
+    revalidatePath("/notifications");
   });
 
-  revalidatePath("/notifications");
-});
+export const markAllAsReadAction = action
+  .schema(z.object({}))
+  .action(async () => {
+    const user = await auth();
 
-export const markAllAsReadAction = action(z.object({}), async () => {
-  const user = await auth();
+    await NotificationRepo.readAll({
+      userId: user.id,
+    });
 
-  await notificationRepository.markAll(user.id);
-
-  revalidatePath("/notifications");
-});
+    revalidatePath("/notifications");
+  });

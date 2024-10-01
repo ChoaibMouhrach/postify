@@ -32,7 +32,9 @@ export class SupplierRepo extends Repo<TSupplier> {
     return supplier;
   }
 
-  public static async create(input: TSupplierInsert): Promise<SupplierRepo[]> {
+  public static async create(
+    input: TSupplierInsert[],
+  ): Promise<SupplierRepo[]> {
     const suppliers = await db.insert(suppliersTable).values(input).returning();
     return suppliers.map((supplier) => new this(supplier));
   }
@@ -101,5 +103,19 @@ export class SupplierRepo extends Repo<TSupplier> {
           eq(suppliersTable.businessId, where.businessId),
         ),
       );
+  }
+
+  public async remove() {
+    return SupplierRepo.remove({
+      id: this.data.id,
+      businessId: this.data.businessId,
+    });
+  }
+
+  public async permRemove() {
+    return SupplierRepo.permRemove({
+      id: this.data.id,
+      businessId: this.data.businessId,
+    });
   }
 }
