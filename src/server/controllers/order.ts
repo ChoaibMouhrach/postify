@@ -38,7 +38,7 @@ import {
 } from "@/common/schemas";
 import { ORDER_TYPES, RECORDS_LIMIT } from "@/common/constants";
 import { revalidatePath } from "next/cache";
-import { BusinessRepo } from "../repositories/business";
+import { BusinessesRepo } from "../repositories/business";
 import { redirect } from "next/navigation";
 import { CustomerRepo } from "../repositories/customer";
 import { OrderRepo } from "../repositories/order";
@@ -58,7 +58,7 @@ export const getOrdersAction = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await BusinessRepo.find({
+  const business = await BusinessesRepo.find({
     id: businessId,
     userId: user.id,
   });
@@ -110,11 +110,11 @@ export const getOrdersAction = async (input: unknown) => {
 
   const countPromise = db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(ordersTable)
     .where(where)
-    .then((orders) => parseInt(orders[0].count));
+    .then((orders) => orders[0].count);
 
   const [data, count] = await Promise.all([dataPromise, countPromise]);
 
@@ -142,7 +142,7 @@ export const createOrderAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -257,7 +257,7 @@ export const updateOrderAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -376,7 +376,7 @@ export const updateOrderAction = action
             return db
               .update(productsTable)
               .set({
-                stock: sql<string>`${productsTable.stock} + ${q}`,
+                stock: sql`${productsTable.stock} + ${q}`.mapWith(Number),
               })
               .where(
                 and(
@@ -390,7 +390,7 @@ export const updateOrderAction = action
             await db
               .update(productsTable)
               .set({
-                stock: sql<string>`${productsTable.stock} - ${q}`,
+                stock: sql`${productsTable.stock} - ${q}`,
               })
               .where(
                 and(
@@ -416,7 +416,7 @@ export const updateOrderAction = action
           await db
             .update(productsTable)
             .set({
-              stock: sql<string>`${productsTable.stock} - ${item.new.quantity}`,
+              stock: sql`${productsTable.stock} - ${item.new.quantity}`,
             })
             .where(
               and(
@@ -449,7 +449,7 @@ export const updateOrderAction = action
         return db
           .update(productsTable)
           .set({
-            stock: sql<string>`${productsTable.stock} + ${item.quantity}`,
+            stock: sql`${productsTable.stock} + ${item.quantity}`,
           })
           .where(
             and(
@@ -476,7 +476,7 @@ export const deleteOrderAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -528,7 +528,7 @@ export const restoreOrderAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });

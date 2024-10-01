@@ -8,7 +8,7 @@ import {
 import { Delete } from "./delete";
 import { Edit } from "./edit";
 import { rscAuth } from "@/server/lib/action";
-import { businessRepository } from "@/server/repositories/business";
+import { BusinessesRepo } from "@/server/repositories/business";
 import { supplierRepository } from "@/server/repositories/supplier";
 
 interface PageProps {
@@ -21,7 +21,7 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(
+  const business = await BusinessesRepo.rscFindOrThrow(
     params.businessId,
     user.id,
   );

@@ -36,7 +36,7 @@ const Profile = async () => {
 
   const notificationsCount = await db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(notificationsTable)
     .where(
@@ -45,7 +45,7 @@ const Profile = async () => {
         eq(notificationsTable.read, false),
       ),
     )
-    .then((recs) => parseInt(recs[0].count));
+    .then((recs) => recs[0].count);
 
   return (
     <DropdownMenu>
@@ -90,7 +90,7 @@ const BusinessesSwitch: React.FC<BusinessesSwitchProps> = async ({
 }) => {
   const user = await rscAuth();
 
-  const data = await db.query.businesses.findMany({
+  const data = await db.query.businessesTable.findMany({
     where: eq(businessesTable.userId, user.id),
   });
 

@@ -27,7 +27,7 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
-import { BusinessRepo } from "../repositories/business";
+import { BusinessesRepo } from "../repositories/business";
 import { redirect } from "next/navigation";
 import { CategoryRepo } from "../repositories/category";
 
@@ -45,7 +45,7 @@ export const getCategoriesAction = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await BusinessRepo.find({
+  const business = await BusinessesRepo.find({
     id: businessId,
     userId: user.id,
   });
@@ -77,11 +77,11 @@ export const getCategoriesAction = async (input: unknown) => {
 
   const countPromise = db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(categoriesTable)
     .where(where)
-    .then((recs) => parseInt(recs[0].count));
+    .then((recs) => recs[0].count);
 
   const [data, count] = await Promise.all([dataPromise, countPromise]);
 
@@ -113,7 +113,7 @@ export const restoreCategoryAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -138,7 +138,7 @@ export const createCategoryAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -169,7 +169,7 @@ export const updateCategoryAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -209,7 +209,7 @@ export const deleteCategoryAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });

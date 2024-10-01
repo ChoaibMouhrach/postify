@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Card,
   CardDescription,
@@ -6,14 +7,14 @@ import {
 } from "@/client/components/ui/card";
 import { db } from "@/server/db";
 import {
+  businessesTable,
   customersTable,
   ordersTable,
   purchasesTable,
   suppliersTable,
 } from "@/server/db/schema";
 import { rscAuth } from "@/server/lib/action";
-import { businessRepository } from "@/server/repositories/business";
-import { inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { Charts } from "./charts";
 
 interface OrdersProps {
@@ -26,12 +27,12 @@ const Orders: React.FC<OrdersProps> = async ({ businesses }) => {
   if (businesses.length) {
     const response = await db
       .select({
-        count: sql<string>`COUNT(*)`,
+        count: sql`COUNT(*)`.mapWith(Number),
       })
       .from(ordersTable)
       .where(inArray(ordersTable.businessId, businesses));
 
-    count = parseInt(response.at(0)!.count);
+    count = response.at(0)!.count;
   }
 
   return (
@@ -54,12 +55,12 @@ const Purchases: React.FC<PurchasesProps> = async ({ businesses }) => {
   if (businesses.length) {
     const data = await db
       .select({
-        count: sql<string>`COUNT(*)`,
+        count: sql`COUNT(*)`.mapWith(Number),
       })
       .from(purchasesTable)
       .where(inArray(purchasesTable.businessId, businesses));
 
-    count = parseInt(data.at(0)!.count);
+    count = data.at(0)!.count;
   }
 
   return (
@@ -82,12 +83,12 @@ const Customers: React.FC<CustomersProps> = async ({ businesses }) => {
   if (businesses.length) {
     const data = await db
       .select({
-        count: sql<string>`COUNT(*)`,
+        count: sql`COUNT(*)`.mapWith(Number),
       })
       .from(customersTable)
       .where(inArray(customersTable.businessId, businesses));
 
-    count = parseInt(data.at(0)!.count);
+    count = data.at(0)!.count;
   }
 
   return (
@@ -110,12 +111,12 @@ const Suppliers: React.FC<SuppliersProps> = async ({ businesses }) => {
   if (businesses.length) {
     const data = await db
       .select({
-        count: sql<string>`COUNT(*)`,
+        count: sql`COUNT(*)`.mapWith(Number),
       })
       .from(suppliersTable)
       .where(inArray(suppliersTable.businessId, businesses));
 
-    count = parseInt(data.at(0)!.count);
+    count = data.at(0)!.count;
   }
 
   return (
@@ -131,8 +132,14 @@ const Suppliers: React.FC<SuppliersProps> = async ({ businesses }) => {
 export const Cards = async () => {
   const user = await rscAuth();
 
-  const data = await businessRepository.all(user.id);
-  const ids = data.map((business) => business.id);
+  const businesses = await db
+    .select({
+      id: businessesTable.id,
+    })
+    .from(businessesTable)
+    .where(eq(businessesTable.id, user.id));
+
+  let ids = businesses.map(({ id }) => id);
 
   return (
     <>

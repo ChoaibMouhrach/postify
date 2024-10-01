@@ -68,7 +68,7 @@ export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
       : undefined,
   );
 
-  const dataPromise = db.query.tasks.findMany({
+  const dataPromise = db.query.tasksTable.findMany({
     where,
     with: {
       type: true,
@@ -81,13 +81,12 @@ export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
 
   const countPromise = db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(tasksTable)
-    .where(where)
-    .then((recs) => parseInt(recs[0].count));
+    .where(where);
 
-  const [data, count] = await Promise.all([dataPromise, countPromise]);
+  const [data, [{ count }]] = await Promise.all([dataPromise, countPromise]);
 
   const lastPage = Math.ceil(count / RECORDS_LIMIT);
 

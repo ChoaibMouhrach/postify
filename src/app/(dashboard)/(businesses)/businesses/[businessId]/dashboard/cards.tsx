@@ -22,15 +22,12 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = async ({ businessId }) => {
-  const count = await db
+  const [{ count }] = await db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(productsTable)
-    .where(eq(productsTable.businessId, businessId))
-    .then((products) => {
-      return parseInt(products[0].count);
-    });
+    .where(eq(productsTable.businessId, businessId));
 
   return (
     <Card>
@@ -47,15 +44,12 @@ interface SupplierCardProps {
 }
 
 const SupplierCard: React.FC<SupplierCardProps> = async ({ businessId }) => {
-  const count = await db
+  const [{ count }] = await db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(suppliersTable)
-    .where(eq(suppliersTable.businessId, businessId))
-    .then((suppliers) => {
-      return parseInt(suppliers[0].count);
-    });
+    .where(eq(suppliersTable.businessId, businessId));
 
   return (
     <Card>
@@ -72,15 +66,12 @@ interface CustomerCardProps {
 }
 
 const CustomerCard: React.FC<CustomerCardProps> = async ({ businessId }) => {
-  const count = await db
+  const [{ count }] = await db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(customersTable)
-    .where(eq(customersTable.businessId, businessId))
-    .then((customers) => {
-      return parseInt(customers[0].count);
-    });
+    .where(eq(customersTable.businessId, businessId));
 
   return (
     <Card>
@@ -97,15 +88,12 @@ interface OrderCardProps {
 }
 
 const OrderCard: React.FC<OrderCardProps> = async ({ businessId }) => {
-  const count = await db
+  const [{ count }] = await db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(ordersTable)
-    .where(eq(ordersTable.businessId, businessId))
-    .then((orders) => {
-      return parseInt(orders[0].count);
-    });
+    .where(eq(ordersTable.businessId, businessId));
 
   return (
     <Card>
@@ -122,15 +110,12 @@ interface PurchaseCardProps {
 }
 
 const PurchaseCard: React.FC<PurchaseCardProps> = async ({ businessId }) => {
-  const count = await db
+  const [{ count }] = await db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(purchasesTable)
-    .where(eq(purchasesTable.businessId, businessId))
-    .then((purchases) => {
-      return parseInt(purchases[0].count);
-    });
+    .where(eq(purchasesTable.businessId, businessId));
 
   return (
     <Card>
@@ -147,15 +132,12 @@ interface CategoryCardProps {
 }
 
 const CategoryCard: React.FC<CategoryCardProps> = async ({ businessId }) => {
-  const count = await db
+  const [{ count }] = await db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(categoriesTable)
-    .where(eq(categoriesTable.businessId, businessId))
-    .then((categories) => {
-      return parseInt(categories[0].count);
-    });
+    .where(eq(categoriesTable.businessId, businessId));
 
   return (
     <Card>

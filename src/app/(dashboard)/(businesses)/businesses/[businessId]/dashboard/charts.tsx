@@ -23,26 +23,28 @@ interface OrdersProps {
 const Orders: React.FC<OrdersProps> = async ({ businessId }) => {
   const data = await db
     .select({
-      count: sql<string>`COUNT(*)`,
-      month: sql<string>` strftime('%m', ${ordersTable.createdAt}) AS month`,
+      count: sql`COUNT(*)`.mapWith(Number),
+      month: sql` strftime('%m', ${ordersTable.createdAt}) AS month`.mapWith(
+        Number,
+      ),
     })
     .from(ordersTable)
     .where(eq(ordersTable.businessId, businessId))
-    .groupBy(sql<string>`month`)
-    .orderBy(asc(sql<string>`month`))
+    .groupBy(sql`month`)
+    .orderBy(asc(sql`month`))
     .then((recs) => {
       let data = [];
 
       for (let i = 1; i <= 12; i++) {
-        const item = recs.find((rec) => parseInt(rec.month) === i);
+        const item = recs.find((rec) => rec.month === i);
 
         if (item) {
           data.push(item);
         }
 
         data.push({
-          count: "0",
-          month: String(i),
+          count: 0,
+          month: i,
         });
       }
 
@@ -69,26 +71,28 @@ interface PurchasesProps {
 const Purchases: React.FC<PurchasesProps> = async ({ businessId }) => {
   const data = await db
     .select({
-      count: sql<string>`COUNT(*)`,
-      month: sql<string>` strftime('%m', ${purchasesTable.createdAt}) AS month`,
+      count: sql`COUNT(*)`.mapWith(Number),
+      month: sql` strftime('%m', ${purchasesTable.createdAt}) AS month`.mapWith(
+        Number,
+      ),
     })
     .from(purchasesTable)
     .where(eq(purchasesTable.businessId, businessId))
-    .groupBy(sql<string>`month`)
-    .orderBy(asc(sql<string>`month`))
+    .groupBy(sql`month`.mapWith(Number))
+    .orderBy(asc(sql`month`.mapWith(Number)))
     .then((recs) => {
-      let data: { count: string; month: string }[] = [];
+      let data: { count: number; month: number }[] = [];
 
       for (let i = 1; i <= 12; i++) {
-        const item = recs.find((rec) => parseInt(rec.month) === i);
+        const item = recs.find((rec) => rec.month === i);
 
         if (item) {
           data.push(item);
         }
 
         data.push({
-          count: "0",
-          month: String(i),
+          count: 0,
+          month: i,
         });
       }
 
@@ -117,26 +121,28 @@ interface CustomersProps {
 const Customers: React.FC<CustomersProps> = async ({ businessId }) => {
   const data = await db
     .select({
-      count: sql<string>`COUNT(*)`,
-      month: sql<string>` strftime('%m', ${customersTable.createdAt}) AS month`,
+      count: sql`COUNT(*)`.mapWith(Number),
+      month: sql` strftime('%m', ${customersTable.createdAt}) AS month`.mapWith(
+        Number,
+      ),
     })
     .from(customersTable)
     .where(eq(customersTable.businessId, businessId))
-    .groupBy(sql<string>`month`)
-    .orderBy(asc(sql<string>`month`))
+    .groupBy(sql`month`.mapWith(Number))
+    .orderBy(asc(sql`month`.mapWith(Number)))
     .then((recs) => {
-      let data: { count: string; month: string }[] = [];
+      let data: { count: number; month: number }[] = [];
 
       for (let i = 1; i <= 12; i++) {
-        const item = recs.find((rec) => parseInt(rec.month) === i);
+        const item = recs.find((rec) => rec.month === i);
 
         if (item) {
           data.push(item);
         }
 
         data.push({
-          count: "0",
-          month: String(i),
+          count: 0,
+          month: i,
         });
       }
 
@@ -165,26 +171,28 @@ interface SuppliersProps {
 const Suppliers: React.FC<SuppliersProps> = async ({ businessId }) => {
   const data = await db
     .select({
-      count: sql<string>`COUNT(*)`,
-      month: sql<string>` strftime('%m', ${suppliersTable.createdAt}) AS month`,
+      count: sql`COUNT(*)`.mapWith(Number),
+      month: sql` strftime('%m', ${suppliersTable.createdAt}) AS month`.mapWith(
+        Number,
+      ),
     })
     .from(suppliersTable)
     .where(eq(suppliersTable.businessId, businessId))
-    .groupBy(sql<string>`month`)
-    .orderBy(asc(sql<string>`month`))
+    .groupBy(sql`month`.mapWith(Number))
+    .orderBy(asc(sql`month`.mapWith(Number)))
     .then((recs) => {
-      let data: { count: string; month: string }[] = [];
+      let data: { count: number; month: number }[] = [];
 
       for (let i = 1; i <= 12; i++) {
-        const item = recs.find((rec) => parseInt(rec.month) === i);
+        const item = recs.find((rec) => rec.month === i);
 
         if (item) {
           data.push(item);
         }
 
         data.push({
-          count: "0",
-          month: String(i),
+          count: 0,
+          month: i,
         });
       }
 

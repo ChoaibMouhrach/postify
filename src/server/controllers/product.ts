@@ -27,7 +27,7 @@ import {
 } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { BusinessRepo } from "../repositories/business";
+import { BusinessesRepo } from "../repositories/business";
 import { CategoryRepo } from "../repositories/category";
 import { ProductRepo } from "../repositories/product";
 
@@ -46,7 +46,7 @@ export const getProductsAction = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await BusinessRepo.findOrThrow({
+  const business = await BusinessesRepo.findOrThrow({
     id: businessId,
     userId: user.id,
   });
@@ -71,7 +71,7 @@ export const getProductsAction = async (input: unknown) => {
       : undefined,
   );
 
-  const data = await db.query.productsTable.findMany({
+  const dataPromise = db.query.productsTable.findMany({
     where,
     orderBy: desc(productsTable.createdAt),
     limit: 8,
@@ -81,13 +81,14 @@ export const getProductsAction = async (input: unknown) => {
     },
   });
 
-  const count = await db
+  const countPromise = db
     .select({
-      count: sql<string>`COUTN(*)`,
+      count: sql`COUTN(*)`.mapWith(Number),
     })
     .from(productsTable)
-    .where(where)
-    .then(([{ count }]) => parseInt(count));
+    .where(where);
+
+  const [data, [{ count }]] = await Promise.all([dataPromise, countPromise]);
 
   const lastPage = Math.ceil(count / 8);
 
@@ -113,7 +114,7 @@ export const createProductAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -151,7 +152,7 @@ export const updateProductAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -200,7 +201,7 @@ export const deleteProductAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -231,7 +232,7 @@ export const restoreProductAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });

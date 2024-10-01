@@ -2,12 +2,12 @@ import { CardContent, CardHeader } from "@/client/components/ui/card";
 import { db } from "@/server/db";
 import { ordersTable } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import React from "react";
 import { Skeleton } from "@/client/components/ui/skeleton";
-import { businessRepository } from "@/server/repositories/business";
 import { rscAuth } from "@/server/lib/action";
 import { PrintOrder } from "./print-order";
+import { BusinessesRepo } from "@/server/repositories/business";
 
 interface OrderProps {
   id: string;
@@ -17,10 +17,20 @@ interface OrderProps {
 export const Order: React.FC<OrderProps> = async ({ businessId, id }) => {
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
+  const business = await BusinessesRepo.find({
+    id: businessId,
+    userId: user.id,
+  });
 
-  const order = await db.query.orders.findFirst({
-    where: and(eq(ordersTable.businessId, business.id), eq(ordersTable.id, id)),
+  if (!business) {
+    notFound();
+  }
+
+  const order = await db.query.ordersTable.findFirst({
+    where: and(
+      eq(ordersTable.businessId, business.data.id),
+      eq(ordersTable.id, id),
+    ),
     with: {
       customer: true,
       items: {
@@ -35,7 +45,7 @@ export const Order: React.FC<OrderProps> = async ({ businessId, id }) => {
     redirect("/orders");
   }
 
-  return <PrintOrder order={order} business={business} />;
+  return <PrintOrder order={order} business={business.data} />;
 };
 
 export const OrderSkeleton = () => {

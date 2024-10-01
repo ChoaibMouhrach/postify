@@ -11,11 +11,11 @@ export class Repo<T> {
   }
 }
 
-export class BusinessRepo extends Repo<TBusiness> {
+export class BusinessesRepo extends Repo<TBusiness> {
   public static async findByEmail(where: {
     email: string;
     userId: string;
-  }): Promise<BusinessRepo | null> {
+  }): Promise<BusinessesRepo | null> {
     const business = await db.query.businessesTable.findFirst({
       where: and(
         eq(businessesTable.userId, where.userId),
@@ -29,7 +29,7 @@ export class BusinessRepo extends Repo<TBusiness> {
   public static async find(where: {
     id: string;
     userId: string;
-  }): Promise<BusinessRepo | null> {
+  }): Promise<BusinessesRepo | null> {
     const business = await db.query.businessesTable.findFirst({
       where: and(
         eq(businessesTable.userId, where.userId),
@@ -43,7 +43,7 @@ export class BusinessRepo extends Repo<TBusiness> {
   public static async findOrThrow(where: {
     id: string;
     userId: string;
-  }): Promise<BusinessRepo> {
+  }): Promise<BusinessesRepo> {
     const business = await this.find(where);
 
     if (!business) {
@@ -55,7 +55,7 @@ export class BusinessRepo extends Repo<TBusiness> {
 
   public static async create(
     input: TBusinessInsert[],
-  ): Promise<BusinessRepo[]> {
+  ): Promise<BusinessesRepo[]> {
     const businesses = await db
       .insert(businessesTable)
       .values(input)
@@ -130,7 +130,7 @@ export class BusinessRepo extends Repo<TBusiness> {
   }
 
   public async save(): Promise<void> {
-    return BusinessRepo.update(
+    return BusinessesRepo.update(
       {
         id: this.data.id,
         userId: this.data.userId,
@@ -140,21 +140,21 @@ export class BusinessRepo extends Repo<TBusiness> {
   }
 
   public async remove(): Promise<void> {
-    return BusinessRepo.remove({
+    return BusinessesRepo.remove({
       id: this.data.id,
       userId: this.data.userId,
     });
   }
 
   public async permRemove(): Promise<void> {
-    return BusinessRepo.permRemove({
+    return BusinessesRepo.permRemove({
       id: this.data.id,
       userId: this.data.userId,
     });
   }
 
   public async restore(): Promise<void> {
-    return BusinessRepo.restore({
+    return BusinessesRepo.restore({
       id: this.data.id,
       userId: this.data.userId,
     });

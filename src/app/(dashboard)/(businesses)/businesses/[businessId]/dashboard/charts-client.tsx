@@ -13,8 +13,8 @@ import {
 
 interface OrdersChartProps {
   data: {
-    count: string;
-    month: string;
+    count: number;
+    month: number;
   }[];
 }
 

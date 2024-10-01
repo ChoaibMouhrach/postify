@@ -29,7 +29,7 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { z } from "zod";
-import { BusinessRepo } from "../repositories/business";
+import { BusinessesRepo } from "../repositories/business";
 import { redirect } from "next/navigation";
 
 const schema = z.object({
@@ -46,7 +46,7 @@ export const getSuppliersAction = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await BusinessRepo.find({
+  const business = await BusinessesRepo.find({
     id: businessId,
     userId: user.id,
   });
@@ -86,11 +86,11 @@ export const getSuppliersAction = async (input: unknown) => {
 
   const countPromise = db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(suppliersTable)
     .where(where)
-    .then((recs) => parseInt(recs[0].count));
+    .then((recs) => recs[0].count);
 
   const [data, count] = await Promise.all([dataPromise, countPromise]);
 
@@ -119,7 +119,7 @@ export const restoreSupplierAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -143,7 +143,7 @@ export const createSupplierAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -197,7 +197,7 @@ export const deleteSupplierAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -222,7 +222,7 @@ export const updateSupplierAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });

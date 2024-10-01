@@ -9,7 +9,7 @@ import React from "react";
 import { Edit } from "./edit";
 import { Delete } from "./delete";
 import { rscAuth } from "@/server/lib/action";
-import { businessRepository } from "@/server/repositories/business";
+import { BusinessesRepo } from "@/server/repositories/business";
 import { purchaseRepository } from "@/server/repositories/purchase";
 import { db } from "@/server/db";
 import { purchasesItems } from "@/server/db/schema";
@@ -25,7 +25,7 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(
+  const business = await BusinessesRepo.rscFindOrThrow(
     params.businessId,
     user.id,
   );

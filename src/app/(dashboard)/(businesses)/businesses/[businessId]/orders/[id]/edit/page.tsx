@@ -11,7 +11,7 @@ import { eq } from "drizzle-orm";
 import { ordersItems } from "@/server/db/schema";
 import { Edit } from "./edit";
 import { rscAuth } from "@/server/lib/action";
-import { businessRepository } from "@/server/repositories/business";
+import { BusinessesRepo } from "@/server/repositories/business";
 import { orderRepository } from "@/server/repositories/order";
 
 interface PageProps {
@@ -24,7 +24,7 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(
+  const business = await BusinessesRepo.rscFindOrThrow(
     params.businessId,
     user.id,
   );

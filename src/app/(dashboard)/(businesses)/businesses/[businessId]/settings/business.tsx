@@ -9,7 +9,7 @@ import { BusinessEdit } from "./business-edit";
 import { BusinessDelete } from "./business-delete";
 import React from "react";
 import { rscAuth } from "@/server/lib/action";
-import { businessRepository } from "@/server/repositories/business";
+import { BusinessesRepo } from "@/server/repositories/business";
 
 interface BusinessProps {
   businessId: string;
@@ -18,7 +18,7 @@ interface BusinessProps {
 export const Business: React.FC<BusinessProps> = async ({ businessId }) => {
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(businessId, user.id);
+  const business = await BusinessesRepo.rscFindOrThrow(businessId, user.id);
 
   return (
     <>

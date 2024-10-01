@@ -6,7 +6,7 @@ import {
 } from "@/client/components/ui/card";
 import { Create } from "./create";
 import React from "react";
-import { businessRepository } from "@/server/repositories/business";
+import { BusinessesRepo } from "@/server/repositories/business";
 import { rscAuth } from "@/server/lib/action";
 
 interface PageProps {
@@ -18,7 +18,7 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(
+  const business = await BusinessesRepo.rscFindOrThrow(
     params.businessId,
     user.id,
   );

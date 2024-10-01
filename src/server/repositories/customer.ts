@@ -78,7 +78,7 @@ export class CustomerRepo extends Repo<TCustomer> {
     await db
       .update(customersTable)
       .set({
-        deletedAt: sql<string>`NOW()`,
+        deletedAt: sql`NOW()`.mapWith(Number),
       })
       .where(
         and(

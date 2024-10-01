@@ -27,7 +27,7 @@ const NotificationsWrapper: React.FC<NotificationsWrapperProps> = async ({
 
   const user = await rscAuth();
 
-  const data = await db.query.notifications.findMany({
+  const data = await db.query.notificationsTable.findMany({
     where: eq(notificationsTable.userId, user.id),
     orderBy: desc(notificationsTable.createdAt),
     offset: (page - 1) * RECORDS_LIMIT,
@@ -36,10 +36,10 @@ const NotificationsWrapper: React.FC<NotificationsWrapperProps> = async ({
 
   const count = await db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(notificationsTable)
-    .then((notifications) => parseInt(notifications[0].count));
+    .then((notifications) => notifications[0].count);
 
   const lastPage = Math.ceil(count / RECORDS_LIMIT);
 

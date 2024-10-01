@@ -7,13 +7,15 @@ import { eq } from "drizzle-orm";
 import { users } from "../db/schema";
 import { revalidatePath } from "next/cache";
 
-export const updateAuthAction = action(updateAuthSchema, async ({ name }) => {
-  const user = await auth();
+export const updateAuthAction = action
+  .schema(updateAuthSchema)
+  .action(async ({ parsedInput }) => {
+    const user = await auth();
 
-  await db
-    .update(users)
-    .set({ name: name || null })
-    .where(eq(users.email, user.email));
+    await db
+      .update(users)
+      .set({ name: parsedInput.name || null })
+      .where(eq(users.email, user.email));
 
-  revalidatePath("/settings");
-});
+    revalidatePath("/settings");
+  });

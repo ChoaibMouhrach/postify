@@ -10,7 +10,7 @@ import React, { Suspense } from "react";
 import { DataTableSkeleton } from "@/client/components/data-table";
 import { SearchParams } from "@/types/nav";
 import { rscAuth } from "@/server/lib/action";
-import { businessRepository } from "@/server/repositories/business";
+import { BusinessesRepo } from "@/server/repositories/business";
 import { getPurchasesActiopn } from "@/server/controllers/purchase";
 import { TBusiness } from "@/server/db/schema";
 
@@ -53,7 +53,7 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
   const user = await rscAuth();
 
-  const business = await businessRepository.rscFindOrThrow(
+  const business = await BusinessesRepo.rscFindOrThrow(
     params.businessId,
     user.id,
   );

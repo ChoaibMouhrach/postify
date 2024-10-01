@@ -34,7 +34,7 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
-import { BusinessRepo } from "../repositories/business";
+import { BusinessesRepo } from "../repositories/business";
 import { redirect } from "next/navigation";
 import { CustomerRepo } from "../repositories/customer";
 
@@ -52,7 +52,7 @@ export const getCustomersAction = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await BusinessRepo.find({
+  const business = await BusinessesRepo.find({
     id: businessId,
     userId: user.id,
   });
@@ -83,19 +83,20 @@ export const getCustomersAction = async (input: unknown) => {
       : undefined,
   );
 
-  const data = await db.query.customersTable.findMany({
+  const dataPromise = db.query.customersTable.findMany({
     where,
     orderBy: desc(customersTable.createdAt),
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
   });
 
-  const count = await db
+  const countPromise = db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
-    .from(customersTable)
-    .then((recs) => parseInt(recs[0].count));
+    .from(customersTable);
+
+  const [data, [{ count }]] = await Promise.all([dataPromise, countPromise]);
 
   const lastPage = Math.ceil(count / 8);
 
@@ -120,7 +121,7 @@ export const restoreCustomerAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -145,7 +146,7 @@ export const createCustomerAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -189,7 +190,7 @@ export const deleteCustomerAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -213,7 +214,7 @@ export const updateCustomerAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });

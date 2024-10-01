@@ -28,7 +28,7 @@ import {
 import { TakenError, action, auth } from "../lib/action";
 import { db } from "../db";
 import { businessesTable } from "../db/schema";
-import { BusinessRepo } from "../repositories/business";
+import { BusinessesRepo } from "../repositories/business";
 import { revalidatePath } from "next/cache";
 
 const indexSchema = z.object({
@@ -75,11 +75,11 @@ export const getBusinessesAction = async (input: unknown) => {
 
   const countPromise = db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(businessesTable)
     .where(where)
-    .then((recs) => parseInt(recs[0].count));
+    .then((recs) => recs[0].count);
 
   const [data, count] = await Promise.all([dataPromise, countPromise]);
 
@@ -106,7 +106,7 @@ export const createBusinessAction = action
     const user = await auth();
 
     if (parsedInput.email) {
-      const business = await BusinessRepo.findByEmail({
+      const business = await BusinessesRepo.findByEmail({
         email: parsedInput.email,
         userId: user.id,
       });
@@ -116,7 +116,7 @@ export const createBusinessAction = action
       }
     }
 
-    await BusinessRepo.create([
+    await BusinessesRepo.create([
       {
         name: parsedInput.name,
         phone: parsedInput.phone,
@@ -134,13 +134,13 @@ export const updateBusinessAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.id,
       userId: user.id,
     });
 
     if (parsedInput.email) {
-      const businessByEmail = await BusinessRepo.findByEmail({
+      const businessByEmail = await BusinessesRepo.findByEmail({
         email: parsedInput.email,
         userId: user.id,
       });
@@ -171,7 +171,7 @@ export const deleteBusinessAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.id,
       userId: user.id,
     });
@@ -195,7 +195,7 @@ export const restoreBusinessAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.id,
       userId: user.id,
     });

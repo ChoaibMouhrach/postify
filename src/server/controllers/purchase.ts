@@ -33,7 +33,7 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
-import { BusinessRepo } from "../repositories/business";
+import { BusinessesRepo } from "../repositories/business";
 import { PurchaseRepo } from "../repositories/purchase";
 import { SupplierRepo } from "../repositories/supplier";
 
@@ -51,7 +51,7 @@ export const getPurchasesActiopn = async (input: unknown) => {
 
   const user = await rscAuth();
 
-  const business = await BusinessRepo.findOrThrow({
+  const business = await BusinessesRepo.findOrThrow({
     id: businessId,
     userId: user.id,
   });
@@ -95,11 +95,11 @@ export const getPurchasesActiopn = async (input: unknown) => {
 
   const countPromise = db
     .select({
-      count: sql<string>`COUNT(*)`,
+      count: sql`COUNT(*)`.mapWith(Number),
     })
     .from(purchasesTable)
     .where(where)
-    .then((recs) => parseInt(recs[0].count));
+    .then((recs) => recs[0].count);
 
   const [data, count] = await Promise.all([dataPromise, countPromise]);
 
@@ -130,7 +130,7 @@ export const restorePurchaseAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -153,7 +153,7 @@ export const restorePurchaseAction = action
         return db
           .update(productsTable)
           .set({
-            stock: sql<string>`${productsTable.stock} + ${item.quantity}`,
+            stock: sql`${productsTable.stock} + ${item.quantity}`,
           })
           .where(
             and(
@@ -185,7 +185,7 @@ export const createPurchaseAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -240,7 +240,7 @@ export const createPurchaseAction = action
         return db
           .update(productsTable)
           .set({
-            stock: sql<string>`${productsTable.stock} + ${item.quantity}`,
+            stock: sql`${productsTable.stock} + ${item.quantity}`,
           })
           .where(eq(productsTable.id, item.id));
       }),
@@ -260,7 +260,7 @@ export const updatePurchaseAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -335,7 +335,7 @@ export const updatePurchaseAction = action
             return db
               .update(productsTable)
               .set({
-                stock: sql<string>`${productsTable.stock} - ${q}`,
+                stock: sql`${productsTable.stock} - ${q}`,
               })
               .where(
                 and(
@@ -348,7 +348,7 @@ export const updatePurchaseAction = action
           return db
             .update(productsTable)
             .set({
-              stock: sql<string>`${productsTable.stock} + ${q}`,
+              stock: sql`${productsTable.stock} + ${q}`,
             })
             .where(
               and(
@@ -361,7 +361,7 @@ export const updatePurchaseAction = action
         return db
           .update(productsTable)
           .set({
-            stock: sql<string>`${productsTable.stock} + ${product.quantity}`,
+            stock: sql`${productsTable.stock} + ${product.quantity}`,
           })
           .where(
             and(
@@ -382,7 +382,7 @@ export const updatePurchaseAction = action
         return db
           .update(productsTable)
           .set({
-            stock: sql<string>`${productsTable.stock} - ${oldItem.quantity}`,
+            stock: sql`${productsTable.stock} - ${oldItem.quantity}`,
           })
           .where(
             and(
@@ -408,7 +408,7 @@ export const deletePurchaseAction = action
   .action(async ({ parsedInput }) => {
     const user = await auth();
 
-    const business = await BusinessRepo.findOrThrow({
+    const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
       userId: user.id,
     });
@@ -433,7 +433,7 @@ export const deletePurchaseAction = action
           return db
             .update(productsTable)
             .set({
-              stock: sql<string>`${productsTable.stock} - ${item.quantity}`,
+              stock: sql`${productsTable.stock} - ${item.quantity}`,
             })
             .where(
               and(
