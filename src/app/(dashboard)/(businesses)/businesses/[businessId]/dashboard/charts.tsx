@@ -1,5 +1,10 @@
 import { db } from "@/server/db";
-import { customers, orders, purchases, suppliers } from "@/server/db/schema";
+import {
+  customersTable,
+  ordersTable,
+  purchasesTable,
+  suppliersTable,
+} from "@/server/db/schema";
 import { asc, eq, sql } from "drizzle-orm";
 import { Chart } from "./charts-client";
 import {
@@ -19,10 +24,10 @@ const Orders: React.FC<OrdersProps> = async ({ businessId }) => {
   const data = await db
     .select({
       count: sql<string>`COUNT(*)`,
-      month: sql<string>` strftime('%m', ${orders.createdAt}) AS month`,
+      month: sql<string>` strftime('%m', ${ordersTable.createdAt}) AS month`,
     })
-    .from(orders)
-    .where(eq(orders.businessId, businessId))
+    .from(ordersTable)
+    .where(eq(ordersTable.businessId, businessId))
     .groupBy(sql<string>`month`)
     .orderBy(asc(sql<string>`month`))
     .then((recs) => {
@@ -65,10 +70,10 @@ const Purchases: React.FC<PurchasesProps> = async ({ businessId }) => {
   const data = await db
     .select({
       count: sql<string>`COUNT(*)`,
-      month: sql<string>` strftime('%m', ${purchases.createdAt}) AS month`,
+      month: sql<string>` strftime('%m', ${purchasesTable.createdAt}) AS month`,
     })
-    .from(purchases)
-    .where(eq(purchases.businessId, businessId))
+    .from(purchasesTable)
+    .where(eq(purchasesTable.businessId, businessId))
     .groupBy(sql<string>`month`)
     .orderBy(asc(sql<string>`month`))
     .then((recs) => {
@@ -113,10 +118,10 @@ const Customers: React.FC<CustomersProps> = async ({ businessId }) => {
   const data = await db
     .select({
       count: sql<string>`COUNT(*)`,
-      month: sql<string>` strftime('%m', ${customers.createdAt}) AS month`,
+      month: sql<string>` strftime('%m', ${customersTable.createdAt}) AS month`,
     })
-    .from(customers)
-    .where(eq(customers.businessId, businessId))
+    .from(customersTable)
+    .where(eq(customersTable.businessId, businessId))
     .groupBy(sql<string>`month`)
     .orderBy(asc(sql<string>`month`))
     .then((recs) => {
@@ -161,10 +166,10 @@ const Suppliers: React.FC<SuppliersProps> = async ({ businessId }) => {
   const data = await db
     .select({
       count: sql<string>`COUNT(*)`,
-      month: sql<string>` strftime('%m', ${suppliers.createdAt}) AS month`,
+      month: sql<string>` strftime('%m', ${suppliersTable.createdAt}) AS month`,
     })
-    .from(suppliers)
-    .where(eq(suppliers.businessId, businessId))
+    .from(suppliersTable)
+    .where(eq(suppliersTable.businessId, businessId))
     .groupBy(sql<string>`month`)
     .orderBy(asc(sql<string>`month`))
     .then((recs) => {

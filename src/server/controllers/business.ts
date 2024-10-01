@@ -27,8 +27,8 @@ import {
 } from "@/common/schemas/business";
 import { TakenError, action, auth } from "../lib/action";
 import { db } from "../db";
-import { businesses } from "../db/schema";
-import { businessRepository } from "../repositories/business";
+import { businessesTable } from "../db/schema";
+import { BusinessRepo } from "../repositories/business";
 import { revalidatePath } from "next/cache";
 
 const indexSchema = z.object({
@@ -45,28 +45,30 @@ export const getBusinessesAction = async (input: unknown) => {
   const user = await rscAuth();
 
   const where = and(
-    eq(businesses.userId, user.id),
-    trash ? isNotNull(businesses.deletedAt) : isNull(businesses.deletedAt),
+    eq(businessesTable.userId, user.id),
+    trash
+      ? isNotNull(businessesTable.deletedAt)
+      : isNull(businessesTable.deletedAt),
     from && to
       ? between(
-          businesses.createdAt,
+          businessesTable.createdAt,
           new Date(parseInt(from)).toISOString().slice(0, 10),
           new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query
       ? or(
-          ilike(businesses.name, `%${query}%`),
-          ilike(businesses.email, `%${query}%`),
-          ilike(businesses.phone, `%${query}%`),
-          ilike(businesses.address, `%${query}%`),
+          ilike(businessesTable.name, `%${query}%`),
+          ilike(businessesTable.email, `%${query}%`),
+          ilike(businessesTable.phone, `%${query}%`),
+          ilike(businessesTable.address, `%${query}%`),
         )
       : undefined,
   );
 
-  const dataPromise = db.query.businesses.findMany({
+  const dataPromise = db.query.businessesTable.findMany({
     where,
-    orderBy: desc(businesses.createdAt),
+    orderBy: desc(businessesTable.createdAt),
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
   });
@@ -75,7 +77,7 @@ export const getBusinessesAction = async (input: unknown) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(businesses)
+    .from(businessesTable)
     .where(where)
     .then((recs) => parseInt(recs[0].count));
 
@@ -104,10 +106,10 @@ export const createBusinessAction = action(
     const user = await auth();
 
     if (input.email) {
-      const business = await db.query.businesses.findFirst({
+      const business = await db.query.businessesTable.findFirst({
         where: and(
-          eq(businesses.email, input.email),
-          eq(businesses.userId, user.id),
+          eq(businessesTable.email, input.email),
+          eq(businessesTable.userId, user.id),
         ),
       });
 
@@ -116,7 +118,7 @@ export const createBusinessAction = action(
       }
     }
 
-    await businessRepository.create({
+    await BusinessRepo.create({
       name: input.name,
       phone: input.phone,
       currency: input.currency,
@@ -141,8 +143,8 @@ export const updateBusinessAction = action(
     if (input.email) {
       const businessByEmail = await db.query.businesses.findFirst({
         where: and(
-          eq(businesses.email, input.email),
-          eq(businesses.userId, user.id),
+          eq(businessesTable.email, input.email),
+          eq(businessesTable.userId, user.id),
         ),
       });
 

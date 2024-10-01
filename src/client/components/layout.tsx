@@ -13,7 +13,7 @@ import {
 import { ScrollArea } from "./ui/scroll-area";
 import { db } from "@/server/db";
 import { and, eq, sql } from "drizzle-orm";
-import { businesses, notifications } from "@/server/db/schema";
+import { businessesTable, notificationsTable } from "@/server/db/schema";
 import { BusinessesSwitchCMP } from "./layout-client";
 import { capitalize } from "@/common/utils";
 
@@ -38,9 +38,12 @@ const Profile = async () => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(notifications)
+    .from(notificationsTable)
     .where(
-      and(eq(notifications.userId, user.id), eq(notifications.read, false)),
+      and(
+        eq(notificationsTable.userId, user.id),
+        eq(notificationsTable.read, false),
+      ),
     )
     .then((recs) => parseInt(recs[0].count));
 
@@ -88,7 +91,7 @@ const BusinessesSwitch: React.FC<BusinessesSwitchProps> = async ({
   const user = await rscAuth();
 
   const data = await db.query.businesses.findMany({
-    where: eq(businesses.userId, user.id),
+    where: eq(businessesTable.userId, user.id),
   });
 
   return <BusinessesSwitchCMP value={businessId} businesses={data} />;

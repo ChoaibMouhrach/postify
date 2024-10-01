@@ -86,7 +86,7 @@ export const verificationTokens = sqliteTable(
   }),
 );
 
-export const businesses = sqliteTable("businesses", {
+export const businessesTable = sqliteTable("businesses", {
   id: id(),
 
   // meta
@@ -110,10 +110,10 @@ export const businesses = sqliteTable("businesses", {
   createdAt: createdAt(),
 });
 
-export type TBusiness = typeof businesses.$inferSelect;
-export type TBusinessInsert = typeof businesses.$inferInsert;
+export type TBusiness = typeof businessesTable.$inferSelect;
+export type TBusinessInsert = typeof businessesTable.$inferInsert;
 
-export const products = sqliteTable("products", {
+export const productsTable = sqliteTable("products", {
   id: id(),
 
   // info
@@ -130,9 +130,9 @@ export const products = sqliteTable("products", {
   // meta
   businessId: text("businessId")
     .notNull()
-    .references(() => businesses.id, { onDelete: "cascade" }),
+    .references(() => businessesTable.id, { onDelete: "cascade" }),
 
-  categoryId: text("categoryId").references(() => categories.id, {
+  categoryId: text("categoryId").references(() => categoriesTable.id, {
     onDelete: "cascade",
   }),
 
@@ -140,10 +140,10 @@ export const products = sqliteTable("products", {
   deletedAt: deletedAt(),
 });
 
-export type TProduct = typeof products.$inferSelect;
-export type TProductInsert = typeof products.$inferInsert;
+export type TProduct = typeof productsTable.$inferSelect;
+export type TProductInsert = typeof productsTable.$inferInsert;
 
-export const categories = sqliteTable("categories", {
+export const categoriesTable = sqliteTable("categories", {
   id: id(),
 
   // info
@@ -152,15 +152,15 @@ export const categories = sqliteTable("categories", {
   // meta
   businessId: text("businessId")
     .notNull()
-    .references(() => businesses.id, { onDelete: "cascade" }),
+    .references(() => businessesTable.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
 
-export type TCategory = typeof categories.$inferSelect;
-export type TCategoryInsert = typeof categories.$inferInsert;
+export type TCategory = typeof categoriesTable.$inferSelect;
+export type TCategoryInsert = typeof categoriesTable.$inferInsert;
 
-export const customers = sqliteTable("customers", {
+export const customersTable = sqliteTable("customers", {
   id: id(),
 
   // info
@@ -174,15 +174,15 @@ export const customers = sqliteTable("customers", {
   // meta
   businessId: text("businessId")
     .notNull()
-    .references(() => businesses.id, { onDelete: "cascade" }),
+    .references(() => businessesTable.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
 
-export type TCustomer = typeof customers.$inferSelect;
-export type TCustomerInsert = typeof customers.$inferInsert;
+export type TCustomer = typeof customersTable.$inferSelect;
+export type TCustomerInsert = typeof customersTable.$inferInsert;
 
-export const suppliers = sqliteTable("suppliers", {
+export const suppliersTable = sqliteTable("suppliers", {
   id: id(),
 
   // info
@@ -196,13 +196,13 @@ export const suppliers = sqliteTable("suppliers", {
   // meta
   businessId: text("businessId")
     .notNull()
-    .references(() => businesses.id, { onDelete: "cascade" }),
+    .references(() => businessesTable.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
 
-export type TSupplier = typeof suppliers.$inferSelect;
-export type TSupplierInsert = typeof suppliers.$inferInsert;
+export type TSupplier = typeof suppliersTable.$inferSelect;
+export type TSupplierInsert = typeof suppliersTable.$inferInsert;
 
 export const orderTypes = sqliteTable("orderTypes", {
   id: id(),
@@ -211,13 +211,13 @@ export const orderTypes = sqliteTable("orderTypes", {
 
 export type TOrderType = typeof orderTypes.$inferSelect;
 
-export const orders = sqliteTable("orders", {
+export const ordersTable = sqliteTable("orders", {
   id: id(),
 
   //
   note: text("note"),
   shippingAddress: text("shippingAddress"),
-  customerId: text("customerId").references(() => customers.id, {
+  customerId: text("customerId").references(() => customersTable.id, {
     onDelete: "cascade",
   }),
 
@@ -225,7 +225,7 @@ export const orders = sqliteTable("orders", {
   totalPrice: real("totalPrice").notNull(),
   businessId: text("businessId")
     .notNull()
-    .references(() => businesses.id, {
+    .references(() => businessesTable.id, {
       onDelete: "cascade",
     }),
   orderTypeId: text("orderTypeId")
@@ -239,19 +239,19 @@ export const orders = sqliteTable("orders", {
   deletedAt: deletedAt(),
 });
 
-export type TOrder = typeof orders.$inferSelect;
-export type TOrderInsert = typeof orders.$inferInsert;
+export type TOrder = typeof ordersTable.$inferSelect;
+export type TOrderInsert = typeof ordersTable.$inferInsert;
 
 export const ordersItems = sqliteTable("ordersItems", {
   id: id(),
 
   orderId: text("orderId")
     .notNull()
-    .references(() => orders.id, { onDelete: "cascade" }),
+    .references(() => ordersTable.id, { onDelete: "cascade" }),
 
   productId: text("productId")
     .notNull()
-    .references(() => products.id, { onDelete: "cascade" }),
+    .references(() => productsTable.id, { onDelete: "cascade" }),
 
   quantity: integer("quantity").notNull(),
   price: real("price").notNull(),
@@ -260,26 +260,26 @@ export const ordersItems = sqliteTable("ordersItems", {
 
 export type TOrderItem = typeof ordersItems.$inferSelect;
 
-export const purchases = sqliteTable("purchases", {
+export const purchasesTable = sqliteTable("purchases", {
   id: id(),
 
   // info
   supplierId: text("supplierId")
     .notNull()
-    .references(() => suppliers.id, { onDelete: "cascade" }),
+    .references(() => suppliersTable.id, { onDelete: "cascade" }),
 
   totalCost: real("totalCost").notNull(),
 
   // meta
   businessId: text("businessId")
     .notNull()
-    .references(() => businesses.id, { onDelete: "cascade" }),
+    .references(() => businessesTable.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
 
-export type TPurchase = typeof purchases.$inferSelect;
-export type TPurchaseInsert = typeof purchases.$inferInsert;
+export type TPurchase = typeof purchasesTable.$inferSelect;
+export type TPurchaseInsert = typeof purchasesTable.$inferInsert;
 
 export const purchasesItems = sqliteTable("purchasesItems", {
   id: id(),
@@ -287,15 +287,15 @@ export const purchasesItems = sqliteTable("purchasesItems", {
   // info
   purchaseId: text("purchaseId")
     .notNull()
-    .references(() => purchases.id, { onDelete: "cascade" }),
+    .references(() => purchasesTable.id, { onDelete: "cascade" }),
   productId: text("productId")
     .notNull()
-    .references(() => products.id, { onDelete: "cascade" }),
+    .references(() => productsTable.id, { onDelete: "cascade" }),
   quantity: integer("quantity").notNull(),
   cost: real("cost").notNull(),
 });
 
-export const notifications = sqliteTable("notifications", {
+export const notificationsTable = sqliteTable("notifications", {
   id: id(),
 
   // info
@@ -315,8 +315,8 @@ export const notifications = sqliteTable("notifications", {
   deletedAt: deletedAt(),
 });
 
-export type TNotification = typeof notifications.$inferSelect;
-export type TNotificationInsert = typeof notifications.$inferInsert;
+export type TNotification = typeof notificationsTable.$inferSelect;
+export type TNotificationInsert = typeof notificationsTable.$inferInsert;
 
 export const taskTypes = sqliteTable("taskTypes", {
   id: id(),
@@ -332,7 +332,7 @@ export const taskStatuses = sqliteTable("taskStatuses", {
 
 export type TTaskStatus = typeof taskStatuses.$inferSelect;
 
-export const tasks = sqliteTable("tasks", {
+export const tasksTable = sqliteTable("tasks", {
   id: id(),
   title: text("title").notNull(),
   description: text("description"),
@@ -355,49 +355,55 @@ export const tasks = sqliteTable("tasks", {
   createdAt: createdAt(),
 });
 
-export type TTask = typeof tasks.$inferSelect;
-export type TTaskInsert = typeof tasks.$inferInsert;
+export type TTask = typeof tasksTable.$inferSelect;
+export type TTaskInsert = typeof tasksTable.$inferInsert;
 
-export const purchasesRelations = relations(purchases, ({ one, many }) => ({
-  business: one(businesses, {
-    fields: [purchases.businessId],
-    references: [businesses.id],
+export const purchasesRelations = relations(
+  purchasesTable,
+  ({ one, many }) => ({
+    business: one(businessesTable, {
+      fields: [purchasesTable.businessId],
+      references: [businessesTable.id],
+    }),
+    supplier: one(suppliersTable, {
+      fields: [purchasesTable.supplierId],
+      references: [suppliersTable.id],
+    }),
+    items: many(purchasesItems),
   }),
-  supplier: one(suppliers, {
-    fields: [purchases.supplierId],
-    references: [suppliers.id],
-  }),
-  items: many(purchasesItems),
-}));
+);
 
 export const purchasesItemsRelations = relations(purchasesItems, ({ one }) => ({
-  product: one(products, {
+  product: one(productsTable, {
     fields: [purchasesItems.productId],
-    references: [products.id],
+    references: [productsTable.id],
   }),
-  purchase: one(purchases, {
+  purchase: one(purchasesTable, {
     fields: [purchasesItems.purchaseId],
-    references: [purchases.id],
+    references: [purchasesTable.id],
   }),
 }));
 
-export const suppliersRelations = relations(suppliers, ({ many, one }) => ({
-  business: one(businesses, {
-    fields: [suppliers.businessId],
-    references: [businesses.id],
+export const suppliersRelations = relations(
+  suppliersTable,
+  ({ many, one }) => ({
+    business: one(businessesTable, {
+      fields: [suppliersTable.businessId],
+      references: [businessesTable.id],
+    }),
+    purchases: many(purchasesTable),
   }),
-  purchases: many(purchases),
-}));
+);
 
-export const productRelations = relations(products, ({ one, many }) => ({
+export const productRelations = relations(productsTable, ({ one, many }) => ({
   purchasesItems: many(purchasesItems),
-  category: one(categories, {
-    fields: [products.categoryId],
-    references: [categories.id],
+  category: one(categoriesTable, {
+    fields: [productsTable.categoryId],
+    references: [categoriesTable.id],
   }),
-  business: one(businesses, {
-    fields: [products.businessId],
-    references: [businesses.id],
+  business: one(businessesTable, {
+    fields: [productsTable.businessId],
+    references: [businessesTable.id],
   }),
 }));
 
@@ -406,68 +412,71 @@ export const rolesRelations = relations(roles, ({ many }) => ({
 }));
 
 export const userRelations = relations(users, ({ many, one }) => ({
-  user: many(products),
-  businesses: many(businesses),
+  user: many(productsTable),
+  businesses: many(businessesTable),
   role: one(roles, {
     fields: [users.roleId],
     references: [roles.id],
   }),
 }));
 
-export const customersRelations = relations(customers, ({ many, one }) => ({
-  orders: many(orders),
-  business: one(businesses, {
-    fields: [customers.businessId],
-    references: [businesses.id],
+export const customersRelations = relations(
+  customersTable,
+  ({ many, one }) => ({
+    orders: many(ordersTable),
+    business: one(businessesTable, {
+      fields: [customersTable.businessId],
+      references: [businessesTable.id],
+    }),
   }),
-}));
+);
 
 export const orderTypesRelations = relations(orderTypes, ({ many }) => ({
-  orders: many(orders),
+  orders: many(ordersTable),
 }));
 
-export const ordersRelations = relations(orders, ({ one, many }) => ({
+export const ordersRelations = relations(ordersTable, ({ one, many }) => ({
   items: many(ordersItems),
   type: one(orderTypes, {
-    fields: [orders.orderTypeId],
+    fields: [ordersTable.orderTypeId],
     references: [orderTypes.id],
   }),
-  business: one(businesses, {
-    fields: [orders.businessId],
-    references: [businesses.id],
+  business: one(businessesTable, {
+    fields: [ordersTable.businessId],
+    references: [businessesTable.id],
   }),
-  customer: one(customers, {
-    fields: [orders.customerId],
-    references: [customers.id],
+  customer: one(customersTable, {
+    fields: [ordersTable.customerId],
+    references: [customersTable.id],
   }),
 }));
 
 export const ordersItemsRelations = relations(ordersItems, ({ one }) => ({
-  order: one(orders, {
+  order: one(ordersTable, {
     fields: [ordersItems.orderId],
-    references: [orders.id],
+    references: [ordersTable.id],
   }),
-  product: one(products, {
+  product: one(productsTable, {
     fields: [ordersItems.productId],
-    references: [products.id],
+    references: [productsTable.id],
   }),
 }));
 
 export const taskTypesRelations = relations(taskTypes, ({ many }) => ({
-  tasks: many(tasks),
+  tasks: many(tasksTable),
 }));
 
 export const taskStatusesRelations = relations(taskStatuses, ({ many }) => ({
-  tasks: many(tasks),
+  tasks: many(tasksTable),
 }));
 
-export const tasksRelations = relations(tasks, ({ one }) => ({
+export const tasksRelations = relations(tasksTable, ({ one }) => ({
   status: one(taskStatuses, {
-    fields: [tasks.statusId],
+    fields: [tasksTable.statusId],
     references: [taskStatuses.id],
   }),
   type: one(taskTypes, {
-    fields: [tasks.typeId],
+    fields: [tasksTable.typeId],
     references: [taskTypes.id],
   }),
 }));

@@ -1,81 +1,102 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../db";
-import { purchases, TPurchaseInsert } from "../db/schema";
+import { purchasesTable, TPurchase, TPurchaseInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
-import { redirect } from "next/navigation";
+import { Repo } from "./business";
 
-const find = (id: string, businessId: string) => {
-  return db.query.purchases.findFirst({
-    where: and(eq(purchases.id, id), eq(purchases.businessId, businessId)),
-  });
-};
+export class PurchaseRepo extends Repo<TPurchase> {
+  public static async find(where: {
+    id: string;
+    businessId: string;
+  }): Promise<PurchaseRepo | null> {
+    const purchase = await db.query.purchasesTable.findFirst({
+      where: and(
+        eq(purchasesTable.id, where.id),
+        eq(purchasesTable.businessId, where.businessId),
+      ),
+    });
 
-const findOrThrow = async (id: string, businessId: string) => {
-  const purchase = await find(id, businessId);
-
-  if (!purchase) {
-    throw new NotfoundError("Purchase");
+    return purchase ? new this(purchase) : null;
   }
 
-  return purchase;
-};
+  public static async findOrThrow(where: {
+    id: string;
+    businessId: string;
+  }): Promise<PurchaseRepo> {
+    const purchase = await this.find(where);
 
-const rscFindOrThrow = async (id: string, businessId: string) => {
-  const purchase = await find(id, businessId);
+    if (!purchase) {
+      throw new NotfoundError("Purchase");
+    }
 
-  if (!purchase) {
-    redirect(`/businesses/${businessId}/purchases`);
+    return purchase;
   }
 
-  return purchase;
-};
+  public static async create(input: TPurchaseInsert): Promise<PurchaseRepo[]> {
+    const purchases = await db.insert(purchasesTable).values(input).returning();
+    return purchases.map((purchase) => new this(purchase));
+  }
 
-const create = (input: TPurchaseInsert) => {
-  return db.insert(purchases).values(input);
-};
+  public static async remove(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .update(purchasesTable)
+      .set({
+        deletedAt: sql`NOW()`,
+      })
+      .where(
+        and(
+          eq(purchasesTable.id, where.id),
+          eq(purchasesTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-const remove = (id: string, businessId: string) => {
-  return db
-    .update(purchases)
-    .set({
-      deletedAt: sql`NOW()`,
-    })
-    .where(and(eq(purchases.id, id), eq(purchases.businessId, businessId)));
-};
+  public static async permRemove(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .delete(purchasesTable)
+      .where(
+        and(
+          eq(purchasesTable.id, where.id),
+          eq(purchasesTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-const permRemove = (id: string, businessId: string) => {
-  return db
-    .delete(purchases)
-    .where(and(eq(purchases.id, id), eq(purchases.businessId, businessId)));
-};
+  public static async restore(where: { id: string; businessId: string }) {
+    await db
+      .update(purchasesTable)
+      .set({
+        deletedAt: null,
+      })
+      .where(
+        and(
+          eq(purchasesTable.id, where.id),
+          eq(purchasesTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-const restore = (id: string, businessId: string) => {
-  return db
-    .update(purchases)
-    .set({
-      deletedAt: null,
-    })
-    .where(and(eq(purchases.id, id), eq(purchases.businessId, businessId)));
-};
-
-const update = (
-  id: string,
-  businessId: string,
-  input: Partial<TPurchaseInsert>,
-) => {
-  return db
-    .update(purchases)
-    .set(input)
-    .where(and(eq(purchases.id, id), eq(purchases.businessId, businessId)));
-};
-
-export const purchaseRepository = {
-  find,
-  findOrThrow,
-  rscFindOrThrow,
-  update,
-  create,
-  remove,
-  permRemove,
-  restore,
-};
+  public static async update(
+    where: {
+      id: string;
+      businessId: string;
+    },
+    input: Partial<TPurchaseInsert>,
+  ): Promise<void> {
+    await db
+      .update(purchasesTable)
+      .set(input)
+      .where(
+        and(
+          eq(purchasesTable.id, where.id),
+          eq(purchasesTable.businessId, where.businessId),
+        ),
+      );
+  }
+}

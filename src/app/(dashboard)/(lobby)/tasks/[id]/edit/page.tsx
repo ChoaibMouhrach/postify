@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from "@/client/components/ui/card";
 import { db } from "@/server/db";
-import { tasks } from "@/server/db/schema";
+import { tasksTable } from "@/server/db/schema";
 import { rscAuth } from "@/server/lib/action";
 import { and, eq } from "drizzle-orm";
 import React from "react";
@@ -24,7 +24,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
   const task = await db.query.tasks.findFirst({
-    where: and(eq(tasks.userId, user.id), eq(tasks.id, params.id)),
+    where: and(eq(tasksTable.userId, user.id), eq(tasksTable.id, params.id)),
   });
 
   if (!task) {

@@ -7,12 +7,12 @@ import {
 import { Skeleton } from "@/client/components/ui/skeleton";
 import { db } from "@/server/db";
 import {
-  categories,
-  customers,
-  orders,
-  products,
-  purchases,
-  suppliers,
+  categoriesTable,
+  customersTable,
+  ordersTable,
+  productsTable,
+  purchasesTable,
+  suppliersTable,
 } from "@/server/db/schema";
 import { eq, sql } from "drizzle-orm";
 import React, { Suspense } from "react";
@@ -26,8 +26,8 @@ const ProductCard: React.FC<ProductCardProps> = async ({ businessId }) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(products)
-    .where(eq(products.businessId, businessId))
+    .from(productsTable)
+    .where(eq(productsTable.businessId, businessId))
     .then((products) => {
       return parseInt(products[0].count);
     });
@@ -51,8 +51,8 @@ const SupplierCard: React.FC<SupplierCardProps> = async ({ businessId }) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(suppliers)
-    .where(eq(suppliers.businessId, businessId))
+    .from(suppliersTable)
+    .where(eq(suppliersTable.businessId, businessId))
     .then((suppliers) => {
       return parseInt(suppliers[0].count);
     });
@@ -76,8 +76,8 @@ const CustomerCard: React.FC<CustomerCardProps> = async ({ businessId }) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(customers)
-    .where(eq(customers.businessId, businessId))
+    .from(customersTable)
+    .where(eq(customersTable.businessId, businessId))
     .then((customers) => {
       return parseInt(customers[0].count);
     });
@@ -101,8 +101,8 @@ const OrderCard: React.FC<OrderCardProps> = async ({ businessId }) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(orders)
-    .where(eq(orders.businessId, businessId))
+    .from(ordersTable)
+    .where(eq(ordersTable.businessId, businessId))
     .then((orders) => {
       return parseInt(orders[0].count);
     });
@@ -126,8 +126,8 @@ const PurchaseCard: React.FC<PurchaseCardProps> = async ({ businessId }) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(purchases)
-    .where(eq(purchases.businessId, businessId))
+    .from(purchasesTable)
+    .where(eq(purchasesTable.businessId, businessId))
     .then((purchases) => {
       return parseInt(purchases[0].count);
     });
@@ -151,8 +151,8 @@ const CategoryCard: React.FC<CategoryCardProps> = async ({ businessId }) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(categories)
-    .where(eq(categories.businessId, businessId))
+    .from(categoriesTable)
+    .where(eq(categoriesTable.businessId, businessId))
     .then((categories) => {
       return parseInt(categories[0].count);
     });

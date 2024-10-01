@@ -1,56 +1,76 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "../db";
-import { TNotificationInsert, notifications } from "../db/schema";
+import {
+  TNotification,
+  TNotificationInsert,
+  notificationsTable,
+} from "../db/schema";
 import { NotfoundError } from "../lib/action";
+import { Repo } from "./business";
 
-const find = (id: string, userId: string) => {
-  return db.query.notifications.findFirst({
-    where: and(eq(notifications.userId, userId), eq(notifications.id, id)),
-  });
-};
+export class NotificationRepo extends Repo<TNotification> {
+  public static async find(where: {
+    id: string;
+    userId: string;
+  }): Promise<NotificationRepo | null> {
+    const notification = await db.query.notificationsTable.findFirst({
+      where: and(
+        eq(notificationsTable.userId, where.userId),
+        eq(notificationsTable.id, where.id),
+      ),
+    });
 
-const findOrThrow = async (id: string, userId: string) => {
-  const notification = await find(id, userId);
-
-  if (!notification) {
-    throw new NotfoundError("Notification");
+    return notification ? new this(notification) : null;
   }
 
-  return notification;
-};
+  public static async findOrThrow(where: {
+    id: string;
+    userId: string;
+  }): Promise<NotificationRepo> {
+    const notification = await this.find(where);
 
-const create = async (input: TNotificationInsert) => {
-  const notification = await db.insert(notifications).values(input).returning({
-    id: notifications.id,
-  });
+    if (!notification) {
+      throw new NotfoundError("Notification");
+    }
 
-  return notification[0];
-};
+    return notification;
+  }
 
-const update = async (
-  id: string,
-  userId: string,
-  input: Partial<TNotificationInsert>,
-) => {
-  return db
-    .update(notifications)
-    .set(input)
-    .where(and(eq(notifications.userId, userId), eq(notifications.id, id)));
-};
+  public static async create(
+    input: TNotificationInsert,
+  ): Promise<NotificationRepo[]> {
+    const notifications = await db
+      .insert(notificationsTable)
+      .values(input)
+      .returning();
 
-const markAll = (userId: string) => {
-  return db
-    .update(notifications)
-    .set({
-      read: true,
-    })
-    .where(eq(notifications.userId, userId));
-};
+    return notifications.map((notification) => new this(notification));
+  }
 
-export const notificationRepository = {
-  find,
-  findOrThrow,
-  create,
-  update,
-  markAll,
-};
+  public static async update(
+    where: {
+      id: string;
+      userId: string;
+    },
+    input: Partial<TNotificationInsert>,
+  ): Promise<void> {
+    await db
+      .update(notificationsTable)
+      .set(input)
+      .where(
+        and(
+          eq(notificationsTable.userId, where.userId),
+          eq(notificationsTable.id, where.id),
+        ),
+      );
+  }
+
+  public static async markAll(userId: string): Promise<void> {
+    await db
+      .update(notificationsTable)
+      .set({
+        read: true,
+      })
+      .where(eq(notificationsTable.userId, userId));
+  }
+}

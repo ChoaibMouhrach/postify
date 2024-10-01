@@ -1,97 +1,105 @@
-import { and, eq, SQL, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../db";
-import { products, TProductInsert } from "../db/schema";
+import { productsTable, TProduct, TProductInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
-import { redirect } from "next/navigation";
+import { Repo } from "./business";
 
-const find = (id: string, businessId: string) => {
-  return db.query.products.findFirst({
-    where: and(eq(products.id, id), eq(products.businessId, businessId)),
-  });
-};
+export class ProductRepo extends Repo<TProduct> {
+  public static async find(where: {
+    id: string;
+    businessId: string;
+  }): Promise<ProductRepo | null> {
+    const product = await db.query.productsTable.findFirst({
+      where: and(
+        eq(productsTable.id, where.id),
+        eq(productsTable.businessId, where.businessId),
+      ),
+    });
 
-const findOrThrow = async (id: string, businessId: string) => {
-  const product = await find(id, businessId);
-
-  if (!product) {
-    throw new NotfoundError("Product");
+    return product ? new this(product) : null;
   }
 
-  return product;
-};
+  public static async findOrThrow(where: {
+    id: string;
+    businessId: string;
+  }): Promise<ProductRepo> {
+    const product = await this.find(where);
 
-const rscFindOrThrow = async (id: string, businessId: string) => {
-  const product = await find(id, businessId);
+    if (!product) {
+      throw new NotfoundError("Product");
+    }
 
-  if (!product) {
-    redirect(`/businesses/${businessId}/products`);
+    return product;
   }
 
-  return product;
-};
+  public static async create(input: TProductInsert[]): Promise<ProductRepo[]> {
+    const products = await db.insert(productsTable).values(input).returning();
+    return products.map((product) => new this(product));
+  }
 
-const count = async (where?: SQL<unknown>) => {
-  const recs = await db
-    .select({
-      count: sql<string>`COUNT(*)`,
-    })
-    .from(products)
-    .where(where);
+  public static async update(
+    where: {
+      id: string;
+      businessId: string;
+    },
+    input: Partial<TProductInsert>,
+  ): Promise<void> {
+    await db
+      .update(productsTable)
+      .set(input)
+      .where(
+        and(
+          eq(productsTable.id, where.id),
+          eq(productsTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-  return parseInt(recs[0].count);
-};
+  public static async remove(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .update(productsTable)
+      .set({
+        deletedAt: `NOW()`,
+      })
+      .where(
+        and(
+          eq(productsTable.id, where.id),
+          eq(productsTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-const create = async (input: TProductInsert) => {
-  const ps = await db.insert(products).values(input).returning({
-    id: products.id,
-  });
+  public static async permRemove(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .delete(productsTable)
+      .where(
+        and(
+          eq(productsTable.id, where.id),
+          eq(productsTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-  return ps[0];
-};
-
-const update = (
-  id: string,
-  businessId: string,
-  input: Partial<TProductInsert>,
-) => {
-  return db
-    .update(products)
-    .set(input)
-    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
-};
-
-const remove = (id: string, businessId: string) => {
-  return db
-    .update(products)
-    .set({
-      deletedAt: `NOW()`,
-    })
-    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
-};
-
-const permRemove = (id: string, businessId: string) => {
-  return db
-    .delete(products)
-    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
-};
-
-const restore = (id: string, businessId: string) => {
-  return db
-    .update(products)
-    .set({
-      deletedAt: null,
-    })
-    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
-};
-
-export const productRepository = {
-  find,
-  findOrThrow,
-  rscFindOrThrow,
-  count,
-  create,
-  update,
-  remove,
-  restore,
-  permRemove,
-};
+  public static async restore(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .update(productsTable)
+      .set({
+        deletedAt: null,
+      })
+      .where(
+        and(
+          eq(productsTable.id, where.id),
+          eq(productsTable.businessId, where.businessId),
+        ),
+      );
+  }
+}

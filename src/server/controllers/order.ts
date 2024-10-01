@@ -25,11 +25,11 @@ import {
   sql,
 } from "drizzle-orm";
 import {
-  customers,
+  customersTable,
   orderTypes,
-  orders,
+  ordersTable,
   ordersItems,
-  products,
+  productsTable,
 } from "../db/schema";
 import {
   fromSchema,
@@ -61,30 +61,30 @@ export const getOrdersAction = async (input: unknown) => {
 
   const customersRequest = db
     .select({
-      id: customers.id,
+      id: customersTable.id,
     })
-    .from(customers)
+    .from(customersTable)
     .where(
       and(
-        eq(customers.businessId, business.id),
-        ilike(customers.name, `%${query}%`),
+        eq(customersTable.businessId, business.id),
+        ilike(customersTable.name, `%${query}%`),
       ),
     );
 
   const where = and(
-    eq(orders.businessId, businessId),
-    trash ? isNotNull(orders.deletedAt) : isNull(orders.deletedAt),
+    eq(ordersTable.businessId, businessId),
+    trash ? isNotNull(ordersTable.deletedAt) : isNull(ordersTable.deletedAt),
     from && to
       ? between(
-          orders.createdAt,
+          ordersTable.createdAt,
           new Date(parseInt(from)).toISOString().slice(0, 10),
           new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query
       ? or(
-          ilike(orders.id, query),
-          inArray(orders.customerId, customersRequest),
+          ilike(ordersTable.id, query),
+          inArray(ordersTable.customerId, customersRequest),
         )
       : undefined,
   );
@@ -95,7 +95,7 @@ export const getOrdersAction = async (input: unknown) => {
       customer: true,
       type: true,
     },
-    orderBy: desc(orders.createdAt),
+    orderBy: desc(ordersTable.createdAt),
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
   });
@@ -104,7 +104,7 @@ export const getOrdersAction = async (input: unknown) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(orders)
+    .from(ordersTable)
     .where(where)
     .then((orders) => parseInt(orders[0].count));
 
@@ -147,9 +147,9 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
 
   const ps = await db.query.products.findMany({
     where: and(
-      eq(products.businessId, business.id),
+      eq(productsTable.businessId, business.id),
       inArray(
-        products.id,
+        productsTable.id,
         input.products.map((product) => product.id),
       ),
     ),
@@ -207,12 +207,15 @@ export const createOrderAction = action(createOrderSchema, async (input) => {
     items.map((item) => {
       return new Promise(async (res) => {
         await db
-          .update(products)
+          .update(productsTable)
           .set({
-            stock: sql`${products.stock} - ${item.quantity}`,
+            stock: sql`${productsTable.stock} - ${item.quantity}`,
           })
           .where(
-            and(eq(products.id, item.id), eq(products.businessId, business.id)),
+            and(
+              eq(productsTable.id, item.id),
+              eq(productsTable.businessId, business.id),
+            ),
           );
 
         if (item.stock - item.quantity <= 5) {
@@ -273,9 +276,9 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
 
   const newItems = await db.query.products.findMany({
     where: and(
-      eq(products.businessId, business.id),
+      eq(productsTable.businessId, business.id),
       inArray(
-        products.id,
+        productsTable.id,
         input.products.map((product) => product.id),
       ),
     ),
@@ -338,28 +341,28 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
 
         if (item.old.quantity > item.new.quantity) {
           return db
-            .update(products)
+            .update(productsTable)
             .set({
-              stock: sql<string>`${products.stock} + ${q}`,
+              stock: sql<string>`${productsTable.stock} + ${q}`,
             })
             .where(
               and(
-                eq(products.id, item.id),
-                eq(products.businessId, business.id),
+                eq(productsTable.id, item.id),
+                eq(productsTable.businessId, business.id),
               ),
             );
         }
 
         return new Promise(async (res) => {
           await db
-            .update(products)
+            .update(productsTable)
             .set({
-              stock: sql<string>`${products.stock} - ${q}`,
+              stock: sql<string>`${productsTable.stock} - ${q}`,
             })
             .where(
               and(
-                eq(products.id, item.id),
-                eq(products.businessId, business.id),
+                eq(productsTable.id, item.id),
+                eq(productsTable.businessId, business.id),
               ),
             );
 
@@ -376,12 +379,15 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
 
       return new Promise(async (res) => {
         await db
-          .update(products)
+          .update(productsTable)
           .set({
-            stock: sql<string>`${products.stock} - ${item.new.quantity}`,
+            stock: sql<string>`${productsTable.stock} - ${item.new.quantity}`,
           })
           .where(
-            and(eq(products.id, item.id), eq(products.businessId, business.id)),
+            and(
+              eq(productsTable.id, item.id),
+              eq(productsTable.businessId, business.id),
+            ),
           );
 
         if (item.stock - item.new.quantity <= 5) {
@@ -404,14 +410,14 @@ export const updateOrderAction = action(updateOrderSchema, async (input) => {
       }
 
       return db
-        .update(products)
+        .update(productsTable)
         .set({
-          stock: sql<string>`${products.stock} + ${item.quantity}`,
+          stock: sql<string>`${productsTable.stock} + ${item.quantity}`,
         })
         .where(
           and(
-            eq(products.id, item.productId),
-            eq(products.businessId, business.id),
+            eq(productsTable.id, item.productId),
+            eq(productsTable.businessId, business.id),
           ),
         );
     }),
@@ -448,14 +454,14 @@ export const deleteOrderAction = action(schema, async (input) => {
     await Promise.all(
       items.map((item) => {
         return db
-          .update(products)
+          .update(productsTable)
           .set({
-            stock: sql`${products.stock} + ${item.quantity}`,
+            stock: sql`${productsTable.stock} + ${item.quantity}`,
           })
           .where(
             and(
-              eq(products.id, item.productId),
-              eq(products.businessId, business.id),
+              eq(productsTable.id, item.productId),
+              eq(productsTable.businessId, business.id),
             ),
           );
       }),
@@ -490,14 +496,14 @@ export const restoreOrderAction = action(schema, async (input) => {
   await Promise.all(
     items.map((item) => {
       return db
-        .update(products)
+        .update(productsTable)
         .set({
-          stock: sql`${products.stock} + ${item.quantity}`,
+          stock: sql`${productsTable.stock} + ${item.quantity}`,
         })
         .where(
           and(
-            eq(products.id, item.productId),
-            eq(products.businessId, business.id),
+            eq(productsTable.id, item.productId),
+            eq(productsTable.businessId, business.id),
           ),
         );
     }),

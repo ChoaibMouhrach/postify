@@ -5,7 +5,12 @@ import {
   CardTitle,
 } from "@/client/components/ui/card";
 import { db } from "@/server/db";
-import { customers, orders, purchases, suppliers } from "@/server/db/schema";
+import {
+  customersTable,
+  ordersTable,
+  purchasesTable,
+  suppliersTable,
+} from "@/server/db/schema";
 import { rscAuth } from "@/server/lib/action";
 import { businessRepository } from "@/server/repositories/business";
 import { inArray, sql } from "drizzle-orm";
@@ -23,8 +28,8 @@ const Orders: React.FC<OrdersProps> = async ({ businesses }) => {
       .select({
         count: sql<string>`COUNT(*)`,
       })
-      .from(orders)
-      .where(inArray(orders.businessId, businesses));
+      .from(ordersTable)
+      .where(inArray(ordersTable.businessId, businesses));
 
     count = parseInt(response.at(0)!.count);
   }
@@ -51,8 +56,8 @@ const Purchases: React.FC<PurchasesProps> = async ({ businesses }) => {
       .select({
         count: sql<string>`COUNT(*)`,
       })
-      .from(purchases)
-      .where(inArray(purchases.businessId, businesses));
+      .from(purchasesTable)
+      .where(inArray(purchasesTable.businessId, businesses));
 
     count = parseInt(data.at(0)!.count);
   }
@@ -79,8 +84,8 @@ const Customers: React.FC<CustomersProps> = async ({ businesses }) => {
       .select({
         count: sql<string>`COUNT(*)`,
       })
-      .from(customers)
-      .where(inArray(customers.businessId, businesses));
+      .from(customersTable)
+      .where(inArray(customersTable.businessId, businesses));
 
     count = parseInt(data.at(0)!.count);
   }
@@ -107,8 +112,8 @@ const Suppliers: React.FC<SuppliersProps> = async ({ businesses }) => {
       .select({
         count: sql<string>`COUNT(*)`,
       })
-      .from(suppliers)
-      .where(inArray(suppliers.businessId, businesses));
+      .from(suppliersTable)
+      .where(inArray(suppliersTable.businessId, businesses));
 
     count = parseInt(data.at(0)!.count);
   }

@@ -19,7 +19,7 @@ import {
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "../db";
-import { categories } from "../db/schema";
+import { categoriesTable } from "../db/schema";
 import { businessRepository } from "../repositories/business";
 import {
   fromSchema,
@@ -47,16 +47,18 @@ export const getCategoriesAction = async (input: unknown) => {
   const business = await businessRepository.rscFindOrThrow(businessId, user.id);
 
   const where = and(
-    eq(categories.businessId, business.id),
-    trash ? isNotNull(categories.deletedAt) : isNull(categories.deletedAt),
+    eq(categoriesTable.businessId, business.id),
+    trash
+      ? isNotNull(categoriesTable.deletedAt)
+      : isNull(categoriesTable.deletedAt),
     from && to
       ? between(
-          categories.createdAt,
+          categoriesTable.createdAt,
           new Date(parseInt(from)).toISOString().slice(0, 10),
           new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
-    query ? or(ilike(categories.name, `%${query}%`)) : undefined,
+    query ? or(ilike(categoriesTable.name, `%${query}%`)) : undefined,
   );
 
   const dataPromise = db.query.categories.findMany({
@@ -69,7 +71,7 @@ export const getCategoriesAction = async (input: unknown) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(categories)
+    .from(categoriesTable)
     .where(where)
     .then((recs) => parseInt(recs[0].count));
 
@@ -136,8 +138,8 @@ export const createCategoryAction = action(
 
     const category = await db.query.categories.findFirst({
       where: and(
-        eq(categories.name, input.name),
-        eq(categories.businessId, business.id),
+        eq(categoriesTable.name, input.name),
+        eq(categoriesTable.businessId, business.id),
       ),
     });
 
@@ -146,13 +148,13 @@ export const createCategoryAction = action(
     }
 
     const newCategory = await db
-      .insert(categories)
+      .insert(categoriesTable)
       .values({
         name: input.name,
         businessId: input.businessId,
       })
       .returning({
-        id: categories.id,
+        id: categoriesTable.id,
       })
       .then((cats) => cats[0]);
 
@@ -183,8 +185,8 @@ export const updateCategoryAction = action(
 
     const categoryCheck = await db.query.categories.findFirst({
       where: and(
-        eq(categories.businessId, business.id),
-        eq(categories.name, input.name),
+        eq(categoriesTable.businessId, business.id),
+        eq(categoriesTable.name, input.name),
       ),
     });
 

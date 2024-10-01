@@ -9,7 +9,7 @@ import {
   trashSchema,
 } from "@/common/schemas";
 import { db } from "@/server/db";
-import { tasks, TTask, TTaskStatus, TTaskType } from "@/server/db/schema";
+import { tasksTable, TTask, TTaskStatus, TTaskType } from "@/server/db/schema";
 import { rscAuth } from "@/server/lib/action";
 import { SearchParams } from "@/types/nav";
 import {
@@ -47,23 +47,23 @@ export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
   const user = await rscAuth();
 
   const where = and(
-    eq(tasks.userId, user.id),
-    trash ? isNotNull(tasks.deletedAt) : isNull(tasks.deletedAt),
+    eq(tasksTable.userId, user.id),
+    trash ? isNotNull(tasksTable.deletedAt) : isNull(tasksTable.deletedAt),
     from || to
       ? and(
           from
-            ? gte(tasks.createdAt, new Date(parseInt(from)).toDateString())
+            ? gte(tasksTable.createdAt, new Date(parseInt(from)).toDateString())
             : undefined,
           lte(
-            tasks.createdAt,
+            tasksTable.createdAt,
             to ? new Date(parseInt(to)).toDateString() : `NOW()`,
           ),
         )
       : undefined,
     query
       ? or(
-          ilike(tasks.title, `%${query}%`),
-          ilike(tasks.description, `%${query}%`),
+          ilike(tasksTable.title, `%${query}%`),
+          ilike(tasksTable.description, `%${query}%`),
         )
       : undefined,
   );
@@ -76,14 +76,14 @@ export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
     },
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
-    orderBy: desc(tasks.createdAt),
+    orderBy: desc(tasksTable.createdAt),
   });
 
   const countPromise = db
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(tasks)
+    .from(tasksTable)
     .where(where)
     .then((recs) => parseInt(recs[0].count));
 

@@ -8,7 +8,7 @@ import { action, auth, rscAuth, TakenError } from "@/server/lib/action";
 import { supplierRepository } from "@/server/repositories/supplier";
 import { revalidatePath } from "next/cache";
 import { db } from "../db";
-import { suppliers } from "../db/schema";
+import { suppliersTable } from "../db/schema";
 import { RECORDS_LIMIT } from "@/common/constants";
 import {
   and,
@@ -48,21 +48,23 @@ export const getSuppliersAction = async (input: unknown) => {
   const business = await businessRepository.rscFindOrThrow(businessId, user.id);
 
   const where = and(
-    eq(suppliers.businessId, business.id),
-    trash ? isNotNull(suppliers.deletedAt) : isNull(suppliers.deletedAt),
+    eq(suppliersTable.businessId, business.id),
+    trash
+      ? isNotNull(suppliersTable.deletedAt)
+      : isNull(suppliersTable.deletedAt),
     from && to
       ? between(
-          suppliers.createdAt,
+          suppliersTable.createdAt,
           new Date(parseInt(from)).toISOString().slice(0, 10),
           new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query
       ? or(
-          ilike(suppliers.name, `%${query}%`),
-          ilike(suppliers.email, `%${query}%`),
-          ilike(suppliers.phone, `%${query}%`),
-          ilike(suppliers.address, `%${query}%`),
+          ilike(suppliersTable.name, `%${query}%`),
+          ilike(suppliersTable.email, `%${query}%`),
+          ilike(suppliersTable.phone, `%${query}%`),
+          ilike(suppliersTable.address, `%${query}%`),
         )
       : undefined,
   );
@@ -71,14 +73,14 @@ export const getSuppliersAction = async (input: unknown) => {
     where,
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
-    orderBy: desc(suppliers.createdAt),
+    orderBy: desc(suppliersTable.createdAt),
   });
 
   const countPromise = db
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(suppliers)
+    .from(suppliersTable)
     .where(where)
     .then((recs) => parseInt(recs[0].count));
 
@@ -139,8 +141,8 @@ export const createSupplierAction = action(
     if (input.email) {
       const supplierCheck = await db.query.suppliers.findFirst({
         where: and(
-          eq(suppliers.email, input.email),
-          eq(suppliers.businessId, business.id),
+          eq(suppliersTable.email, input.email),
+          eq(suppliersTable.businessId, business.id),
         ),
       });
 
@@ -151,8 +153,8 @@ export const createSupplierAction = action(
 
     const supplierPhoneCheck = await db.query.suppliers.findFirst({
       where: and(
-        eq(suppliers.phone, input.phone),
-        eq(suppliers.businessId, user.id),
+        eq(suppliersTable.phone, input.phone),
+        eq(suppliersTable.businessId, user.id),
       ),
     });
 
@@ -223,8 +225,8 @@ export const updateSupplierAction = action(
     if (input.email) {
       const supplierEmailCheck = await db.query.suppliers.findFirst({
         where: and(
-          eq(suppliers.email, input.email),
-          eq(suppliers.businessId, business.id),
+          eq(suppliersTable.email, input.email),
+          eq(suppliersTable.businessId, business.id),
         ),
       });
 
@@ -235,8 +237,8 @@ export const updateSupplierAction = action(
 
     const supplierPhoneCheck = await db.query.suppliers.findFirst({
       where: and(
-        eq(suppliers.phone, input.phone),
-        eq(suppliers.businessId, business.id),
+        eq(suppliersTable.phone, input.phone),
+        eq(suppliersTable.businessId, business.id),
       ),
     });
 

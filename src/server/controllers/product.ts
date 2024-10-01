@@ -12,7 +12,7 @@ import {
   updateProductSchema,
 } from "@/common/schemas/product";
 import { db } from "@/server/db";
-import { products } from "@/server/db/schema";
+import { productsTable } from "@/server/db/schema";
 import { action, auth, NotfoundError, rscAuth } from "@/server/lib/action";
 import { productRepository } from "@/server/repositories/product";
 import {
@@ -48,26 +48,28 @@ export const getProductsAction = async (input: unknown) => {
   const business = await businessRepository.findOrThrow(businessId, user.id);
 
   const where = and(
-    eq(products.businessId, business.id),
-    trash ? isNotNull(products.deletedAt) : isNull(products.deletedAt),
+    eq(productsTable.businessId, business.id),
+    trash
+      ? isNotNull(productsTable.deletedAt)
+      : isNull(productsTable.deletedAt),
     from && to
       ? between(
-          products.createdAt,
+          productsTable.createdAt,
           new Date(parseInt(from)).toISOString().slice(0, 10),
           new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query
       ? or(
-          ilike(products.name, `%${query}%`),
-          ilike(products.description, `%${query}%`),
+          ilike(productsTable.name, `%${query}%`),
+          ilike(productsTable.description, `%${query}%`),
         )
       : undefined,
   );
 
   const data = await db.query.products.findMany({
     where,
-    orderBy: desc(products.createdAt),
+    orderBy: desc(productsTable.createdAt),
     limit: 8,
     offset: (page - 1) * 8,
     with: {

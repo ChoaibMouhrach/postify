@@ -1,81 +1,108 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { NotfoundError } from "../lib/action";
-import { categories, TCategoryInsert } from "../db/schema";
-import { redirect } from "next/navigation";
+import { categoriesTable, TCategory, TCategoryInsert } from "../db/schema";
+import { Repo } from "./business";
 
-const find = (id: string, businessId: string) => {
-  return db.query.categories.findFirst({
-    where: and(eq(categories.id, id), eq(categories.businessId, businessId)),
-  });
-};
+export class CategoryRepo extends Repo<TCategory> {
+  public static async find(where: {
+    id: string;
+    businessId: string;
+  }): Promise<CategoryRepo | null> {
+    const category = await db.query.categoriesTable.findFirst({
+      where: and(
+        eq(categoriesTable.id, where.id),
+        eq(categoriesTable.businessId, where.businessId),
+      ),
+    });
 
-const findOrThrow = async (id: string, businessId: string) => {
-  const category = await find(id, businessId);
-
-  if (!category) {
-    throw new NotfoundError("Category");
+    return category ? new this(category) : null;
   }
 
-  return category;
-};
+  public static async findOrThrow(where: {
+    id: string;
+    businessId: string;
+  }): Promise<CategoryRepo> {
+    const category = await this.find(where);
 
-const rscFindOrThrow = async (id: string, businessId: string) => {
-  const category = await find(id, businessId);
+    if (!category) {
+      throw new NotfoundError("Category");
+    }
 
-  if (!category) {
-    redirect(`/businesses/${businessId}/categories`);
+    return category;
   }
 
-  return category;
-};
+  public static async create(input: TCategoryInsert): Promise<CategoryRepo[]> {
+    const categories = await db
+      .insert(categoriesTable)
+      .values(input)
+      .returning();
+    return categories.map((category) => new this(category));
+  }
 
-const create = async (input: TCategoryInsert) => {
-  return db.insert(categories).values(input);
-};
+  public static async update(
+    where: {
+      id: string;
+      businessId: string;
+    },
+    input: Partial<TCategoryInsert>,
+  ): Promise<void> {
+    await db
+      .update(categoriesTable)
+      .set(input)
+      .where(
+        and(
+          eq(categoriesTable.id, where.id),
+          eq(categoriesTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-const update = (
-  id: string,
-  businessId: string,
-  input: Partial<TCategoryInsert>,
-) => {
-  return db
-    .update(categories)
-    .set(input)
-    .where(and(eq(categories.id, id), eq(categories.businessId, businessId)));
-};
+  public static async remove(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .update(categoriesTable)
+      .set({
+        deletedAt: `NOW()`,
+      })
+      .where(
+        and(
+          eq(categoriesTable.id, where.id),
+          eq(categoriesTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-const remove = (id: string, businessId: string) => {
-  return db
-    .update(categories)
-    .set({
-      deletedAt: `NOW()`,
-    })
-    .where(and(eq(categories.id, id), eq(categories.businessId, businessId)));
-};
+  public static async restore(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .update(categoriesTable)
+      .set({
+        deletedAt: null,
+      })
+      .where(
+        and(
+          eq(categoriesTable.id, where.id),
+          eq(categoriesTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-const restore = (id: string, businessId: string) => {
-  return db
-    .update(categories)
-    .set({
-      deletedAt: null,
-    })
-    .where(and(eq(categories.id, id), eq(categories.businessId, businessId)));
-};
-
-const permRemove = (id: string, businessId: string) => {
-  return db
-    .delete(categories)
-    .where(and(eq(categories.id, id), eq(categories.businessId, businessId)));
-};
-
-export const categoryRepository = {
-  find,
-  findOrThrow,
-  rscFindOrThrow,
-  create,
-  update,
-  remove,
-  restore,
-  permRemove,
-};
+  public static async permRemove(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .delete(categoriesTable)
+      .where(
+        and(
+          eq(categoriesTable.id, where.id),
+          eq(categoriesTable.businessId, where.businessId),
+        ),
+      );
+  }
+}

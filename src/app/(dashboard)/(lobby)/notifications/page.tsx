@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from "@/client/components/ui/card";
 import { db } from "@/server/db";
-import { notifications } from "@/server/db/schema";
+import { notificationsTable } from "@/server/db/schema";
 import { rscAuth } from "@/server/lib/action";
 import { desc, eq, sql } from "drizzle-orm";
 import { NotificationSkeleton, Notifications } from "./table";
@@ -28,8 +28,8 @@ const NotificationsWrapper: React.FC<NotificationsWrapperProps> = async ({
   const user = await rscAuth();
 
   const data = await db.query.notifications.findMany({
-    where: eq(notifications.userId, user.id),
-    orderBy: desc(notifications.createdAt),
+    where: eq(notificationsTable.userId, user.id),
+    orderBy: desc(notificationsTable.createdAt),
     offset: (page - 1) * RECORDS_LIMIT,
     limit: RECORDS_LIMIT,
   });
@@ -38,7 +38,7 @@ const NotificationsWrapper: React.FC<NotificationsWrapperProps> = async ({
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(notifications)
+    .from(notificationsTable)
     .then((notifications) => parseInt(notifications[0].count));
 
   const lastPage = Math.ceil(count / RECORDS_LIMIT);

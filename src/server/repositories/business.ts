@@ -1,92 +1,117 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { NotfoundError } from "../lib/action";
-import { TBusinessInsert, businesses } from "../db/schema";
-import { redirect } from "next/navigation";
+import { TBusiness, TBusinessInsert, businessesTable } from "../db/schema";
 
-const all = async (userId: string) => {
-  return db.query.businesses.findMany({
-    where: eq(businesses.userId, userId),
-  });
-};
+export class Repo<T> {
+  public data: T;
 
-const find = (id: string, userId: string) => {
-  return db.query.businesses.findFirst({
-    where: and(eq(businesses.userId, userId), eq(businesses.id, id)),
-  });
-};
+  public constructor(data: T) {
+    this.data = data;
+  }
+}
 
-const findOrThrow = async (id: string, userId: string) => {
-  const business = await find(id, userId);
+export class BusinessRepo extends Repo<TBusiness> {
+  public static async find(where: {
+    id: string;
+    userId: string;
+  }): Promise<BusinessRepo | null> {
+    const business = await db.query.businessesTable.findFirst({
+      where: and(
+        eq(businessesTable.userId, where.userId),
+        eq(businessesTable.id, where.id),
+      ),
+    });
 
-  if (!business) {
-    throw new NotfoundError("Business");
+    return business ? new this(business) : null;
   }
 
-  return business;
-};
+  public static async findOrThrow(where: {
+    id: string;
+    userId: string;
+  }): Promise<BusinessRepo> {
+    const business = await this.find(where);
 
-const rscFindOrThrow = async (id: string, userId: string) => {
-  const business = await find(id, userId);
+    if (!business) {
+      throw new NotfoundError("Business");
+    }
 
-  if (!business) {
-    redirect("/businesses");
+    return business;
   }
 
-  return business;
-};
+  public static async create(
+    input: TBusinessInsert[],
+  ): Promise<BusinessRepo[]> {
+    const businesses = await db
+      .insert(businessesTable)
+      .values(input)
+      .returning();
+    return businesses.map((business) => new this(business));
+  }
 
-const create = async (input: TBusinessInsert) => {
-  const business = await db.insert(businesses).values(input).returning({
-    id: businesses.id,
-  });
+  public static async update(
+    where: {
+      id: string;
+      userId: string;
+    },
+    input: Partial<TBusinessInsert>,
+  ): Promise<void> {
+    await db
+      .update(businessesTable)
+      .set(input)
+      .where(
+        and(
+          eq(businessesTable.userId, where.userId),
+          eq(businessesTable.id, where.id),
+        ),
+      );
+  }
 
-  return business[0];
-};
+  public static async remove(where: {
+    id: string;
+    userId: string;
+  }): Promise<void> {
+    await db
+      .update(businessesTable)
+      .set({
+        deletedAt: `NOW()`,
+      })
+      .where(
+        and(
+          eq(businessesTable.userId, where.userId),
+          eq(businessesTable.id, where.id),
+        ),
+      );
+  }
 
-const update = (
-  id: string,
-  userId: string,
-  input: Partial<TBusinessInsert>,
-) => {
-  return db
-    .update(businesses)
-    .set(input)
-    .where(and(eq(businesses.userId, userId), eq(businesses.id, id)));
-};
+  public static async restore(where: {
+    id: string;
+    userId: string;
+  }): Promise<void> {
+    await db
+      .update(businessesTable)
+      .set({
+        deletedAt: null,
+      })
+      .where(
+        and(
+          eq(businessesTable.userId, where.userId),
+          eq(businessesTable.id, where.id),
+        ),
+      );
+  }
 
-const remove = (id: string, userId: string) => {
-  return db
-    .update(businesses)
-    .set({
-      deletedAt: `NOW()`,
-    })
-    .where(and(eq(businesses.userId, userId), eq(businesses.id, id)));
-};
-
-const restore = (id: string, userId: string) => {
-  return db
-    .update(businesses)
-    .set({
-      deletedAt: null,
-    })
-    .where(and(eq(businesses.userId, userId), eq(businesses.id, id)));
-};
-
-const permRemove = (id: string, userId: string) => {
-  return db
-    .delete(businesses)
-    .where(and(eq(businesses.userId, userId), eq(businesses.id, id)));
-};
-
-export const businessRepository = {
-  all,
-  find,
-  findOrThrow,
-  rscFindOrThrow,
-  create,
-  update,
-  remove,
-  restore,
-  permRemove,
-};
+  public static async permRemove(where: {
+    id: string;
+    userId: string;
+  }): Promise<void> {
+    await db
+      .delete(businessesTable)
+      .where(
+        and(
+          eq(businessesTable.userId, where.userId),
+          eq(businessesTable.id, where.id),
+        ),
+      );
+  }
+}

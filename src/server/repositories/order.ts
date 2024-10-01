@@ -1,85 +1,105 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "../db";
-import { orders, TOrderInsert } from "../db/schema";
+import { ordersTable, TOrder, TOrderInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
-import { redirect } from "next/navigation";
+import { Repo } from "./business";
 
-const find = (id: string, businessId: string) => {
-  return db.query.orders.findFirst({
-    where: and(eq(orders.businessId, businessId), eq(orders.id, id)),
-  });
-};
+export class OrderRepo extends Repo<TOrder> {
+  public static async find(where: {
+    id: string;
+    businessId: string;
+  }): Promise<OrderRepo | null> {
+    const order = await db.query.ordersTable.findFirst({
+      where: and(
+        eq(ordersTable.businessId, where.businessId),
+        eq(ordersTable.id, where.id),
+      ),
+    });
 
-const findOrThrow = async (id: string, businessId: string) => {
-  const order = await find(id, businessId);
-
-  if (!order) {
-    throw new NotfoundError("order");
+    return order ? new this(order) : null;
   }
 
-  return order;
-};
+  public static async findOrThrow(where: {
+    id: string;
+    businessId: string;
+  }): Promise<OrderRepo> {
+    const order = await this.find(where);
 
-const rscFindOrThrow = async (id: string, businessId: string) => {
-  const order = await find(id, businessId);
+    if (!order) {
+      throw new NotfoundError("order");
+    }
 
-  if (!order) {
-    redirect(`/businesses/${businessId}/orders`);
+    return order;
   }
 
-  return order;
-};
+  public static async create(input: TOrderInsert): Promise<OrderRepo[]> {
+    const orders = await db.insert(ordersTable).values(input).returning();
+    return orders.map((order) => new this(order));
+  }
 
-const create = async (input: TOrderInsert) => {
-  const os = await db.insert(orders).values(input).returning({
-    id: orders.id,
-  });
+  public static async update(
+    where: {
+      id: string;
+      businessId: string;
+    },
+    input: Partial<TOrderInsert>,
+  ): Promise<void> {
+    await db
+      .update(ordersTable)
+      .set(input)
+      .where(
+        and(
+          eq(ordersTable.businessId, where.businessId),
+          eq(ordersTable.id, where.id),
+        ),
+      );
+  }
 
-  return os[0];
-};
+  public static async remove(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .update(ordersTable)
+      .set({
+        deletedAt: `NOW()`,
+      })
+      .where(
+        and(
+          eq(ordersTable.businessId, where.businessId),
+          eq(ordersTable.id, where.id),
+        ),
+      );
+  }
 
-const update = (
-  id: string,
-  businessId: string,
-  input: Partial<TOrderInsert>,
-) => {
-  return db
-    .update(orders)
-    .set(input)
-    .where(and(eq(orders.businessId, businessId), eq(orders.id, id)));
-};
+  public static async restore(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .update(ordersTable)
+      .set({
+        deletedAt: null,
+      })
+      .where(
+        and(
+          eq(ordersTable.businessId, where.businessId),
+          eq(ordersTable.id, where.id),
+        ),
+      );
+  }
 
-const remove = (id: string, businessId: string) => {
-  return db
-    .update(orders)
-    .set({
-      deletedAt: `NOW()`,
-    })
-    .where(and(eq(orders.businessId, businessId), eq(orders.id, id)));
-};
-
-const restore = (id: string, businessId: string) => {
-  return db
-    .update(orders)
-    .set({
-      deletedAt: null,
-    })
-    .where(and(eq(orders.businessId, businessId), eq(orders.id, id)));
-};
-
-const permRemove = (id: string, businessId: string) => {
-  return db
-    .delete(orders)
-    .where(and(eq(orders.businessId, businessId), eq(orders.id, id)));
-};
-
-export const orderRepository = {
-  find,
-  findOrThrow,
-  rscFindOrThrow,
-  create,
-  update,
-  remove,
-  restore,
-  permRemove,
-};
+  public static async permRemove(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .delete(ordersTable)
+      .where(
+        and(
+          eq(ordersTable.businessId, where.businessId),
+          eq(ordersTable.id, where.id),
+        ),
+      );
+  }
+}

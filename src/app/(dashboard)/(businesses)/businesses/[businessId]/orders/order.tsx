@@ -1,6 +1,6 @@
 import { CardContent, CardHeader } from "@/client/components/ui/card";
 import { db } from "@/server/db";
-import { orders } from "@/server/db/schema";
+import { ordersTable } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import React from "react";
@@ -20,7 +20,7 @@ export const Order: React.FC<OrderProps> = async ({ businessId, id }) => {
   const business = await businessRepository.rscFindOrThrow(businessId, user.id);
 
   const order = await db.query.orders.findFirst({
-    where: and(eq(orders.businessId, business.id), eq(orders.id, id)),
+    where: and(eq(ordersTable.businessId, business.id), eq(ordersTable.id, id)),
     with: {
       customer: true,
       items: {

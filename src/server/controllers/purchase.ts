@@ -6,10 +6,10 @@ import {
 } from "@/common/schemas/purchase";
 import { db } from "@/server/db";
 import {
-  products,
-  purchases,
+  productsTable,
+  purchasesTable,
   purchasesItems,
-  suppliers,
+  suppliersTable,
 } from "@/server/db/schema";
 import { action, auth, rscAuth } from "@/server/lib/action";
 import { purchaseRepository } from "@/server/repositories/purchase";
@@ -55,32 +55,34 @@ export const getPurchasesActiopn = async (input: unknown) => {
 
   const suppliersReauest = db
     .select({
-      id: suppliers.id,
+      id: suppliersTable.id,
     })
-    .from(suppliers)
+    .from(suppliersTable)
     .where(
       and(
-        eq(suppliers.businessId, business.id),
-        ilike(suppliers.name, `%${query}%`),
+        eq(suppliersTable.businessId, business.id),
+        ilike(suppliersTable.name, `%${query}%`),
       ),
     );
 
   const where = and(
-    eq(purchases.businessId, business.id),
-    trash ? isNotNull(purchases.deletedAt) : isNull(purchases.deletedAt),
+    eq(purchasesTable.businessId, business.id),
+    trash
+      ? isNotNull(purchasesTable.deletedAt)
+      : isNull(purchasesTable.deletedAt),
     from && to
       ? between(
-          purchases.createdAt,
+          purchasesTable.createdAt,
           new Date(parseInt(from)).toISOString().slice(0, 10),
           new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
-    query ? inArray(purchases.supplierId, suppliersReauest) : undefined,
+    query ? inArray(purchasesTable.supplierId, suppliersReauest) : undefined,
   );
 
   const dataPromise = db.query.purchases.findMany({
     where,
-    orderBy: desc(purchases.createdAt),
+    orderBy: desc(purchasesTable.createdAt),
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
     with: {
@@ -92,7 +94,7 @@ export const getPurchasesActiopn = async (input: unknown) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(purchases)
+    .from(purchasesTable)
     .where(where)
     .then((recs) => parseInt(recs[0].count));
 
@@ -146,26 +148,29 @@ export const restorePurchaseAction = action(
     await Promise.all(
       items.map((item) => {
         return db
-          .update(products)
+          .update(productsTable)
           .set({
-            stock: sql<string>`${products.stock} + ${item.quantity}`,
+            stock: sql<string>`${productsTable.stock} + ${item.quantity}`,
           })
           .where(
             and(
-              eq(products.id, item.productId),
-              eq(products.businessId, business.id),
+              eq(productsTable.id, item.productId),
+              eq(productsTable.businessId, business.id),
             ),
           );
       }),
     );
 
     await db
-      .update(purchases)
+      .update(purchasesTable)
       .set({
         deletedAt: null,
       })
       .where(
-        and(eq(purchases.id, input.id), eq(purchases.businessId, business.id)),
+        and(
+          eq(purchasesTable.id, input.id),
+          eq(purchasesTable.businessId, business.id),
+        ),
       );
 
     revalidatePath("/purchases");
@@ -185,9 +190,9 @@ export const createPurchaseAction = action(
 
     let ps = await db.query.products.findMany({
       where: and(
-        eq(products.businessId, business.id),
+        eq(productsTable.businessId, business.id),
         inArray(
-          products.id,
+          productsTable.id,
           input.products.map((product) => product.id),
         ),
       ),
@@ -213,7 +218,7 @@ export const createPurchaseAction = action(
         businessId: business.id,
         totalCost,
       })
-      .returning({ id: purchases.id })
+      .returning({ id: purchasesTable.id })
       .then((ps) => ps[0].id);
 
     await db.insert(purchasesItems).values(
@@ -230,11 +235,11 @@ export const createPurchaseAction = action(
     await Promise.all(
       items.map((item) => {
         return db
-          .update(products)
+          .update(productsTable)
           .set({
-            stock: sql<string>`${products.stock} + ${item.quantity}`,
+            stock: sql<string>`${productsTable.stock} + ${item.quantity}`,
           })
-          .where(eq(products.id, item.id));
+          .where(eq(productsTable.id, item.id));
       }),
     );
 
@@ -293,9 +298,9 @@ export const updatePurchaseAction = action(
 
     const newItems = await db.query.products.findMany({
       where: and(
-        eq(products.businessId, business.id),
+        eq(productsTable.businessId, business.id),
         inArray(
-          products.id,
+          productsTable.id,
           input.products.map((product) => product.id),
         ),
       ),
@@ -320,40 +325,40 @@ export const updatePurchaseAction = action(
 
           if (oldItem.quantity > product.quantity) {
             return db
-              .update(products)
+              .update(productsTable)
               .set({
-                stock: sql<string>`${products.stock} - ${q}`,
+                stock: sql<string>`${productsTable.stock} - ${q}`,
               })
               .where(
                 and(
-                  eq(products.id, product.id),
-                  eq(products.businessId, business.id),
+                  eq(productsTable.id, product.id),
+                  eq(productsTable.businessId, business.id),
                 ),
               );
           }
 
           return db
-            .update(products)
+            .update(productsTable)
             .set({
-              stock: sql<string>`${products.stock} + ${q}`,
+              stock: sql<string>`${productsTable.stock} + ${q}`,
             })
             .where(
               and(
-                eq(products.id, product.id),
-                eq(products.businessId, business.id),
+                eq(productsTable.id, product.id),
+                eq(productsTable.businessId, business.id),
               ),
             );
         }
 
         return db
-          .update(products)
+          .update(productsTable)
           .set({
-            stock: sql<string>`${products.stock} + ${product.quantity}`,
+            stock: sql<string>`${productsTable.stock} + ${product.quantity}`,
           })
           .where(
             and(
-              eq(products.id, product.id),
-              eq(products.businessId, business.id),
+              eq(productsTable.id, product.id),
+              eq(productsTable.businessId, business.id),
             ),
           );
       }),
@@ -367,14 +372,14 @@ export const updatePurchaseAction = action(
         }
 
         return db
-          .update(products)
+          .update(productsTable)
           .set({
-            stock: sql<string>`${products.stock} - ${oldItem.quantity}`,
+            stock: sql<string>`${productsTable.stock} - ${oldItem.quantity}`,
           })
           .where(
             and(
-              eq(products.businessId, business.id),
-              eq(products.id, oldItem.productId),
+              eq(productsTable.businessId, business.id),
+              eq(productsTable.id, oldItem.productId),
             ),
           );
       }),
@@ -416,14 +421,14 @@ export const deletePurchaseAction = action(
       await Promise.all(
         items.map((item) => {
           return db
-            .update(products)
+            .update(productsTable)
             .set({
-              stock: sql<string>`${products.stock} - ${item.quantity}`,
+              stock: sql<string>`${productsTable.stock} - ${item.quantity}`,
             })
             .where(
               and(
-                eq(products.id, item.productId),
-                eq(products.businessId, business.id),
+                eq(productsTable.id, item.productId),
+                eq(productsTable.businessId, business.id),
               ),
             );
         }),

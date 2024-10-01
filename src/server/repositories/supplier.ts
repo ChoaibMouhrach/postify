@@ -1,86 +1,105 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "../db";
-import { TSupplierInsert, suppliers } from "../db/schema";
+import { TSupplier, TSupplierInsert, suppliersTable } from "../db/schema";
 import { NotfoundError } from "../lib/action";
-import { redirect } from "next/navigation";
+import { Repo } from "./business";
 
-const find = (id: string, businessId: string) => {
-  return db.query.suppliers.findFirst({
-    where: and(eq(suppliers.id, id), eq(suppliers.businessId, businessId)),
-  });
-};
+export class SupplierRepo extends Repo<TSupplier> {
+  public static async find(where: {
+    id: string;
+    businessId: string;
+  }): Promise<SupplierRepo | null> {
+    const supplier = await db.query.suppliersTable.findFirst({
+      where: and(
+        eq(suppliersTable.id, where.id),
+        eq(suppliersTable.businessId, where.businessId),
+      ),
+    });
 
-const findOrThrow = async (id: string, businessId: string) => {
-  const supplier = await find(id, businessId);
-
-  if (!supplier) {
-    throw new NotfoundError("Supplier");
+    return supplier ? new this(supplier) : null;
   }
 
-  return supplier;
-};
+  public static async findOrThrow(where: {
+    id: string;
+    businessId: string;
+  }): Promise<SupplierRepo> {
+    const supplier = await this.find(where);
 
-const rscFindOrThrow = async (id: string, businessId: string) => {
-  const supplier = await find(id, businessId);
+    if (!supplier) {
+      throw new NotfoundError("Supplier");
+    }
 
-  if (!supplier) {
-    redirect(`/businesses/${businessId}/suppliers`);
+    return supplier;
   }
 
-  return supplier;
-};
+  public static async create(input: TSupplierInsert): Promise<SupplierRepo[]> {
+    const suppliers = await db.insert(suppliersTable).values(input).returning();
+    return suppliers.map((supplier) => new this(supplier));
+  }
 
-const create = async (input: TSupplierInsert) => {
-  const products = await db
-    .insert(suppliers)
-    .values(input)
-    .returning({ id: suppliers.id });
+  public static async update(
+    where: {
+      id: string;
+      businessId: string;
+    },
+    input: Partial<TSupplierInsert>,
+  ): Promise<void> {
+    await db
+      .update(suppliersTable)
+      .set(input)
+      .where(
+        and(
+          eq(suppliersTable.id, where.id),
+          eq(suppliersTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-  return products[0];
-};
+  public static async remove(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .update(suppliersTable)
+      .set({
+        deletedAt: `NOW()`,
+      })
+      .where(
+        and(
+          eq(suppliersTable.id, where.id),
+          eq(suppliersTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-const update = (
-  id: string,
-  businessId: string,
-  input: Partial<TSupplierInsert>,
-) => {
-  return db
-    .update(suppliers)
-    .set(input)
-    .where(and(eq(suppliers.id, id), eq(suppliers.businessId, businessId)));
-};
+  public static async permRemove(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .delete(suppliersTable)
+      .where(
+        and(
+          eq(suppliersTable.id, where.id),
+          eq(suppliersTable.businessId, where.businessId),
+        ),
+      );
+  }
 
-const remove = (id: string, businessId: string) => {
-  return db
-    .update(suppliers)
-    .set({
-      deletedAt: `NOW()`,
-    })
-    .where(and(eq(suppliers.id, id), eq(suppliers.businessId, businessId)));
-};
-
-const permRemove = (id: string, businessId: string) => {
-  return db
-    .delete(suppliers)
-    .where(and(eq(suppliers.id, id), eq(suppliers.businessId, businessId)));
-};
-
-const restore = (id: string, businessId: string) => {
-  return db
-    .update(suppliers)
-    .set({
-      deletedAt: null,
-    })
-    .where(and(eq(suppliers.id, id), eq(suppliers.businessId, businessId)));
-};
-
-export const supplierRepository = {
-  find,
-  findOrThrow,
-  rscFindOrThrow,
-  create,
-  update,
-  remove,
-  permRemove,
-  restore,
-};
+  public static async restore(where: {
+    id: string;
+    businessId: string;
+  }): Promise<void> {
+    await db
+      .update(suppliersTable)
+      .set({
+        deletedAt: null,
+      })
+      .where(
+        and(
+          eq(suppliersTable.id, where.id),
+          eq(suppliersTable.businessId, where.businessId),
+        ),
+      );
+  }
+}

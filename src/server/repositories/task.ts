@@ -1,87 +1,109 @@
 import { db } from "../db";
 import { and, eq } from "drizzle-orm";
-import { tasks, taskTypes, TTaskInsert } from "../db/schema";
+import { tasksTable, taskTypes, TTask, TTaskInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
+import { Repo } from "./business";
 
-const find = (id: string, userId: string) => {
-  return db.query.tasks.findFirst({
-    where: and(eq(tasks.id, id), eq(tasks.userId, userId)),
-  });
-};
+export class TaskRepo extends Repo<TTask> {
+  public static async find(where: {
+    id: string;
+    userId: string;
+  }): Promise<TaskRepo | null> {
+    const task = await db.query.tasksTable.findFirst({
+      where: and(
+        eq(tasksTable.id, where.id),
+        eq(tasksTable.userId, where.userId),
+      ),
+    });
 
-const findOrThrow = async (id: string, userId: string) => {
-  const task = await find(id, userId);
-
-  if (!task) {
-    throw new NotfoundError("Task");
+    return task ? new this(task) : null;
   }
 
-  return task;
-};
+  public static async findOrThrow(where: {
+    id: string;
+    userId: string;
+  }): Promise<TaskRepo> {
+    const task = await this.find(where);
 
-const findType = (id: string) => {
-  return db.query.taskTypes.findFirst({
-    where: eq(taskTypes.id, id),
-  });
-};
+    if (!task) {
+      throw new NotfoundError("Task");
+    }
 
-const findTypeOrThrow = async (id: string) => {
-  const type = await findType(id);
-
-  if (!type) {
-    throw new NotfoundError("Task type");
+    return task;
   }
 
-  return type;
-};
+  public static async findType(id: string) {
+    return db.query.taskTypes.findFirst({
+      where: eq(taskTypes.id, id),
+    });
+  }
 
-const create = async (input: TTaskInsert) => {
-  const ts = await db.insert(tasks).values(input).returning({
-    id: tasks.id,
-  });
+  public static async findTypeOrThrow(id: string) {
+    const type = await this.findType(id);
 
-  return ts[0].id;
-};
+    if (!type) {
+      throw new NotfoundError("Task type");
+    }
 
-const update = (id: string, userId: string, input: Partial<TTaskInsert>) => {
-  return db
-    .update(tasks)
-    .set(input)
-    .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
-};
+    return type;
+  }
 
-const remove = (id: string, userId: string) => {
-  return db
-    .update(tasks)
-    .set({
-      deletedAt: `NOW()`,
-    })
-    .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
-};
+  public static async create(input: TTaskInsert[]): Promise<TaskRepo[]> {
+    const tasks = await db.insert(tasksTable).values(input).returning();
+    return tasks.map((task) => new this(task));
+  }
 
-const restore = (id: string, userId: string) => {
-  return db
-    .update(tasks)
-    .set({
-      deletedAt: null,
-    })
-    .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
-};
+  public static async update(
+    where: {
+      id: string;
+      userId: string;
+    },
+    input: Partial<TTaskInsert>,
+  ): Promise<void> {
+    await db
+      .update(tasksTable)
+      .set(input)
+      .where(
+        and(eq(tasksTable.id, where.id), eq(tasksTable.userId, where.userId)),
+      );
+  }
 
-const permRemove = (id: string, userId: string) => {
-  return db
-    .delete(tasks)
-    .where(and(eq(tasks.id, id), eq(tasks.userId, userId)));
-};
+  public static async remove(where: {
+    id: string;
+    userId: string;
+  }): Promise<void> {
+    await db
+      .update(tasksTable)
+      .set({
+        deletedAt: `NOW()`,
+      })
+      .where(
+        and(eq(tasksTable.id, where.id), eq(tasksTable.userId, where.userId)),
+      );
+  }
 
-export const taskRepository = {
-  find,
-  findOrThrow,
-  findType,
-  findTypeOrThrow,
-  create,
-  update,
-  remove,
-  restore,
-  permRemove,
-};
+  public static async restore(where: {
+    id: string;
+    userId: string;
+  }): Promise<void> {
+    await db
+      .update(tasksTable)
+      .set({
+        deletedAt: null,
+      })
+      .where(
+        and(eq(tasksTable.id, where.id), eq(tasksTable.userId, where.userId)),
+      );
+  }
+
+  public static async permRemove(where: {
+    id: string;
+    userId: string;
+  }): Promise<void> {
+    await db
+      .delete(tasksTable)
+      .where(
+        and(eq(tasksTable.id, where.id), eq(tasksTable.userId, where.userId)),
+      );
+  }
+}

@@ -26,7 +26,7 @@ import {
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "../db";
-import { customers } from "../db/schema";
+import { customersTable } from "../db/schema";
 import {
   fromSchema,
   pageSchema,
@@ -54,28 +54,30 @@ export const getCustomersAction = async (input: unknown) => {
   const business = await businessRepository.rscFindOrThrow(businessId, user.id);
 
   const where = and(
-    eq(customers.businessId, business.id),
-    trash ? isNotNull(customers.deletedAt) : isNull(customers.deletedAt),
+    eq(customersTable.businessId, business.id),
+    trash
+      ? isNotNull(customersTable.deletedAt)
+      : isNull(customersTable.deletedAt),
     from && to
       ? between(
-          customers.createdAt,
+          customersTable.createdAt,
           new Date(parseInt(from)).toISOString().slice(0, 10),
           new Date(parseInt(to)).toISOString().slice(0, 10),
         )
       : undefined,
     query
       ? or(
-          ilike(customers.name, `%${query}%`),
-          ilike(customers.address, `%${query}%`),
-          ilike(customers.email, `%${query}%`),
-          ilike(customers.phone, `%${query}%`),
+          ilike(customersTable.name, `%${query}%`),
+          ilike(customersTable.address, `%${query}%`),
+          ilike(customersTable.email, `%${query}%`),
+          ilike(customersTable.phone, `%${query}%`),
         )
       : undefined,
   );
 
   const data = await db.query.customers.findMany({
     where,
-    orderBy: desc(customers.createdAt),
+    orderBy: desc(customersTable.createdAt),
     limit: RECORDS_LIMIT,
     offset: (page - 1) * RECORDS_LIMIT,
   });
@@ -84,7 +86,7 @@ export const getCustomersAction = async (input: unknown) => {
     .select({
       count: sql<string>`COUNT(*)`,
     })
-    .from(customers)
+    .from(customersTable)
     .then((recs) => parseInt(recs[0].count));
 
   const lastPage = Math.ceil(count / 8);
@@ -144,8 +146,8 @@ export const createCustomerAction = action(
     if (input.email) {
       const customer = await db.query.customers.findFirst({
         where: and(
-          eq(customers.businessId, business.id),
-          eq(customers.email, input.email),
+          eq(customersTable.businessId, business.id),
+          eq(customersTable.email, input.email),
         ),
       });
 
@@ -219,8 +221,8 @@ export const updateCustomerAction = action(
     if (input.email) {
       const customerCheck = await db.query.customers.findFirst({
         where: and(
-          eq(customers.email, input.email),
-          eq(customers.businessId, business.id),
+          eq(customersTable.email, input.email),
+          eq(customersTable.businessId, business.id),
         ),
       });
 
@@ -231,8 +233,8 @@ export const updateCustomerAction = action(
 
     const customerPhoneCheck = await db.query.customers.findFirst({
       where: and(
-        eq(customers.phone, input.phone),
-        eq(customers.businessId, business.id),
+        eq(customersTable.phone, input.phone),
+        eq(customersTable.businessId, business.id),
       ),
     });
 
