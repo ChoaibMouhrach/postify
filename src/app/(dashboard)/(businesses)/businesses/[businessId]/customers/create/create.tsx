@@ -46,8 +46,8 @@ export const Create: React.FC<CreateProps> = ({ businessId }) => {
       form.reset();
       toast.success("Customer created successfully");
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 

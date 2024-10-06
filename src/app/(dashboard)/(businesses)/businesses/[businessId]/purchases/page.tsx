@@ -13,6 +13,7 @@ import { rscAuth } from "@/server/lib/action";
 import { BusinessesRepo } from "@/server/repositories/business";
 import { getPurchasesActiopn } from "@/server/controllers/purchase";
 import { TBusiness } from "@/server/db/schema";
+import { redirect } from "next/navigation";
 
 interface PurchasesWrapperProps {
   searchParams: SearchParams;
@@ -53,10 +54,14 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
   const user = await rscAuth();
 
-  const business = await BusinessesRepo.rscFindOrThrow(
-    params.businessId,
-    user.id,
-  );
+  const business = await BusinessesRepo.find({
+    id: params.businessId,
+    userId: user.id,
+  });
+
+  if (!business) {
+    redirect("/businesses");
+  }
 
   return (
     <Card>
@@ -68,7 +73,10 @@ const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
       </CardHeader>
       <CardContent>
         <Suspense fallback={<DataTableSkeleton />}>
-          <PurchasesWrapper business={business} searchParams={searchParams} />
+          <PurchasesWrapper
+            business={business.data}
+            searchParams={searchParams}
+          />
         </Suspense>
       </CardContent>
     </Card>

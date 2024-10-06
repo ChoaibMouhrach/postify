@@ -30,7 +30,7 @@ const Actions: React.FC<ActionsProps> = ({ customer }) => {
         businessId: customer.businessId,
       });
 
-      if ("data" in response) {
+      if (response?.data) {
         res(response);
         return;
       }
@@ -42,7 +42,7 @@ const Actions: React.FC<ActionsProps> = ({ customer }) => {
       loading: "Restoring...",
       success: "Customer restored successfully",
       error: (error: RestoreActionReturnType) => {
-        return error.serverError || "Something went wrong";
+        return error?.serverError || "Something went wrong";
       },
     });
   };

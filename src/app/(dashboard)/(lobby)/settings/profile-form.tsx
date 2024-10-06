@@ -15,8 +15,6 @@ import { Input } from "@/client/components/ui/input";
 import { updateAuthSchema } from "@/common/schemas/auth";
 import { updateAuthAction } from "@/server/controllers/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { User } from "next-auth";
-import { useSession } from "next-auth/react";
 import { useAction } from "next-safe-action/hooks";
 import React, { useMemo } from "react";
 import { useForm } from "react-hook-form";
@@ -24,13 +22,13 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 interface ProfileFormProps {
-  user: User;
+  user: any;
 }
 
 type Payload = z.infer<typeof updateAuthSchema>;
 
 export const ProfileForm: React.FC<ProfileFormProps> = ({ user }) => {
-  const { update } = useSession();
+  // const { update } = useSession();
 
   const form = useForm<Payload>({
     resolver: zodResolver(updateAuthSchema),
@@ -42,12 +40,12 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ user }) => {
   const { execute, status } = useAction(updateAuthAction, {
     onSuccess: () => {
       toast.success("Auth updated successfully");
-      update({
-        name: form.getValues("name"),
-      });
+      //update({
+      //  name: form.getValues("name"),
+      //});
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 

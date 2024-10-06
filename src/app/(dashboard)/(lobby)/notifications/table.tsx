@@ -22,9 +22,9 @@ import { useAction } from "next-safe-action/hooks";
 import { Separator } from "@/client/components/ui/separator";
 
 interface NotificationsProps {
-  data: TNotification[];
   page: number;
   lastPage: number;
+  data: TNotification[];
 }
 
 type MarkAsReadActionReturn = Awaited<ReturnType<typeof markAsReadAction>>;
@@ -40,8 +40,8 @@ export const Notifications: React.FC<NotificationsProps> = ({
     onSuccess: () => {
       toast.success("All notifications are marked as read");
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 
@@ -71,7 +71,7 @@ export const Notifications: React.FC<NotificationsProps> = ({
     const promise = new Promise<MarkAsReadActionReturn>(async (res, rej) => {
       const response = await markAsReadAction({ id });
 
-      if ("data" in response) {
+      if (response?.data) {
         res(response);
         return;
       }
@@ -83,7 +83,7 @@ export const Notifications: React.FC<NotificationsProps> = ({
       loading: "Please wait while we mark this notification as read.",
       success: "Notification is successfully marked as read",
       error: (err: MarkAsReadActionReturn) => {
-        return err.serverError || "Something went wrong";
+        return err?.serverError || "Something went wrong";
       },
     });
   };

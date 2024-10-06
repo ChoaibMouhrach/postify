@@ -1,17 +1,23 @@
-import { getServerSession } from "next-auth";
 import {
   createSafeActionClient,
   DEFAULT_SERVER_ERROR_MESSAGE,
 } from "next-safe-action";
-import { authOptions } from "./auth";
-import { redirect } from "next/navigation";
 import { ROLES } from "@/common/constants";
+import { validateRequest } from "./auth";
+import { UserRepo } from "../repositories/user";
+import { RoleRepo } from "../repositories/role";
 
 export class CustomError extends Error {}
 
 export class UnauthenticatedError extends CustomError {
   constructor() {
     super("Unauthenticated");
+  }
+}
+
+export class ForbiddenError extends CustomError {
+  constructor() {
+    super("Forbidden");
   }
 }
 
@@ -43,32 +49,29 @@ export const action = createSafeActionClient({
   },
 });
 
-export const auth = async () => {
-  const session = await getServerSession(authOptions);
+export const protectedAction = action.use(async ({ next }) => {
+  const { user } = await validateRequest();
 
-  if (!session?.user) {
+  if (!user) {
     throw new UnauthenticatedError();
   }
 
-  return session.user;
-};
+  const role = await RoleRepo.findOrThrow(user.roleId);
 
-export const adminAuth = async () => {
-  const user = await auth();
+  return await next({
+    ctx: {
+      authUser: {
+        ...user,
+        role: role.data,
+      },
+    },
+  });
+});
 
-  if (user.role.name !== ROLES.ADMIN) {
-    redirect("/403");
+export const adminAction = protectedAction.use(async ({ next, ctx }) => {
+  if (ctx.authUser.role.name !== ROLES.ADMIN) {
+    throw new ForbiddenError();
   }
 
-  return user;
-};
-
-export const rscAuth = async () => {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) {
-    redirect("/sign-in");
-  }
-
-  return session.user;
-};
+  return await next();
+});

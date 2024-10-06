@@ -1,18 +1,18 @@
 "use client";
 
+import Link from "next/link";
+import { toast } from "sonner";
+import { MoreHorizontal } from "lucide-react";
 import { TSupplier } from "@/server/db/schema";
 import { ColumnDef } from "@tanstack/react-table";
-import { toast } from "sonner";
+import { Button } from "@/client/components/ui/button";
+import { restoreSupplierAction } from "@/server/controllers/supplier";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/client/components/ui/dropdown-menu";
-import { Button } from "@/client/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
-import Link from "next/link";
-import { restoreSupplierAction } from "@/server/controllers/supplier";
 
 interface ActionsProps {
   supplier: TSupplier;
@@ -29,7 +29,7 @@ const Actions: React.FC<ActionsProps> = ({ supplier }) => {
           id: supplier.id,
         });
 
-        if ("data" in response) {
+        if (response?.data) {
           res(response);
           return;
         }
@@ -42,7 +42,7 @@ const Actions: React.FC<ActionsProps> = ({ supplier }) => {
       loading: "Please wait while we restore this supplier",
       success: "Supplier restored successfully",
       error: (err: Awaited<RestoreSupplierActionReturnType>) => {
-        return err.serverError || "Something went wrong";
+        return err?.serverError || "Something went wrong";
       },
     });
   };

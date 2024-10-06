@@ -8,6 +8,7 @@ import { Create } from "./create";
 import React from "react";
 import { rscAuth } from "@/server/lib/action";
 import { BusinessesRepo } from "@/server/repositories/business";
+import { redirect } from "next/navigation";
 
 interface PageProps {
   params: {
@@ -18,10 +19,14 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  const business = await BusinessesRepo.rscFindOrThrow(
-    params.businessId,
-    user.id,
-  );
+  const business = await BusinessesRepo.find({
+    id: params.businessId,
+    userId: user.id,
+  });
+
+  if (!business) {
+    redirect("/businesses");
+  }
 
   return (
     <Card>
@@ -29,7 +34,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
         <CardTitle>New Product</CardTitle>
         <CardDescription>You can add new products from here.</CardDescription>
       </CardHeader>
-      <Create business={business} />
+      <Create business={business.data} />
     </Card>
   );
 };

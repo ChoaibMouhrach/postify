@@ -13,7 +13,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 
 const schema = z.object({
@@ -32,23 +31,23 @@ export const SignIn = () => {
     },
   });
 
-  const onSubmit = async (payload: Payload) => {
+  const onSubmit = async (/* payload: Payload */) => {
     setPending(true);
     try {
-      await signIn("email", {
-        email: payload.email,
-        redirect: false,
-        callbackUrl: "/",
-      });
+      //await signIn("email", {
+      //  email: payload.email,
+      //  redirect: false,
+      //  callbackUrl: "/",
+      //});
 
       toast.success(
         "We've emailed you a link for authentication. Please use it to log in.",
       );
 
       form.reset();
-    } catch (err) {
-      if (err instanceof Error) {
-        toast.error(err.message);
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
       }
     }
     setPending(false);

@@ -20,8 +20,8 @@ export const Delete: React.FC<DeleteProps> = ({ purchase }) => {
       toast.success("Purchase deleted successfully");
       router.push(`/businesses/${purchase.businessId}/purchases`);
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 

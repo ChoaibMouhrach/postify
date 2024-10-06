@@ -30,7 +30,7 @@ const Actions: React.FC<ActionsProps> = ({ purchase }) => {
           businessId: purchase.businessId,
         });
 
-        if ("data" in response) {
+        if (response?.data) {
           res(response);
           return;
         }
@@ -43,7 +43,7 @@ const Actions: React.FC<ActionsProps> = ({ purchase }) => {
       loading: "Please wait while we restore this purchase",
       success: "Purchase restored successfully",
       error: (err: Awaited<RestoreProductReturn>) => {
-        return err.serverError || "Something went wrong";
+        return err?.serverError || "Something went wrong";
       },
     });
   };

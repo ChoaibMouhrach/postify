@@ -53,8 +53,8 @@ export const Create: React.FC<CreateProps> = ({ types, statuses }) => {
       toast.success("Task created successfully");
       form.reset();
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 

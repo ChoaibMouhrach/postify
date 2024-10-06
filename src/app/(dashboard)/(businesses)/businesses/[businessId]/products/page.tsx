@@ -31,7 +31,7 @@ const ProductsWrapper: React.FC<ProductsWrapperProps> = async ({
     <Products
       // data
       data={data}
-      business={business}
+      business={business.data}
       // meta
       query={query}
       trash={trash}

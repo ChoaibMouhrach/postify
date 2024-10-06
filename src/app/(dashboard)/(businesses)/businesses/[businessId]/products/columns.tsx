@@ -35,7 +35,7 @@ const Actions: React.FC<ActionsProps> = ({ product }) => {
           businessId,
         });
 
-        if ("data" in response) {
+        if (response?.data) {
           res(response);
           return;
         }
@@ -49,7 +49,7 @@ const Actions: React.FC<ActionsProps> = ({ product }) => {
       loading: "Please wait while we restore this product",
       success: "Product restored successfully",
       error: (err: Awaited<RestoreProductActionReturnType>) => {
-        return err.serverError || "Something went wrong";
+        return err?.serverError || "Something went wrong";
       },
       finally: () => {
         setRestorePending(false);

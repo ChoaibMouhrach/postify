@@ -11,7 +11,6 @@ import {
   purchasesItems,
   suppliersTable,
 } from "@/server/db/schema";
-import { action, auth, rscAuth } from "@/server/lib/action";
 import {
   and,
   between,
@@ -23,116 +22,99 @@ import {
   isNull,
   sql,
 } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import {
-  fromSchema,
-  pageSchema,
-  querySchema,
-  toSchema,
-  trashSchema,
-} from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
 import { BusinessesRepo } from "../repositories/business";
 import { PurchaseRepo } from "../repositories/purchase";
 import { SupplierRepo } from "../repositories/supplier";
+import { protectedAction } from "../lib/action";
+import { businessIndexBaseSchema } from "@/common/schemas";
 
-const schema = z.object({
-  businessId: z.string().uuid(),
-  page: pageSchema,
-  trash: trashSchema,
-  query: querySchema,
-  from: fromSchema,
-  to: toSchema,
-});
+export const getPurchasesActiopn = protectedAction
+  .schema(businessIndexBaseSchema)
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
+    const business = await BusinessesRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: authUser.id,
+    });
 
-export const getPurchasesActiopn = async (input: unknown) => {
-  const { page, query, trash, from, to, businessId } = schema.parse(input);
+    const suppliersReauest = db
+      .select({
+        id: suppliersTable.id,
+      })
+      .from(suppliersTable)
+      .where(
+        and(
+          eq(suppliersTable.businessId, business.data.id),
+          ilike(suppliersTable.name, `%${parsedInput.query}%`),
+        ),
+      );
 
-  const user = await rscAuth();
-
-  const business = await BusinessesRepo.findOrThrow({
-    id: businessId,
-    userId: user.id,
-  });
-
-  const suppliersReauest = db
-    .select({
-      id: suppliersTable.id,
-    })
-    .from(suppliersTable)
-    .where(
-      and(
-        eq(suppliersTable.businessId, business.data.id),
-        ilike(suppliersTable.name, `%${query}%`),
-      ),
+    const where = and(
+      eq(purchasesTable.businessId, business.data.id),
+      parsedInput.trash
+        ? isNotNull(purchasesTable.deletedAt)
+        : isNull(purchasesTable.deletedAt),
+      parsedInput.from && parsedInput.to
+        ? between(
+            purchasesTable.createdAt,
+            new Date(parseInt(parsedInput.from)).toISOString().slice(0, 10),
+            new Date(parseInt(parsedInput.to)).toISOString().slice(0, 10),
+          )
+        : undefined,
+      parsedInput.query
+        ? inArray(purchasesTable.supplierId, suppliersReauest)
+        : undefined,
     );
 
-  const where = and(
-    eq(purchasesTable.businessId, business.data.id),
-    trash
-      ? isNotNull(purchasesTable.deletedAt)
-      : isNull(purchasesTable.deletedAt),
-    from && to
-      ? between(
-          purchasesTable.createdAt,
-          new Date(parseInt(from)).toISOString().slice(0, 10),
-          new Date(parseInt(to)).toISOString().slice(0, 10),
-        )
-      : undefined,
-    query ? inArray(purchasesTable.supplierId, suppliersReauest) : undefined,
-  );
+    const dataPromise = db.query.purchasesTable.findMany({
+      where,
+      orderBy: desc(purchasesTable.createdAt),
+      limit: RECORDS_LIMIT,
+      offset: (parsedInput.page - 1) * RECORDS_LIMIT,
+      with: {
+        supplier: true,
+      },
+    });
 
-  const dataPromise = db.query.purchasesTable.findMany({
-    where,
-    orderBy: desc(purchasesTable.createdAt),
-    limit: RECORDS_LIMIT,
-    offset: (page - 1) * RECORDS_LIMIT,
-    with: {
-      supplier: true,
-    },
+    const countPromise = db
+      .select({
+        count: sql`COUNT(*)`.mapWith(Number),
+      })
+      .from(purchasesTable)
+      .where(where)
+      .then((recs) => recs[0].count);
+
+    const [data, count] = await Promise.all([dataPromise, countPromise]);
+
+    const lastPage = Math.ceil(count / RECORDS_LIMIT);
+
+    return {
+      // data
+      data,
+      business,
+      // meta
+      query: parsedInput.query,
+      trash: parsedInput.trash,
+      from: parsedInput.from,
+      to: parsedInput.to,
+      // pagination
+      page: parsedInput.to,
+      lastPage,
+    };
   });
-
-  const countPromise = db
-    .select({
-      count: sql`COUNT(*)`.mapWith(Number),
-    })
-    .from(purchasesTable)
-    .where(where)
-    .then((recs) => recs[0].count);
-
-  const [data, count] = await Promise.all([dataPromise, countPromise]);
-
-  const lastPage = Math.ceil(count / RECORDS_LIMIT);
-
-  return {
-    // data
-    data,
-    business,
-    // meta
-    query,
-    trash,
-    from,
-    to,
-    // pagination
-    page,
-    lastPage,
-  };
-};
 
 const restorePurchaseSchema = z.object({
   businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
-export const restorePurchaseAction = action
+export const restorePurchaseAction = protectedAction
   .schema(restorePurchaseSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const purchase = await PurchaseRepo.findOrThrow({
@@ -175,19 +157,14 @@ export const restorePurchaseAction = action
           eq(purchasesTable.businessId, business.data.id),
         ),
       );
-
-    revalidatePath("/purchases");
-    revalidatePath(`/purchases/${purchase.data.id}/edit`);
   });
 
-export const createPurchaseAction = action
+export const createPurchaseAction = protectedAction
   .schema(createPurchaseSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     let ps = await db.query.productsTable.findMany({
@@ -245,24 +222,14 @@ export const createPurchaseAction = action
           .where(eq(productsTable.id, item.id));
       }),
     );
-
-    // revalidate products
-    revalidatePath("/products");
-
-    // revalidate purchases
-    revalidatePath("/purchases");
-    revalidatePath(`/dashboard`);
-    revalidatePath(`/purchases/${purchase.data.id}/edit`);
   });
 
-export const updatePurchaseAction = action
+export const updatePurchaseAction = protectedAction
   .schema(updatePurchaseSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const purchase = await PurchaseRepo.findOrThrow({
@@ -392,10 +359,6 @@ export const updatePurchaseAction = action
           );
       }),
     ]);
-
-    revalidatePath("/products");
-    revalidatePath("/purchases");
-    revalidatePath(`/purchases/${purchase.data.id}/edit`);
   });
 
 const deletePurchaseSchema = z.object({
@@ -403,14 +366,12 @@ const deletePurchaseSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const deletePurchaseAction = action
+export const deletePurchaseAction = protectedAction
   .schema(deletePurchaseSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const purchase = await PurchaseRepo.findOrThrow({
@@ -449,8 +410,4 @@ export const deletePurchaseAction = action
         businessId: business.data.id,
       });
     }
-
-    revalidatePath("/products");
-    revalidatePath(`/dashboard`);
-    revalidatePath(`/purchases`);
   });

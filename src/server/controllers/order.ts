@@ -1,13 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import {
-  NotfoundError,
-  RequiredError,
-  action,
-  auth,
-  rscAuth,
-} from "../lib/action";
+import { NotfoundError, RequiredError, protectedAction } from "../lib/action";
 import { createOrderSchema, updateOrderSchema } from "@/common/schemas/order";
 import { db } from "../db";
 import {
@@ -22,129 +16,106 @@ import {
   or,
   sql,
 } from "drizzle-orm";
+import { ORDER_TYPES, RECORDS_LIMIT } from "@/common/constants";
+import { businessIndexBaseSchema } from "@/common/schemas";
+import { BusinessesRepo } from "../repositories/business";
 import {
   customersTable,
-  orderTypes,
-  ordersTable,
   ordersItems,
+  ordersTable,
+  orderTypes,
   productsTable,
 } from "../db/schema";
-import {
-  fromSchema,
-  pageSchema,
-  querySchema,
-  toSchema,
-  trashSchema,
-} from "@/common/schemas";
-import { ORDER_TYPES, RECORDS_LIMIT } from "@/common/constants";
-import { revalidatePath } from "next/cache";
-import { BusinessesRepo } from "../repositories/business";
-import { redirect } from "next/navigation";
 import { CustomerRepo } from "../repositories/customer";
 import { OrderRepo } from "../repositories/order";
 import { NotificationRepo } from "../repositories/notification";
 
-const indexSchema = z.object({
-  businessId: z.string().uuid(),
-  page: pageSchema,
-  query: querySchema,
-  trash: trashSchema,
-  from: fromSchema,
-  to: toSchema,
-});
-
-export const getOrdersAction = async (input: unknown) => {
-  const { page, trash, query, from, to, businessId } = indexSchema.parse(input);
-
-  const user = await rscAuth();
-
-  const business = await BusinessesRepo.find({
-    id: businessId,
-    userId: user.id,
-  });
-
-  if (!business) {
-    redirect("/businesses");
-  }
-
-  const customersRequest = db
-    .select({
-      id: customersTable.id,
-    })
-    .from(customersTable)
-    .where(
-      and(
-        eq(customersTable.businessId, business.data.id),
-        ilike(customersTable.name, `%${query}%`),
-      ),
-    );
-
-  const where = and(
-    eq(ordersTable.businessId, businessId),
-    trash ? isNotNull(ordersTable.deletedAt) : isNull(ordersTable.deletedAt),
-    from && to
-      ? between(
-          ordersTable.createdAt,
-          new Date(parseInt(from)).toISOString().slice(0, 10),
-          new Date(parseInt(to)).toISOString().slice(0, 10),
-        )
-      : undefined,
-    query
-      ? or(
-          ilike(ordersTable.id, query),
-          inArray(ordersTable.customerId, customersRequest),
-        )
-      : undefined,
-  );
-
-  const dataPromise = db.query.ordersTable.findMany({
-    where,
-    with: {
-      customer: true,
-      type: true,
-    },
-    orderBy: desc(ordersTable.createdAt),
-    limit: RECORDS_LIMIT,
-    offset: (page - 1) * RECORDS_LIMIT,
-  });
-
-  const countPromise = db
-    .select({
-      count: sql`COUNT(*)`.mapWith(Number),
-    })
-    .from(ordersTable)
-    .where(where)
-    .then((orders) => orders[0].count);
-
-  const [data, count] = await Promise.all([dataPromise, countPromise]);
-
-  const lastPage = Math.ceil(count / RECORDS_LIMIT);
-
-  return {
-    // data
-    data,
-    business,
-
-    // meta
-    query,
-    trash,
-    from,
-    to,
-
-    // pagination
-    page,
-    lastPage,
-  };
-};
-
-export const createOrderAction = action
-  .schema(createOrderSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+export const getOrdersAction = protectedAction
+  .schema(businessIndexBaseSchema)
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
+    });
+
+    const customersRequest = db
+      .select({
+        id: customersTable.id,
+      })
+      .from(customersTable)
+      .where(
+        and(
+          eq(customersTable.businessId, business.data.id),
+          ilike(customersTable.name, `%${parsedInput.query}%`),
+        ),
+      );
+
+    const where = and(
+      eq(ordersTable.businessId, parsedInput.businessId),
+      parsedInput.trash
+        ? isNotNull(ordersTable.deletedAt)
+        : isNull(ordersTable.deletedAt),
+      parsedInput.from && parsedInput.to
+        ? between(
+            ordersTable.createdAt,
+            new Date(parseInt(parsedInput.from)).toISOString().slice(0, 10),
+            new Date(parseInt(parsedInput.to)).toISOString().slice(0, 10),
+          )
+        : undefined,
+      parsedInput.query
+        ? or(
+            ilike(ordersTable.id, parsedInput.query),
+            inArray(ordersTable.customerId, customersRequest),
+          )
+        : undefined,
+    );
+
+    const dataPromise = db.query.ordersTable.findMany({
+      where,
+      with: {
+        customer: true,
+        type: true,
+      },
+      orderBy: desc(ordersTable.createdAt),
+      limit: RECORDS_LIMIT,
+      offset: (parsedInput.page - 1) * RECORDS_LIMIT,
+    });
+
+    const countPromise = db
+      .select({
+        count: sql<string>`COUNT(*)`,
+      })
+      .from(ordersTable)
+      .where(where)
+      .then((orders) => parseInt(orders[0].count));
+
+    const [data, count] = await Promise.all([dataPromise, countPromise]);
+
+    const lastPage = Math.ceil(count / RECORDS_LIMIT);
+
+    return {
+      // data
+      data,
+      business,
+
+      // meta
+      query: parsedInput.query,
+      trash: parsedInput.trash,
+      from: parsedInput.from,
+      to: parsedInput.to,
+
+      // pagination
+      page: parsedInput.page,
+      lastPage,
+    };
+  });
+
+export const createOrderAction = protectedAction
+  .schema(createOrderSchema)
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
+    const business = await BusinessesRepo.findOrThrow({
+      id: parsedInput.businessId,
+      userId: authUser.id,
     });
 
     if (parsedInput.customerId) {
@@ -237,7 +208,7 @@ export const createOrderAction = action
             await NotificationRepo.create([
               {
                 title: `${item.name} is about to go out of stock`,
-                userId: user.id,
+                userId: authUser.id,
               },
             ]);
           }
@@ -246,20 +217,14 @@ export const createOrderAction = action
         });
       }),
     );
-
-    revalidatePath(`/orders`);
-    revalidatePath("/notifications");
-    revalidatePath(`/dashboard`);
   });
 
-export const updateOrderAction = action
+export const updateOrderAction = protectedAction
   .schema(updateOrderSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const order = await OrderRepo.findOrThrow({
@@ -376,7 +341,7 @@ export const updateOrderAction = action
             return db
               .update(productsTable)
               .set({
-                stock: sql`${productsTable.stock} + ${q}`.mapWith(Number),
+                stock: sql<string>`${productsTable.stock} + ${q}`,
               })
               .where(
                 and(
@@ -390,7 +355,7 @@ export const updateOrderAction = action
             await db
               .update(productsTable)
               .set({
-                stock: sql`${productsTable.stock} - ${q}`,
+                stock: sql<string>`${productsTable.stock} - ${q}`,
               })
               .where(
                 and(
@@ -403,7 +368,7 @@ export const updateOrderAction = action
               await NotificationRepo.create([
                 {
                   title: `${item.name} is about to go out of stock`,
-                  userId: user.id,
+                  userId: authUser.id,
                 },
               ]);
             }
@@ -416,7 +381,7 @@ export const updateOrderAction = action
           await db
             .update(productsTable)
             .set({
-              stock: sql`${productsTable.stock} - ${item.new.quantity}`,
+              stock: sql<string>`${productsTable.stock} - ${item.new.quantity}`,
             })
             .where(
               and(
@@ -429,7 +394,7 @@ export const updateOrderAction = action
             await NotificationRepo.create([
               {
                 title: `${item.name} is about to go out of stock`,
-                userId: user.id,
+                userId: authUser.id,
               },
             ]);
           }
@@ -449,7 +414,7 @@ export const updateOrderAction = action
         return db
           .update(productsTable)
           .set({
-            stock: sql`${productsTable.stock} + ${item.quantity}`,
+            stock: sql<string>`${productsTable.stock} + ${item.quantity}`,
           })
           .where(
             and(
@@ -459,11 +424,6 @@ export const updateOrderAction = action
           );
       }),
     ]);
-
-    revalidatePath("/orders");
-    revalidatePath("/products");
-    revalidatePath("/notifications");
-    revalidatePath("/dashboard");
   });
 
 const schema = z.object({
@@ -471,14 +431,12 @@ const schema = z.object({
   id: z.string().uuid(),
 });
 
-export const deleteOrderAction = action
+export const deleteOrderAction = protectedAction
   .schema(schema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const order = await OrderRepo.findOrThrow({
@@ -517,20 +475,14 @@ export const deleteOrderAction = action
         businessId: business.data.id,
       });
     }
-
-    revalidatePath(`/orders`);
-    revalidatePath(`/dashboard`);
-    revalidatePath(`/orders/${order.data.id}/edit`);
   });
 
-export const restoreOrderAction = action
+export const restoreOrderAction = protectedAction
   .schema(schema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const order = await OrderRepo.findOrThrow({
@@ -566,7 +518,4 @@ export const restoreOrderAction = action
       id: parsedInput.id,
       businessId: business.data.id,
     });
-
-    revalidatePath(`/orders`);
-    revalidatePath(`/orders/${order.data.id}/edit`);
   });

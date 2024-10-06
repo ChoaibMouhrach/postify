@@ -8,9 +8,9 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_PASSWORD=6003
+      - POSTGRES_PASSWORD=3636
       - POSTGRES_USER=root
-      - POSTGRES_DB=pos
+      - POSTGRES_DB=postify
 
 volumes:
   pg_data:

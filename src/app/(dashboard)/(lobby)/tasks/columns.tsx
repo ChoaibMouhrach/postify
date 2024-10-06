@@ -30,7 +30,7 @@ const Actions: React.FC<ActionsProps> = ({ task }) => {
         id: task.id,
       });
 
-      if ("data" in response) {
+      if (response?.data) {
         res(response);
         return;
       }
@@ -41,8 +41,8 @@ const Actions: React.FC<ActionsProps> = ({ task }) => {
     toast.promise(promise, {
       loading: "loading...",
       success: "Task restored successfully",
-      error: (err: RestoreTaskActionRetutn) => {
-        return err.serverError || "Something went wrong";
+      error: (error: RestoreTaskActionRetutn) => {
+        return error?.serverError || "Something went wrong";
       },
     });
   };

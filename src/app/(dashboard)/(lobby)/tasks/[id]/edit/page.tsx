@@ -23,7 +23,7 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  const task = await db.query.tasks.findFirst({
+  const task = await db.query.tasksTable.findFirst({
     where: and(eq(tasksTable.userId, user.id), eq(tasksTable.id, params.id)),
   });
 

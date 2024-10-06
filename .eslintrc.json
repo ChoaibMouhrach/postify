@@ -1,9 +1,3 @@
 {
-  "extends": "next/core-web-vitals",
-  "rules": {
-    "no-unused-expressions": "error",
-    "no-unused-labels": "error",
-    "no-unused-vars": "error",
-    "no-console": "error"
-  }
+  "extends": "next/core-web-vitals"
 }

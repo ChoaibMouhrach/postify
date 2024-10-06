@@ -10,10 +10,11 @@ import { Edit } from "./edit";
 import { Delete } from "./delete";
 import { rscAuth } from "@/server/lib/action";
 import { BusinessesRepo } from "@/server/repositories/business";
-import { purchaseRepository } from "@/server/repositories/purchase";
+import { PurchaseRepo } from "@/server/repositories/purchase";
 import { db } from "@/server/db";
 import { purchasesItems } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 
 interface PageProps {
   params: {
@@ -25,18 +26,26 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  const business = await BusinessesRepo.rscFindOrThrow(
-    params.businessId,
-    user.id,
-  );
+  const business = await BusinessesRepo.find({
+    id: params.businessId,
+    userId: user.id,
+  });
 
-  const purchase = await purchaseRepository.rscFindOrThrow(
-    params.id,
-    business.id,
-  );
+  if (!business) {
+    redirect("/businesses");
+  }
+
+  const purchase = await PurchaseRepo.find({
+    id: params.id,
+    businessId: business.data.id,
+  });
+
+  if (!purchase) {
+    redirect("/purchases");
+  }
 
   const items = await db.query.purchasesItems.findMany({
-    where: eq(purchasesItems.purchaseId, purchase.id),
+    where: eq(purchasesItems.purchaseId, purchase.data.id),
     with: {
       product: true,
     },
@@ -53,7 +62,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
         </CardHeader>
         <Edit
           purchase={{
-            ...purchase,
+            ...purchase.data,
             items,
           }}
         />
@@ -66,7 +75,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Delete purchase={purchase} />
+          <Delete purchase={purchase.data} />
         </CardContent>
       </Card>
     </>

@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Card,
   CardContent,
@@ -9,7 +10,8 @@ import { Delete } from "./delete";
 import { Edit } from "./edit";
 import { rscAuth } from "@/server/lib/action";
 import { BusinessesRepo } from "@/server/repositories/business";
-import { supplierRepository } from "@/server/repositories/supplier";
+import { SupplierRepo } from "@/server/repositories/supplier";
+import { redirect } from "next/navigation";
 
 interface PageProps {
   params: {
@@ -21,15 +23,23 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  const business = await BusinessesRepo.rscFindOrThrow(
-    params.businessId,
-    user.id,
-  );
+  const business = await BusinessesRepo.find({
+    id: params.businessId,
+    userId: user.id,
+  });
 
-  const supplier = await supplierRepository.rscFindOrThrow(
-    params.id,
-    business.id,
-  );
+  if (!business) {
+    redirect("/business");
+  }
+
+  const supplier = await SupplierRepo.find({
+    id: params.id,
+    businessId: business.data.id,
+  });
+
+  if (!supplier) {
+    redirect("/suppliers");
+  }
 
   return (
     <>
@@ -40,7 +50,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
             You can edit your supplier from here.
           </CardDescription>
         </CardHeader>
-        <Edit supplier={supplier} />
+        <Edit supplier={supplier.data} />
       </Card>
       <Card>
         <CardHeader>
@@ -50,7 +60,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Delete supplier={supplier} />
+          <Delete supplier={supplier.data} />
         </CardContent>
       </Card>
     </>

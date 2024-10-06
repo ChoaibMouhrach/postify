@@ -9,7 +9,9 @@ import { Edit } from "./edit";
 import { Delete } from "./delete";
 import { rscAuth } from "@/server/lib/action";
 import { BusinessesRepo } from "@/server/repositories/business";
-import { productRepository } from "@/server/repositories/product";
+import { ProductRepo } from "@/server/repositories/product";
+import { redirect } from "next/navigation";
+import React from "react";
 
 interface PageProps {
   params: { businessId: string; id: string };
@@ -18,15 +20,23 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  const business = await BusinessesRepo.rscFindOrThrow(
-    params.businessId,
-    user.id,
-  );
+  const business = await BusinessesRepo.find({
+    id: params.businessId,
+    userId: user.id,
+  });
 
-  const product = await productRepository.rscFindOrThrow(
-    params.id,
-    business.id,
-  );
+  if (!business) {
+    redirect("/businesses");
+  }
+
+  const product = await ProductRepo.find({
+    id: params.id,
+    businessId: business.data.id,
+  });
+
+  if (!product) {
+    redirect("/products");
+  }
 
   return (
     <>
@@ -37,7 +47,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
             You can update your product from here.
           </CardDescription>
         </CardHeader>
-        <Edit product={product} />
+        <Edit product={product.data} />
       </Card>
       <Card>
         <CardHeader>
@@ -47,7 +57,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Delete product={product} />
+          <Delete product={product.data} />
         </CardContent>
       </Card>
     </>

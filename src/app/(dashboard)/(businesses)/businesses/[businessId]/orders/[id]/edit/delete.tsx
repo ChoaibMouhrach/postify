@@ -20,8 +20,8 @@ export const Delete: React.FC<DeleteProps> = ({ order }) => {
       toast.success("Order deleted successfully");
       router.push(`/businesses/${order.businessId}/orders`);
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 

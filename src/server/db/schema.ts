@@ -1,13 +1,15 @@
 import { randomUUID } from "crypto";
 import { relations, sql } from "drizzle-orm";
 import {
-  sqliteTable,
-  text,
-  primaryKey,
+  boolean,
   integer,
+  pgTable,
   real,
-} from "drizzle-orm/sqlite-core";
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
+// utils
 const id = () => {
   return text("id").notNull().primaryKey().$defaultFn(randomUUID);
 };
@@ -22,71 +24,69 @@ const deletedAt = () => {
   return text("deletedAt");
 };
 
-export const roles = sqliteTable("roles", {
+// tables
+export const rolesTable = pgTable("roles", {
   id: id(),
   name: text("name").notNull(),
 });
 
-export type TRole = typeof roles.$inferSelect;
+export type TRole = typeof rolesTable.$inferSelect;
 
-export const users = sqliteTable("user", {
-  id: id(),
+export const usersTable = pgTable("user", {
+  id: text("id").primaryKey(),
   name: text("name"),
-  image: text("image"),
   email: text("email").notNull(),
   emailVerified: text("emailVerified"),
 
   // roles
-  roleId: text("roleId").references(() => roles.id, { onDelete: "cascade" }),
+  roleId: text("roleId")
+    .notNull()
+    .references(() => rolesTable.id, {
+      onDelete: "cascade",
+    }),
 });
 
-export type TUser = typeof users.$inferSelect;
+export type TUser = typeof usersTable.$inferSelect;
+export type TUserInsert = typeof usersTable.$inferInsert;
 
-export const accounts = sqliteTable(
-  "account",
-  {
-    userId: text("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    type: text("type").$type().notNull(),
-    provider: text("provider").notNull(),
-    providerAccountId: text("providerAccountId").notNull(),
-    refresh_token: text("refresh_token"),
-    access_token: text("access_token"),
-    expires_at: integer("expires_at"),
-    token_type: text("token_type"),
-    scope: text("scope"),
-    id_token: text("id_token"),
-    session_state: text("session_state"),
-  },
-  (account) => ({
-    compoundKey: primaryKey({
-      columns: [account.provider, account.providerAccountId],
-    }),
-  }),
-);
+export const sessionsTable = pgTable("session", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", {
+    withTimezone: true,
+    mode: "date",
+  }).notNull(),
+});
 
-export const sessions = sqliteTable("session", {
-  sessionToken: text("sessionToken").notNull().primaryKey(),
+export type TSession = typeof sessionsTable.$inferSelect;
+export type TSessionInsert = typeof sessionsTable.$inferInsert;
+
+//
+export const variablesTable = pgTable("variables", {
+  id: id(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+});
+
+export type TVariable = typeof variablesTable.$inferSelect;
+export type TVariableInsert = typeof variablesTable.$inferInsert;
+
+//
+export const magicTokensTable = pgTable("magicTokens", {
+  id: id(),
+  token: text("token").notNull().unique(),
   userId: text("userId")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expires: text("expires").notNull(),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expiresAt").notNull(),
 });
 
-export const verificationTokens = sqliteTable(
-  "verificationToken",
-  {
-    identifier: text("identifier").notNull(),
-    token: text("token").notNull(),
-    expires: text("expires").notNull(),
-  },
-  (vt) => ({
-    compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  }),
-);
+export type TMagicToken = typeof magicTokensTable.$inferSelect;
+export type TMagicTokenInsert = typeof magicTokensTable.$inferInsert;
 
-export const businessesTable = sqliteTable("businesses", {
+export const businessesTable = pgTable("businesses", {
   id: id(),
 
   // meta
@@ -101,7 +101,7 @@ export const businessesTable = sqliteTable("businesses", {
 
   userId: text("userId")
     .notNull()
-    .references(() => users.id, {
+    .references(() => usersTable.id, {
       onDelete: "cascade",
     }),
 
@@ -113,7 +113,7 @@ export const businessesTable = sqliteTable("businesses", {
 export type TBusiness = typeof businessesTable.$inferSelect;
 export type TBusinessInsert = typeof businessesTable.$inferInsert;
 
-export const productsTable = sqliteTable("products", {
+export const productsTable = pgTable("products", {
   id: id(),
 
   // info
@@ -143,7 +143,7 @@ export const productsTable = sqliteTable("products", {
 export type TProduct = typeof productsTable.$inferSelect;
 export type TProductInsert = typeof productsTable.$inferInsert;
 
-export const categoriesTable = sqliteTable("categories", {
+export const categoriesTable = pgTable("categories", {
   id: id(),
 
   // info
@@ -160,7 +160,7 @@ export const categoriesTable = sqliteTable("categories", {
 export type TCategory = typeof categoriesTable.$inferSelect;
 export type TCategoryInsert = typeof categoriesTable.$inferInsert;
 
-export const customersTable = sqliteTable("customers", {
+export const customersTable = pgTable("customers", {
   id: id(),
 
   // info
@@ -182,7 +182,7 @@ export const customersTable = sqliteTable("customers", {
 export type TCustomer = typeof customersTable.$inferSelect;
 export type TCustomerInsert = typeof customersTable.$inferInsert;
 
-export const suppliersTable = sqliteTable("suppliers", {
+export const suppliersTable = pgTable("suppliers", {
   id: id(),
 
   // info
@@ -204,14 +204,14 @@ export const suppliersTable = sqliteTable("suppliers", {
 export type TSupplier = typeof suppliersTable.$inferSelect;
 export type TSupplierInsert = typeof suppliersTable.$inferInsert;
 
-export const orderTypes = sqliteTable("orderTypes", {
+export const orderTypes = pgTable("orderTypes", {
   id: id(),
   name: text("name").notNull(),
 });
 
 export type TOrderType = typeof orderTypes.$inferSelect;
 
-export const ordersTable = sqliteTable("orders", {
+export const ordersTable = pgTable("orders", {
   id: id(),
 
   //
@@ -242,7 +242,7 @@ export const ordersTable = sqliteTable("orders", {
 export type TOrder = typeof ordersTable.$inferSelect;
 export type TOrderInsert = typeof ordersTable.$inferInsert;
 
-export const ordersItems = sqliteTable("ordersItems", {
+export const ordersItems = pgTable("ordersItems", {
   id: id(),
 
   orderId: text("orderId")
@@ -260,7 +260,7 @@ export const ordersItems = sqliteTable("ordersItems", {
 
 export type TOrderItem = typeof ordersItems.$inferSelect;
 
-export const purchasesTable = sqliteTable("purchases", {
+export const purchasesTable = pgTable("purchases", {
   id: id(),
 
   // info
@@ -281,7 +281,7 @@ export const purchasesTable = sqliteTable("purchases", {
 export type TPurchase = typeof purchasesTable.$inferSelect;
 export type TPurchaseInsert = typeof purchasesTable.$inferInsert;
 
-export const purchasesItems = sqliteTable("purchasesItems", {
+export const purchasesItems = pgTable("purchasesItems", {
   id: id(),
 
   // info
@@ -295,22 +295,18 @@ export const purchasesItems = sqliteTable("purchasesItems", {
   cost: real("cost").notNull(),
 });
 
-export const notificationsTable = sqliteTable("notifications", {
+export const notificationsTable = pgTable("notifications", {
   id: id(),
 
   // info
   title: text("title").notNull(),
   description: text("description"),
-  read: integer("read", {
-    mode: "boolean",
-  })
-    .default(false)
-    .notNull(),
+  read: boolean("read").default(false).notNull(),
 
   // meta
   userId: text("userId")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
   deletedAt: deletedAt(),
 });
@@ -318,21 +314,21 @@ export const notificationsTable = sqliteTable("notifications", {
 export type TNotification = typeof notificationsTable.$inferSelect;
 export type TNotificationInsert = typeof notificationsTable.$inferInsert;
 
-export const taskTypes = sqliteTable("taskTypes", {
+export const taskTypes = pgTable("taskTypes", {
   id: id(),
   name: text("name").notNull(),
 });
 
 export type TTaskType = typeof taskTypes.$inferSelect;
 
-export const taskStatuses = sqliteTable("taskStatuses", {
+export const taskStatuses = pgTable("taskStatuses", {
   id: id(),
   name: text("name").notNull(),
 });
 
 export type TTaskStatus = typeof taskStatuses.$inferSelect;
 
-export const tasksTable = sqliteTable("tasks", {
+export const tasksTable = pgTable("tasks", {
   id: id(),
   title: text("title").notNull(),
   description: text("description"),
@@ -349,7 +345,7 @@ export const tasksTable = sqliteTable("tasks", {
 
   userId: text("userId")
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
 
   deletedAt: deletedAt(),
   createdAt: createdAt(),
@@ -407,16 +403,24 @@ export const productRelations = relations(productsTable, ({ one, many }) => ({
   }),
 }));
 
-export const rolesRelations = relations(roles, ({ many }) => ({
-  users: many(users),
+export const rolesRelations = relations(rolesTable, ({ many }) => ({
+  users: many(usersTable),
 }));
 
-export const userRelations = relations(users, ({ many, one }) => ({
+export const userRelations = relations(usersTable, ({ many, one }) => ({
   user: many(productsTable),
   businesses: many(businessesTable),
-  role: one(roles, {
-    fields: [users.roleId],
-    references: [roles.id],
+  magicTokens: many(magicTokensTable),
+  role: one(rolesTable, {
+    fields: [usersTable.roleId],
+    references: [rolesTable.id],
+  }),
+}));
+
+export const magicTokenRelations = relations(magicTokensTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [magicTokensTable.userId],
+    references: [usersTable.id],
   }),
 }));
 

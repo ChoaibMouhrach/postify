@@ -19,8 +19,8 @@ export const BusinessDelete: React.FC<BusinessDeleteProps> = ({ business }) => {
       toast.success("Business Deleted successfully");
       router.push("/businesses");
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 

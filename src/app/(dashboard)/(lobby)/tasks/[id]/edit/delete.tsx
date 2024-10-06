@@ -20,8 +20,8 @@ export const Delete: React.FC<DeleteProps> = ({ id, deleted }) => {
       toast.success("Task deleted successfully");
       router.push("/tasks");
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 

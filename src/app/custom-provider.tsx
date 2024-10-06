@@ -1,7 +1,7 @@
 "use client";
 
+import React from "react";
 import { Toaster } from "@/client/components/ui/sonner";
-import { SessionProvider } from "next-auth/react";
 import { AppProgressBar as ProgressBar } from "next-nprogress-bar";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -15,9 +15,7 @@ export const CustomProvider: React.FC<CustomProviderProps> = ({ children }) => {
 
   return (
     <>
-      <SessionProvider>
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
-      </SessionProvider>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
       <Toaster closeButton />
       <ProgressBar
         height="4px"

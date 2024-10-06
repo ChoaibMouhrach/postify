@@ -60,8 +60,8 @@ export const Edit: React.FC<EditProps> = ({ order, business }) => {
     onSuccess: () => {
       toast.success("Order updated successfully");
     },
-    onError: (err) => {
-      toast.error(err.serverError);
+    onError: ({ error }) => {
+      toast.error(error.serverError);
     },
   });
 

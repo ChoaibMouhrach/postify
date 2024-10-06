@@ -8,6 +8,7 @@ import { Create } from "./create";
 import React from "react";
 import { BusinessesRepo } from "@/server/repositories/business";
 import { rscAuth } from "@/server/lib/action";
+import { redirect } from "next/navigation";
 
 interface PageProps {
   params: {
@@ -18,7 +19,14 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  await BusinessesRepo.rscFindOrThrow(params.businessId, user.id);
+  const business = await BusinessesRepo.find({
+    id: params.businessId,
+    userId: user.id,
+  });
+
+  if (!business) {
+    redirect("/businesses");
+  }
 
   return (
     <Card>

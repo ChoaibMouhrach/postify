@@ -4,13 +4,7 @@ import {
   createCustomerSchema,
   updateCustomerSchema,
 } from "@/common/schemas/customer";
-import {
-  CustomError,
-  TakenError,
-  action,
-  auth,
-  rscAuth,
-} from "@/server/lib/action";
+import { CustomError, TakenError, protectedAction } from "@/server/lib/action";
 import {
   and,
   between,
@@ -22,108 +16,88 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "../db";
 import { customersTable } from "../db/schema";
-import {
-  fromSchema,
-  pageSchema,
-  querySchema,
-  toSchema,
-  trashSchema,
-} from "@/common/schemas";
+import { businessIndexBaseSchema } from "@/common/schemas";
 import { RECORDS_LIMIT } from "@/common/constants";
 import { BusinessesRepo } from "../repositories/business";
 import { redirect } from "next/navigation";
 import { CustomerRepo } from "../repositories/customer";
 
-const indexSchema = z.object({
-  businessId: z.string().uuid(),
-  page: pageSchema,
-  query: querySchema,
-  trash: trashSchema,
-  from: fromSchema,
-  to: toSchema,
-});
+export const getCustomersAction = protectedAction
+  .schema(businessIndexBaseSchema)
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
+    const business = await BusinessesRepo.find({
+      id: parsedInput.businessId,
+      userId: authUser.id,
+    });
 
-export const getCustomersAction = async (input: unknown) => {
-  const { page, query, trash, from, to, businessId } = indexSchema.parse(input);
+    if (!business) {
+      redirect("/businesses");
+    }
 
-  const user = await rscAuth();
+    const where = and(
+      eq(customersTable.businessId, business.data.id),
+      parsedInput.trash
+        ? isNotNull(customersTable.deletedAt)
+        : isNull(customersTable.deletedAt),
+      parsedInput.from && parsedInput.to
+        ? between(
+            customersTable.createdAt,
+            new Date(parseInt(parsedInput.from)).toISOString().slice(0, 10),
+            new Date(parseInt(parsedInput.to)).toISOString().slice(0, 10),
+          )
+        : undefined,
+      parsedInput.query
+        ? or(
+            ilike(customersTable.name, `%${parsedInput.query}%`),
+            ilike(customersTable.address, `%${parsedInput.query}%`),
+            ilike(customersTable.email, `%${parsedInput.query}%`),
+            ilike(customersTable.phone, `%${parsedInput.query}%`),
+          )
+        : undefined,
+    );
 
-  const business = await BusinessesRepo.find({
-    id: businessId,
-    userId: user.id,
+    const dataPromise = db.query.customersTable.findMany({
+      where,
+      orderBy: desc(customersTable.createdAt),
+      limit: RECORDS_LIMIT,
+      offset: (parsedInput.page - 1) * RECORDS_LIMIT,
+    });
+
+    const countPromise = db
+      .select({
+        count: sql`COUNT(*)`.mapWith(Number),
+      })
+      .from(customersTable);
+
+    const [data, [{ count }]] = await Promise.all([dataPromise, countPromise]);
+
+    const lastPage = Math.ceil(count / 8);
+
+    return {
+      data,
+      page: parsedInput.page,
+      lastPage,
+      trash: parsedInput.trash,
+      query: parsedInput.query,
+      from: parsedInput.from,
+      to: parsedInput.to,
+    };
   });
-
-  if (!business) {
-    redirect("/businesses");
-  }
-
-  const where = and(
-    eq(customersTable.businessId, business.data.id),
-    trash
-      ? isNotNull(customersTable.deletedAt)
-      : isNull(customersTable.deletedAt),
-    from && to
-      ? between(
-          customersTable.createdAt,
-          new Date(parseInt(from)).toISOString().slice(0, 10),
-          new Date(parseInt(to)).toISOString().slice(0, 10),
-        )
-      : undefined,
-    query
-      ? or(
-          ilike(customersTable.name, `%${query}%`),
-          ilike(customersTable.address, `%${query}%`),
-          ilike(customersTable.email, `%${query}%`),
-          ilike(customersTable.phone, `%${query}%`),
-        )
-      : undefined,
-  );
-
-  const dataPromise = db.query.customersTable.findMany({
-    where,
-    orderBy: desc(customersTable.createdAt),
-    limit: RECORDS_LIMIT,
-    offset: (page - 1) * RECORDS_LIMIT,
-  });
-
-  const countPromise = db
-    .select({
-      count: sql`COUNT(*)`.mapWith(Number),
-    })
-    .from(customersTable);
-
-  const [data, [{ count }]] = await Promise.all([dataPromise, countPromise]);
-
-  const lastPage = Math.ceil(count / 8);
-
-  return {
-    data,
-    page,
-    lastPage,
-    trash,
-    query,
-    from,
-    to,
-  };
-};
 
 const restoreCustomerSchema = z.object({
   businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
-export const restoreCustomerAction = action
+export const restoreCustomerAction = protectedAction
   .schema(restoreCustomerSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const customer = await CustomerRepo.findOrThrow({
@@ -136,19 +110,14 @@ export const restoreCustomerAction = action
     }
 
     await customer.restore();
-
-    revalidatePath("/customers");
-    revalidatePath(`/customers/${customer.data.id}/edit`);
   });
 
-export const createCustomerAction = action
+export const createCustomerAction = protectedAction
   .schema(createCustomerSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     if (parsedInput.email) {
@@ -163,8 +132,7 @@ export const createCustomerAction = action
     }
 
     // todo: check phone number
-
-    const [newCustomer] = await CustomerRepo.create([
+    await CustomerRepo.create([
       {
         name: parsedInput.name,
         email: parsedInput.email || undefined,
@@ -174,10 +142,6 @@ export const createCustomerAction = action
         code: parsedInput.code || null,
       },
     ]);
-
-    revalidatePath("/customers");
-    revalidatePath("/dashboard");
-    revalidatePath(`/customers/${newCustomer.data.id}/edit`);
   });
 
 const deleteCustomerSchema = z.object({
@@ -185,14 +149,12 @@ const deleteCustomerSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const deleteCustomerAction = action
+export const deleteCustomerAction = protectedAction
   .schema(deleteCustomerSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const customer = await CustomerRepo.findOrThrow({
@@ -203,20 +165,14 @@ export const deleteCustomerAction = action
     customer.data.deletedAt = `NOW()`;
 
     await customer.save();
-
-    revalidatePath("/customers");
-    revalidatePath("/dashboard");
-    revalidatePath(`/customers/${customer.data.id}/edit`);
   });
 
-export const updateCustomerAction = action
+export const updateCustomerAction = protectedAction
   .schema(updateCustomerSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const customer = await CustomerRepo.findOrThrow({
@@ -255,7 +211,4 @@ export const updateCustomerAction = action
     customer.data.code = parsedInput.code || null;
 
     await customer.save();
-
-    revalidatePath("/customers");
-    revalidatePath(`/customers/${parsedInput.id}/edit`);
   });

@@ -31,7 +31,7 @@ const Actions: React.FC<ActionsProps> = ({ category }) => {
         businessId,
       });
 
-      if ("data" in response) {
+      if (response?.data) {
         res(response);
         return;
       }

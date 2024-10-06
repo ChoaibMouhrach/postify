@@ -1,12 +1,12 @@
 {
-  "version": "5",
-  "dialect": "sqlite",
+  "version": "7",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1715433698746,
-      "tag": "0000_melodic_gambit",
+      "version": "7",
+      "when": 1727989334586,
+      "tag": "0000_amused_lenny_balinger",
       "breakpoints": true
     }
   ]

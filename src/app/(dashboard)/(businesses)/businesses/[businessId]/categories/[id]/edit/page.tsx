@@ -8,9 +8,10 @@ import {
 import { Delete } from "./delete";
 import { Edit } from "./edit";
 import React from "react";
-import { categoryRepository } from "@/server/repositories/category";
+import { CategoryRepo } from "@/server/repositories/category";
 import { BusinessesRepo } from "@/server/repositories/business";
 import { rscAuth } from "@/server/lib/action";
+import { redirect } from "next/navigation";
 
 interface PageProps {
   params: {
@@ -22,15 +23,23 @@ interface PageProps {
 const Page: React.FC<PageProps> = async ({ params }) => {
   const user = await rscAuth();
 
-  const business = await BusinessesRepo.rscFindOrThrow(
-    params.businessId,
-    user.id,
-  );
+  const business = await BusinessesRepo.find({
+    id: params.businessId,
+    userId: user.id,
+  });
 
-  const category = await categoryRepository.rscFindOrThrow(
-    params.id,
-    business.id,
-  );
+  if (!business) {
+    redirect("/businesses");
+  }
+
+  const category = await CategoryRepo.find({
+    id: params.id,
+    businessId: business.data.id,
+  });
+
+  if (!category) {
+    redirect("/categories");
+  }
 
   return (
     <>
@@ -41,7 +50,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
             You can edit your category from here.
           </CardDescription>
         </CardHeader>
-        <Edit category={category} />
+        <Edit category={category.data} />
       </Card>
       <Card>
         <CardHeader>
@@ -51,7 +60,7 @@ const Page: React.FC<PageProps> = async ({ params }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Delete category={category} />
+          <Delete category={category.data} />
         </CardContent>
       </Card>
     </>

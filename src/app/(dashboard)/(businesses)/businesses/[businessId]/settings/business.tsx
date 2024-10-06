@@ -10,6 +10,7 @@ import { BusinessDelete } from "./business-delete";
 import React from "react";
 import { rscAuth } from "@/server/lib/action";
 import { BusinessesRepo } from "@/server/repositories/business";
+import { redirect } from "next/navigation";
 
 interface BusinessProps {
   businessId: string;
@@ -18,7 +19,14 @@ interface BusinessProps {
 export const Business: React.FC<BusinessProps> = async ({ businessId }) => {
   const user = await rscAuth();
 
-  const business = await BusinessesRepo.rscFindOrThrow(businessId, user.id);
+  const business = await BusinessesRepo.find({
+    id: businessId,
+    userId: user.id,
+  });
+
+  if (!business) {
+    redirect("/businesses");
+  }
 
   return (
     <>
@@ -29,7 +37,7 @@ export const Business: React.FC<BusinessProps> = async ({ businessId }) => {
             You can edit this business from here.
           </CardDescription>
         </CardHeader>
-        <BusinessEdit business={business} />
+        <BusinessEdit business={business.data} />
       </Card>
       <Card>
         <CardHeader>
@@ -39,7 +47,7 @@ export const Business: React.FC<BusinessProps> = async ({ businessId }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <BusinessDelete business={business} />
+          <BusinessDelete business={business.data} />
         </CardContent>
       </Card>
     </>

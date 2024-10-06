@@ -48,8 +48,8 @@ export const BusinessEdit: React.FC<BusinessEditProps> = ({ business }) => {
       toast.success("Business updated successfully");
       form.reset();
     },
-    onError: (err) => {
-      toast.error(err.serverError);
+    onError: ({ error }) => {
+      toast.error(error.serverError);
     },
   });
 

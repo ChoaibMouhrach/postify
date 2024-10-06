@@ -12,8 +12,7 @@ export const env = createEnv({
     RESEND_DOMAIN: z.string().min(3),
 
     // DATABASE
-    TURSO_DATABASE_URL: z.string().url(),
-    TURSO_AUTH_TOKEN: z.string().min(16),
+    DATABASE_URL: z.string().url(),
   },
   client: {},
   runtimeEnv: process.env,

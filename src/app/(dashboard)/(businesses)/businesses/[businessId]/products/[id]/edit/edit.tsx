@@ -35,8 +35,8 @@ export const Edit: React.FC<EditProps> = ({ product }) => {
     onSuccess: () => {
       toast.success("Product updated successfully");
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 

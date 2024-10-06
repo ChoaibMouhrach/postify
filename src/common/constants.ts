@@ -20,3 +20,7 @@ export const ORDER_TYPES = {
   CUSTOMER: "customer",
   WALKING_CUSTOMER: "walking customer",
 };
+
+export const VARIABLES = {
+  setup: "setup",
+};

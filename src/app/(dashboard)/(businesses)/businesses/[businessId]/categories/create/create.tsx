@@ -41,8 +41,8 @@ export const Create: React.FC<CreateProps> = ({ businessId }) => {
       toast.success("Category created successfully");
       form.reset();
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 

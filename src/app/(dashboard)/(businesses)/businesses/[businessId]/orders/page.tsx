@@ -31,7 +31,7 @@ const OrdersWrapper: React.FC<OrdersWrapperProps> = async ({
   return (
     <Orders
       data={data}
-      business={business}
+      business={business.data}
       // meta
       query={query}
       trash={trash}

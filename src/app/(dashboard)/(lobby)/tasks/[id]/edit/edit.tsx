@@ -55,8 +55,8 @@ export const Edit: React.FC<EditProps> = ({ types, statuses, task }) => {
       toast.success("Task updated successfully");
       form.reset();
     },
-    onError: (err) => {
-      toast.error(err.serverError || "Something went wrong");
+    onError: ({ error }) => {
+      toast.error(error.serverError || "Something went wrong");
     },
   });
 

@@ -4,9 +4,8 @@ import {
   createSupplierSchema,
   updateSupplierSchema,
 } from "@/common/schemas/supplier";
-import { action, auth, rscAuth, TakenError } from "@/server/lib/action";
+import { protectedAction, TakenError } from "@/server/lib/action";
 import { SupplierRepo } from "@/server/repositories/supplier";
-import { revalidatePath } from "next/cache";
 import { db } from "../db";
 import { suppliersTable } from "../db/schema";
 import { RECORDS_LIMIT } from "@/common/constants";
@@ -21,107 +20,88 @@ import {
   sql,
   between,
 } from "drizzle-orm";
-import {
-  fromSchema,
-  pageSchema,
-  querySchema,
-  toSchema,
-  trashSchema,
-} from "@/common/schemas";
 import { z } from "zod";
 import { BusinessesRepo } from "../repositories/business";
 import { redirect } from "next/navigation";
+import { businessIndexBaseSchema } from "@/common/schemas";
 
-const schema = z.object({
-  businessId: z.string().uuid(),
-  page: pageSchema,
-  query: querySchema,
-  trash: trashSchema,
-  from: fromSchema,
-  to: toSchema,
-});
+export const getSuppliersAction = protectedAction
+  .schema(businessIndexBaseSchema)
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
+    const business = await BusinessesRepo.find({
+      id: parsedInput.businessId,
+      userId: authUser.id,
+    });
 
-export const getSuppliersAction = async (input: unknown) => {
-  const { page, query, trash, from, to, businessId } = schema.parse(input);
+    if (!business) {
+      redirect("/suppliers");
+    }
 
-  const user = await rscAuth();
+    const where = and(
+      eq(suppliersTable.businessId, business.data.id),
+      parsedInput.trash
+        ? isNotNull(suppliersTable.deletedAt)
+        : isNull(suppliersTable.deletedAt),
+      parsedInput.from && parsedInput.to
+        ? between(
+            suppliersTable.createdAt,
+            new Date(parseInt(parsedInput.from)).toISOString().slice(0, 10),
+            new Date(parseInt(parsedInput.to)).toISOString().slice(0, 10),
+          )
+        : undefined,
+      parsedInput.query
+        ? or(
+            ilike(suppliersTable.name, `%${parsedInput.query}%`),
+            ilike(suppliersTable.email, `%${parsedInput.query}%`),
+            ilike(suppliersTable.phone, `%${parsedInput.query}%`),
+            ilike(suppliersTable.address, `%${parsedInput.query}%`),
+          )
+        : undefined,
+    );
 
-  const business = await BusinessesRepo.find({
-    id: businessId,
-    userId: user.id,
+    const dataPromise = db.query.suppliersTable.findMany({
+      where,
+      limit: RECORDS_LIMIT,
+      offset: (parsedInput.page - 1) * RECORDS_LIMIT,
+      orderBy: desc(suppliersTable.createdAt),
+    });
+
+    const countPromise = db
+      .select({
+        count: sql`COUNT(*)`.mapWith(Number),
+      })
+      .from(suppliersTable)
+      .where(where)
+      .then((recs) => recs[0].count);
+
+    const [data, count] = await Promise.all([dataPromise, countPromise]);
+
+    const lastPage = Math.ceil(count / RECORDS_LIMIT);
+
+    return {
+      data,
+      // meta
+      trash: parsedInput.trash,
+      query: parsedInput.query,
+      from: parsedInput.from,
+      to: parsedInput.to,
+      // pagination
+      page: parsedInput.page,
+      lastPage,
+    };
   });
-
-  if (!business) {
-    redirect("/suppliers");
-  }
-
-  const where = and(
-    eq(suppliersTable.businessId, business.data.id),
-    trash
-      ? isNotNull(suppliersTable.deletedAt)
-      : isNull(suppliersTable.deletedAt),
-    from && to
-      ? between(
-          suppliersTable.createdAt,
-          new Date(parseInt(from)).toISOString().slice(0, 10),
-          new Date(parseInt(to)).toISOString().slice(0, 10),
-        )
-      : undefined,
-    query
-      ? or(
-          ilike(suppliersTable.name, `%${query}%`),
-          ilike(suppliersTable.email, `%${query}%`),
-          ilike(suppliersTable.phone, `%${query}%`),
-          ilike(suppliersTable.address, `%${query}%`),
-        )
-      : undefined,
-  );
-
-  const dataPromise = db.query.suppliersTable.findMany({
-    where,
-    limit: RECORDS_LIMIT,
-    offset: (page - 1) * RECORDS_LIMIT,
-    orderBy: desc(suppliersTable.createdAt),
-  });
-
-  const countPromise = db
-    .select({
-      count: sql`COUNT(*)`.mapWith(Number),
-    })
-    .from(suppliersTable)
-    .where(where)
-    .then((recs) => recs[0].count);
-
-  const [data, count] = await Promise.all([dataPromise, countPromise]);
-
-  const lastPage = Math.ceil(count / RECORDS_LIMIT);
-
-  return {
-    data,
-    // meta
-    trash,
-    query,
-    from,
-    to,
-    // pagination
-    page,
-    lastPage,
-  };
-};
 
 const restoreSupplierSchema = z.object({
   businessId: z.string().uuid(),
   id: z.string().uuid(),
 });
 
-export const restoreSupplierAction = action
+export const restoreSupplierAction = protectedAction
   .schema(restoreSupplierSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const supplier = await SupplierRepo.findOrThrow({
@@ -133,19 +113,14 @@ export const restoreSupplierAction = action
       id: supplier.data.id,
       businessId: business.data.id,
     });
-
-    revalidatePath("/suppliers");
-    revalidatePath(`/suppliers/${parsedInput.id}/edit`);
   });
 
-export const createSupplierAction = action
+export const createSupplierAction = protectedAction
   .schema(createSupplierSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     if (parsedInput.email) {
@@ -164,7 +139,7 @@ export const createSupplierAction = action
     const supplierPhoneCheck = await db.query.suppliersTable.findFirst({
       where: and(
         eq(suppliersTable.phone, parsedInput.phone),
-        eq(suppliersTable.businessId, user.id),
+        eq(suppliersTable.businessId, authUser.id),
       ),
     });
 
@@ -172,7 +147,7 @@ export const createSupplierAction = action
       throw new TakenError("Phone");
     }
 
-    const [supplier] = await SupplierRepo.create([
+    await SupplierRepo.create([
       {
         name: parsedInput.name,
         phone: parsedInput.phone,
@@ -181,10 +156,6 @@ export const createSupplierAction = action
         businessId: business.data.id,
       },
     ]);
-
-    revalidatePath("/suppliers");
-    revalidatePath(`/dashboard`);
-    revalidatePath(`/suppliers/${supplier.data.id}/edit`);
   });
 
 const deleteSupplierSchema = z.object({
@@ -192,14 +163,12 @@ const deleteSupplierSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const deleteSupplierAction = action
+export const deleteSupplierAction = protectedAction
   .schema(deleteSupplierSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const supplier = await SupplierRepo.findOrThrow({
@@ -209,22 +178,18 @@ export const deleteSupplierAction = action
 
     if (supplier.data.deletedAt) {
       await supplier.permRemove();
-    } else {
-      await supplier.remove();
+      return;
     }
 
-    revalidatePath("/suppliers");
-    revalidatePath(`/dashboard`);
+    await supplier.remove();
   });
 
-export const updateSupplierAction = action
+export const updateSupplierAction = protectedAction
   .schema(updateSupplierSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await auth();
-
+  .action(async ({ parsedInput, ctx: { authUser } }) => {
     const business = await BusinessesRepo.findOrThrow({
       id: parsedInput.businessId,
-      userId: user.id,
+      userId: authUser.id,
     });
 
     const supplier = await SupplierRepo.findOrThrow({
@@ -268,6 +233,4 @@ export const updateSupplierAction = action
         address: parsedInput.address || null,
       },
     );
-
-    revalidatePath("/suppliers");
   });
