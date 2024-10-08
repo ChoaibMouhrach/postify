@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,

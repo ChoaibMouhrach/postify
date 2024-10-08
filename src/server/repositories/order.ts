@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { ordersTable, TOrder, TOrderInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
-import { Repo } from "./business";
+import { Repo } from "./repo";
 
 export class OrderRepo extends Repo<TOrder> {
   public static async find(where: {

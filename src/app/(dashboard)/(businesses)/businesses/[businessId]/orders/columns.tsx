@@ -83,7 +83,6 @@ const Actions: React.FC<ActionsProps> = ({ order }) => {
 };
 
 type Columns = (
-  // eslint-disable-next-line no-unused-vars
   currency: string,
 ) => ColumnDef<TOrder & { customer: TCustomer | null; type: TOrderType }>[];
 

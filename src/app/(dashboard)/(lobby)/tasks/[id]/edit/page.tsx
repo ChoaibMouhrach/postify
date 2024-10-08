@@ -7,12 +7,12 @@ import {
 } from "@/client/components/ui/card";
 import { db } from "@/server/db";
 import { tasksTable } from "@/server/db/schema";
-import { rscAuth } from "@/server/lib/action";
 import { and, eq } from "drizzle-orm";
 import React from "react";
 import { Delete } from "./delete";
 import { redirect } from "next/navigation";
 import { Edit } from "./edit";
+import { validateRequest } from "@/server/lib/auth";
 
 interface PageProps {
   params: {
@@ -21,7 +21,11 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ params }) => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
 
   const task = await db.query.tasksTable.findFirst({
     where: and(eq(tasksTable.userId, user.id), eq(tasksTable.id, params.id)),

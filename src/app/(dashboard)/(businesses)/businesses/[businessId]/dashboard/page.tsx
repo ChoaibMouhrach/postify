@@ -1,9 +1,9 @@
 import React from "react";
 import { Cards } from "./cards";
-import { rscAuth } from "@/server/lib/action";
 import { BusinessesRepo } from "@/server/repositories/business";
 import { Charts } from "./charts";
 import { redirect } from "next/navigation";
+import { validateRequest } from "@/server/lib/auth";
 
 interface PageProps {
   params: {
@@ -12,7 +12,11 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ params }) => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
 
   const business = await BusinessesRepo.find({
     id: params.businessId,

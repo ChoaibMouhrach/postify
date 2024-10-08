@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { TVariable, TVariableInsert, variablesTable } from "../db/schema";
-import { Repo } from "./business";
 import { NotfoundError } from "../lib/action";
+import { Repo } from "./repo";
 
 export class VariableRepo extends Repo<TVariable> {
   public static async find(id: string): Promise<VariableRepo | null> {

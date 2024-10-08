@@ -8,9 +8,8 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 interface CategoriesInputProps {
-  // eslint-disable-next-line no-unused-vars
   onValueChange: (value: string) => unknown;
-  defaultValue: string;
+  defaultValue?: string;
 }
 
 export const CategoriesInput: React.FC<CategoriesInputProps> = ({
@@ -22,16 +21,32 @@ export const CategoriesInput: React.FC<CategoriesInputProps> = ({
   const [query, setQuery] = useState("");
   const { data, isSuccess } = useQuery({
     queryKey: ["categories", query],
-    queryFn: () => getCategoriesAction({ businessId }),
+    queryFn: async () => {
+      if (typeof businessId !== "string") {
+        throw new Error("Business not found");
+      }
+
+      const response = await getCategoriesAction({ businessId });
+
+      if (response?.serverError) {
+        throw new Error(response.serverError);
+      }
+
+      if (!response?.data) {
+        throw new Error("Something went wrong");
+      }
+
+      return response.data;
+    },
   });
 
   if (isSuccess) {
     return (
       <Combobox
         query={query}
-        value={defaultValue}
         onQueryChange={setQuery}
         onValueChange={onValueChange}
+        value={defaultValue}
         items={data.data.map((category) => ({
           label: category.name,
           value: category.id,

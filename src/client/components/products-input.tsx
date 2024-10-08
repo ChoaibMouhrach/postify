@@ -25,27 +25,23 @@ import { Combobox } from "@/client/components/ui/combobox";
 import { Skeleton } from "@/client/components/ui/skeleton";
 import debounce from "debounce";
 import { Button } from "@/client/components/ui/button";
-import { Payload } from "./edit";
-import { TBusiness } from "@/server/db/schema";
+import { Payload } from "../../app/(dashboard)/(businesses)/businesses/[businessId]/purchases/create/create";
 import { toast } from "sonner";
 
 interface ProductsInputProps {
   form: UseFormReturn<Payload, any, undefined>;
-  business: TBusiness;
+  businessId: string;
 }
 
 export const ProductsInput: React.FC<ProductsInputProps> = ({
   form,
-  business,
+  businessId,
 }) => {
   const [query, setQuery] = useState("");
   const { data, error, isError, isLoading, isSuccess } = useQuery({
     queryKey: ["products", query],
     queryFn: async () => {
-      const response = await getProductsAction({
-        query,
-        businessId: business.id,
-      });
+      const response = await getProductsAction({ query, businessId });
 
       if (response?.serverError) {
         throw new Error(response.serverError);
@@ -64,29 +60,28 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
     if (!isSuccess) return;
 
     for (let product of data.data) {
-      if (product.id === id) {
-        const p = form.getValues("products").find((p) => p.id === id);
+      if (product.id !== id) {
+        continue;
+      }
+      const p = form.getValues("products").find((p) => p.id === id);
 
-        if (p) {
-          toast.error("Item already selected");
-
-          break;
-        }
-
-        form.setValue("products", [
-          ...form.getValues("products"),
-          {
-            ...product,
-            id,
-            quantity: 1,
-          },
-        ]);
-
+      if (p) {
+        toast.error("Item already selected");
         break;
       }
-    }
 
-    setQuery("");
+      form.setValue("products", [
+        ...form.getValues("products"),
+        {
+          id,
+          name: product.name,
+          quantity: 1,
+          cost: 1,
+        },
+      ]);
+
+      break;
+    }
   };
 
   const removeProduct = (id: string) => {
@@ -96,10 +91,20 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
     );
   };
 
-  const updateQuantity = (id: string, value: string) => {
-    const quantity = parseInt(value);
+  const updateProduct = (
+    type: "cost" | "quantity",
+    id: string,
+    value: string,
+  ) => {
+    let v;
 
-    if (!quantity) {
+    if (type === "quantity") {
+      v = parseInt(value);
+    } else {
+      v = parseFloat(value);
+    }
+
+    if (!v) {
       return;
     }
 
@@ -107,15 +112,30 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
       "products",
       form.getValues("products").map((product) => {
         if (product.id == id) {
-          return {
+          const body = {
             ...product,
-            quantity,
           };
+
+          if (type === "quantity") {
+            body["quantity"] = v;
+          } else {
+            body["cost"] = v;
+          }
+
+          return body;
         }
 
         return product;
       }),
     );
+  };
+
+  const updateQuantity = (id: string, quantity: string) => {
+    updateProduct("quantity", id, quantity);
+  };
+
+  const updateCost = (id: string, cost: string) => {
+    updateProduct("cost", id, cost);
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -161,61 +181,45 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
             <TableRow className="whitespace-nowrap">
               <TableHead>Name</TableHead>
               <TableHead>Quantity</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Total before tax</TableHead>
-              <TableHead>Tax</TableHead>
-              <TableHead>Actions</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead>Cost</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           {form.watch("products").length ? (
             <TableBody>
-              {form.watch("products").map((product) => {
-                const tbt = product.price * product.quantity;
+              {form.watch("products").map((product) => (
+                <TableRow key={product.id} className="whitespace-nowrap">
+                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell>
+                    <Input
+                      step="1"
+                      type="number"
+                      defaultValue={String(product.quantity)}
+                      onChange={(e) =>
+                        updateQuantity(product.id, e.target.value)
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      step="0.001"
+                      type="number"
+                      defaultValue={String(product.cost)}
+                      onChange={(e) => updateCost(product.id, e.target.value)}
+                    />
+                  </TableCell>
 
-                return (
-                  <TableRow key={product.id} className="whitespace-nowrap">
-                    <TableCell className="font-medium">
-                      {product.name}
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        defaultValue={String(product.quantity)}
-                        type="number"
-                        step="1"
-                        onChange={(e) =>
-                          updateQuantity(product.id, e.target.value)
-                        }
-                      />
-                    </TableCell>
-
-                    <TableCell>
-                      {product.price} {business.currency}
-                    </TableCell>
-
-                    <TableCell>
-                      {product.price * product.quantity} {business.currency}
-                    </TableCell>
-
-                    <TableCell>{product.tax}</TableCell>
-
-                    <TableCell>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => removeProduct(product.id)}
-                      >
-                        <Trash className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-
-                    <TableCell className="text-end">
-                      {(tbt + (tbt * product.tax) / 100).toFixed(2)}{" "}
-                      {business.currency}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                  <TableCell className="text-right">
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => removeProduct(product.id)}
+                    >
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           ) : (
             <TableCaption>No results</TableCaption>

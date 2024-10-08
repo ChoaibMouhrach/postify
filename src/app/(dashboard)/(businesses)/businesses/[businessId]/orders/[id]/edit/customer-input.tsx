@@ -27,9 +27,21 @@ export const CustomerInput: React.FC<CustomerInputProps> = ({
   businessId,
 }) => {
   const [query, setQuery] = useState("");
-  const { data, isSuccess } = useQuery({
-    queryKey: ["customers", query],
-    queryFn: () => getCustomersAction({ query, businessId }),
+  const { data, error, isLoading, isError, isSuccess } = useQuery({
+    queryKey: ["customer", query],
+    queryFn: async () => {
+      const response = await getCustomersAction({ query, businessId });
+
+      if (response?.serverError) {
+        throw new Error(response.serverError);
+      }
+
+      if (!response?.data) {
+        throw new Error("Something went wrong");
+      }
+
+      return response.data;
+    },
     placeholderData: (ph) => ph,
   });
 
@@ -66,7 +78,7 @@ export const CustomerInput: React.FC<CustomerInputProps> = ({
         <FormItem>
           <FormLabel>Customer</FormLabel>
           <FormControl>
-            {isSuccess ? (
+            {isSuccess && (
               <Combobox
                 query={query}
                 value={form.getValues("customerId")}
@@ -77,9 +89,9 @@ export const CustomerInput: React.FC<CustomerInputProps> = ({
                   value: customer.id,
                 }))}
               />
-            ) : (
-              <Skeleton className="h-10" />
             )}
+            {isError && error.message}
+            {isLoading && <Skeleton className="h-10" />}
           </FormControl>
           <FormDescription>The customer for this order.</FormDescription>
           <FormMessage />

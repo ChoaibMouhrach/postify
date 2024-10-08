@@ -1,4 +1,4 @@
-import { env } from "@/common/env.mjs";
+import { env } from "@/common/env";
 import { Resend } from "resend";
 
 const resend = new Resend(env.RESEND_TOKEN);

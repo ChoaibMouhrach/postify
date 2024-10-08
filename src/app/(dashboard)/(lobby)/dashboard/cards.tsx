@@ -13,9 +13,10 @@ import {
   purchasesTable,
   suppliersTable,
 } from "@/server/db/schema";
-import { rscAuth } from "@/server/lib/action";
 import { eq, inArray, sql } from "drizzle-orm";
 import { Charts } from "./charts";
+import { validateRequest } from "@/server/lib/auth";
+import { redirect } from "next/navigation";
 
 interface OrdersProps {
   businesses: string[];
@@ -130,7 +131,11 @@ const Suppliers: React.FC<SuppliersProps> = async ({ businesses }) => {
 };
 
 export const Cards = async () => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
 
   const businesses = await db
     .select({

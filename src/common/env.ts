@@ -15,5 +15,16 @@ export const env = createEnv({
     DATABASE_URL: z.string().url(),
   },
   client: {},
-  runtimeEnv: process.env,
+  runtimeEnv: {
+    // NEXTAUTH
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+
+    // RESEND
+    RESEND_TOKEN: process.env.RESEND_TOKEN,
+    RESEND_DOMAIN: process.env.RESEND_DOMAIN,
+
+    // DATABASE
+    DATABASE_URL: process.env.DATABASE_URL,
+  },
 });

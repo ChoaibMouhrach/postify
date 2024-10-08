@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   boolean,
   integer,
@@ -15,9 +15,7 @@ const id = () => {
 };
 
 const createdAt = () => {
-  return text("createdAT")
-    .default(sql`(CURRENT_TIMESTAMP)`)
-    .notNull();
+  return timestamp("createdAT").notNull().defaultNow();
 };
 
 const deletedAt = () => {

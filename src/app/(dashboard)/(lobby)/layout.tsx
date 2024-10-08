@@ -7,7 +7,9 @@ import {
 } from "@/client/components/layout";
 import React from "react";
 import { Bar, MobileBar } from "./links";
-import { rscAuth } from "@/server/lib/action";
+import { validateRequest } from "@/server/lib/auth";
+import { redirect } from "next/navigation";
+import { RoleRepo } from "@/server/repositories/role";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -17,16 +19,32 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = async ({ children, params }) => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const role = await RoleRepo.findOrThrow(user.roleId);
 
   return (
     <LayoutWrapper>
       <LayoutHead businessId={params.businessId}>
-        <MobileBar user={user} />
+        <MobileBar
+          user={{
+            ...user,
+            role: role.data,
+          }}
+        />
       </LayoutHead>
       <LayoutBody>
         <LayoutSidebarWrapper>
-          <Bar user={user} />
+          <Bar
+            user={{
+              ...user,
+              role: role.data,
+            }}
+          />
         </LayoutSidebarWrapper>
         <LayoutContent>{children}</LayoutContent>
       </LayoutBody>

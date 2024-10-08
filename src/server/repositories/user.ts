@@ -7,7 +7,7 @@ import {
   TUserInsert,
   usersTable,
 } from "../db/schema";
-import { Repo } from "./business";
+import { Repo } from "./repo";
 import { NotfoundError } from "../lib/action";
 import { randomUUID } from "crypto";
 import { Mailer } from "../lib/mailer";

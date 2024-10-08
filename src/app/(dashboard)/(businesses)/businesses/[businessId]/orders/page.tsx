@@ -12,6 +12,7 @@ import { SearchParams } from "@/types/nav";
 import { Order, OrderSkeleton } from "./order";
 import { cn } from "@/client/lib/utils";
 import { getOrdersAction } from "@/server/controllers/order";
+import { redirect } from "next/navigation";
 
 interface OrdersWrapperProps {
   searchParams: SearchParams;
@@ -22,24 +23,31 @@ const OrdersWrapper: React.FC<OrdersWrapperProps> = async ({
   searchParams,
   businessId,
 }) => {
-  const { data, lastPage, page, query, trash, from, to, business } =
-    await getOrdersAction({
-      ...searchParams,
-      businessId,
-    });
+  const response = await getOrdersAction({
+    ...searchParams,
+    businessId,
+  });
+
+  if (response?.serverError) {
+    redirect(`/500?message=${response.serverError}`);
+  }
+
+  if (!response?.data) {
+    redirect(`/500?message=Something went wrong`);
+  }
 
   return (
     <Orders
-      data={data}
-      business={business.data}
+      data={response.data.data}
+      business={response.data.business.data}
       // meta
-      query={query}
-      trash={trash}
-      from={from}
-      to={to}
+      query={response.data.query}
+      trash={response.data.trash}
+      from={response.data.from}
+      to={response.data.to}
       // pagination
-      page={page}
-      lastPage={lastPage}
+      page={response.data.page}
+      lastPage={response.data.lastPage}
     />
   );
 };

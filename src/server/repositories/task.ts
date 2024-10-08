@@ -2,7 +2,7 @@ import { db } from "../db";
 import { and, eq } from "drizzle-orm";
 import { tasksTable, taskTypes, TTask, TTaskInsert } from "../db/schema";
 import { NotfoundError } from "../lib/action";
-import { Repo } from "./business";
+import { Repo } from "./repo";
 
 export class TaskRepo extends Repo<TTask> {
   public static async find(where: {

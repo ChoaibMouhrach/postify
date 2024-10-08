@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { rolesTable, TRole } from "../db/schema";
-import { Repo } from "./business";
+import { Repo } from "./repo";
 import { NotfoundError } from "../lib/action";
 
 export class RoleRepo extends Repo<TRole> {

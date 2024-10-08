@@ -38,9 +38,21 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
   businessId,
 }) => {
   const [query, setQuery] = useState("");
-  const { data, isSuccess } = useQuery({
+  const { data, error, isError, isLoading, isSuccess } = useQuery({
     queryKey: ["products", query],
-    queryFn: () => getProductsAction({ query, businessId }),
+    queryFn: async () => {
+      const response = await getProductsAction({ query, businessId });
+
+      if (response?.serverError) {
+        throw new Error(response.serverError);
+      }
+
+      if (!response?.data) {
+        throw new Error("Something went wrong");
+      }
+
+      return response.data;
+    },
     placeholderData: (ph) => ph,
   });
 
@@ -142,7 +154,7 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
           <FormItem>
             <FormLabel>Products</FormLabel>
             <FormControl>
-              {isSuccess ? (
+              {isSuccess && (
                 <Combobox
                   reset
                   query={query}
@@ -153,9 +165,9 @@ export const ProductsInput: React.FC<ProductsInputProps> = ({
                     value: product.id,
                   }))}
                 />
-              ) : (
-                <Skeleton className="h-10" />
               )}
+              {isLoading && <Skeleton className="h-10" />}
+              {isError && error.message}
             </FormControl>
             <FormDescription>The products for this purchase.</FormDescription>
             <FormMessage />

@@ -4,7 +4,6 @@ import {
 } from "next-safe-action";
 import { ROLES } from "@/common/constants";
 import { validateRequest } from "./auth";
-import { UserRepo } from "../repositories/user";
 import { RoleRepo } from "../repositories/role";
 
 export class CustomError extends Error {}
@@ -50,9 +49,9 @@ export const action = createSafeActionClient({
 });
 
 export const protectedAction = action.use(async ({ next }) => {
-  const { user } = await validateRequest();
+  const { user, session } = await validateRequest();
 
-  if (!user) {
+  if (!user || !session) {
     throw new UnauthenticatedError();
   }
 
@@ -64,6 +63,7 @@ export const protectedAction = action.use(async ({ next }) => {
         ...user,
         role: role.data,
       },
+      authSession: session,
     },
   });
 });

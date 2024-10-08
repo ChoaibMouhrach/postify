@@ -1,108 +1,49 @@
 import { DataTable } from "@/client/components/data-table";
 import { Button } from "@/client/components/ui/button";
-import { RECORDS_LIMIT } from "@/common/constants";
-import {
-  fromSchema,
-  pageSchema,
-  querySchema,
-  toSchema,
-  trashSchema,
-} from "@/common/schemas";
-import { db } from "@/server/db";
-import { tasksTable, TTask, TTaskStatus, TTaskType } from "@/server/db/schema";
-import { rscAuth } from "@/server/lib/action";
+import { TTask, TTaskStatus, TTaskType } from "@/server/db/schema";
 import { SearchParams } from "@/types/nav";
-import {
-  and,
-  desc,
-  eq,
-  gte,
-  ilike,
-  isNotNull,
-  isNull,
-  lte,
-  or,
-  sql,
-} from "drizzle-orm";
 import Link from "next/link";
 import React from "react";
-import { z } from "zod";
 import { columns } from "./columns";
+import { getTasksAction } from "@/server/controllers/task";
+import { redirect } from "next/navigation";
 
 interface TasksProps {
   searchParams: SearchParams;
 }
 
-const indexSchema = z.object({
-  page: pageSchema,
-  query: querySchema,
-  trash: trashSchema,
-  from: fromSchema,
-  to: toSchema,
-});
-
 export const Tasks: React.FC<TasksProps> = async ({ searchParams }) => {
-  const { page, query, trash, to, from } = indexSchema.parse(searchParams);
+  const response = await getTasksAction(searchParams);
 
-  const user = await rscAuth();
+  if (!response) {
+    redirect("/500?message=Something went wrong");
+  }
 
-  const where = and(
-    eq(tasksTable.userId, user.id),
-    trash ? isNotNull(tasksTable.deletedAt) : isNull(tasksTable.deletedAt),
-    from || to
-      ? and(
-          from
-            ? gte(tasksTable.createdAt, new Date(parseInt(from)).toDateString())
-            : undefined,
-          lte(
-            tasksTable.createdAt,
-            to ? new Date(parseInt(to)).toDateString() : `NOW()`,
-          ),
-        )
-      : undefined,
-    query
-      ? or(
-          ilike(tasksTable.title, `%${query}%`),
-          ilike(tasksTable.description, `%${query}%`),
-        )
-      : undefined,
-  );
+  if (response.serverError) {
+    redirect(`/500?message=${response.serverError}`);
+  }
 
-  const dataPromise = db.query.tasksTable.findMany({
-    where,
-    with: {
-      type: true,
-      status: true,
-    },
-    limit: RECORDS_LIMIT,
-    offset: (page - 1) * RECORDS_LIMIT,
-    orderBy: desc(tasksTable.createdAt),
-  });
+  if (response.bindArgsValidationErrors || response.validationErrors) {
+    redirect(`/500?message=Validation errors`);
+  }
 
-  const countPromise = db
-    .select({
-      count: sql`COUNT(*)`.mapWith(Number),
-    })
-    .from(tasksTable)
-    .where(where);
-
-  const [data, [{ count }]] = await Promise.all([dataPromise, countPromise]);
-
-  const lastPage = Math.ceil(count / RECORDS_LIMIT);
+  if (!response.data) {
+    redirect(`/500?message=Something went wrong`);
+  }
 
   return (
     <DataTable<TTask & { type: TTaskType; status: TTaskStatus }>
       // data
-      data={data}
+      data={response.data.data}
       columns={columns}
       // meta
-      trash={trash}
-      query={query}
-      from={from}
-      to={to}
+      trash={response.data.trash}
+      query={response.data.query}
+      from={response.data.from}
+      to={response.data.to}
       // pagination
-      page={page}
-      lastPage={lastPage}
+      page={response.data.page}
+      lastPage={response.data.lastPage}
     >
       <Button asChild>
         <Link href="/tasks/create">Add task</Link>

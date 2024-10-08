@@ -5,7 +5,7 @@ import { CardContent, CardFooter } from "@/client/components/ui/card";
 import { Form } from "@/client/components/ui/form";
 import { useForm } from "react-hook-form";
 import { ProductsInput } from "./products-input";
-import { SupplierInput } from "./supplier-input";
+import { SupplierInput } from "@/client/components/suppliers-input";
 import { z } from "zod";
 import { TProduct, TPurchase } from "@/server/db/schema";
 import { useAction } from "next-safe-action/hooks";
@@ -69,7 +69,11 @@ export const Edit: React.FC<EditProps> = ({ purchase }) => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <CardContent className="flex flex-col gap-4">
-          <SupplierInput businessId={purchase.businessId} form={form} />
+          <SupplierInput
+            businessId={purchase.businessId}
+            onValueChange={(id) => form.setValue("supplierId", id)}
+            value={form.getValues("supplierId")}
+          />
           <ProductsInput businessId={purchase.businessId} form={form} />
         </CardContent>
         <CardFooter>

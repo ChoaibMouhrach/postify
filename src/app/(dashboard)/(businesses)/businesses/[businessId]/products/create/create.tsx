@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { createProductAction } from "@/server/controllers/product";
 import { createProductSchema } from "@/common/schemas/product";
 import { TBusiness } from "@/server/db/schema";
-import { CategoriesInput } from "./categories-input";
+import { CategoriesInput } from "@/client/components/categories-input";
 
 type Payload = z.infer<typeof createProductSchema>;
 

@@ -9,11 +9,11 @@ import { Purchases } from "./table";
 import React, { Suspense } from "react";
 import { DataTableSkeleton } from "@/client/components/data-table";
 import { SearchParams } from "@/types/nav";
-import { rscAuth } from "@/server/lib/action";
 import { BusinessesRepo } from "@/server/repositories/business";
 import { getPurchasesActiopn } from "@/server/controllers/purchase";
 import { TBusiness } from "@/server/db/schema";
 import { redirect } from "next/navigation";
+import { validateRequest } from "@/server/lib/auth";
 
 interface PurchasesWrapperProps {
   searchParams: SearchParams;
@@ -24,22 +24,29 @@ const PurchasesWrapper: React.FC<PurchasesWrapperProps> = async ({
   searchParams,
   business,
 }) => {
-  const { data, query, trash, from, to, page, lastPage } =
-    await getPurchasesActiopn({
-      ...searchParams,
-      businessId: business.id,
-    });
+  const response = await getPurchasesActiopn({
+    ...searchParams,
+    businessId: business.id,
+  });
+
+  if (response?.serverError) {
+    redirect(`/purchases?message=${response.serverError}`);
+  }
+
+  if (!response?.data) {
+    redirect(`/purchases?message=Something went wrong`);
+  }
 
   return (
     <Purchases
-      data={data}
+      data={response.data.data}
       business={business}
-      query={query}
-      trash={trash}
-      from={from}
-      to={to}
-      page={page}
-      lastPage={lastPage}
+      query={response.data.query}
+      trash={response.data.trash}
+      from={response.data.from}
+      to={response.data.to}
+      page={response.data.page}
+      lastPage={response.data.lastPage}
     />
   );
 };
@@ -52,7 +59,11 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ searchParams, params }) => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
 
   const business = await BusinessesRepo.find({
     id: params.businessId,

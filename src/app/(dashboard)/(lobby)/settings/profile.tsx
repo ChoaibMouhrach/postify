@@ -5,10 +5,15 @@ import {
   CardTitle,
 } from "@/client/components/ui/card";
 import { ProfileForm } from "./profile-form";
-import { rscAuth } from "@/server/lib/action";
+import { validateRequest } from "@/server/lib/auth";
+import { redirect } from "next/navigation";
 
 export const Profile = async () => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
 
   return (
     <Card>

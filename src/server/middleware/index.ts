@@ -8,14 +8,11 @@ import {
   isPublicRoute,
 } from "./utils";
 import { ROLES } from "@/common/constants";
-import { env } from "@/common/env.mjs";
+import { env } from "@/common/env";
+import { cookies } from "next/headers";
 
 export const middleware: NextMiddleware = async (request) => {
   const pathname = request.nextUrl.pathname;
-
-  if (isPublicRoute(pathname)) {
-    return NextResponse.next();
-  }
 
   let setup;
 
@@ -31,11 +28,31 @@ export const middleware: NextMiddleware = async (request) => {
     return NextResponse.redirect(new URL("/500", env.NEXTAUTH_URL));
   }
 
+  if (setup && pathname === "/setup") {
+    return NextResponse.redirect(new URL("/sign-in", env.NEXTAUTH_URL));
+  }
+
   if (!setup && pathname !== "/setup") {
     return NextResponse.redirect(new URL("/setup", env.NEXTAUTH_URL));
   }
 
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", env.NEXTAUTH_URL));
+  }
+
+  if (isPublicRoute(pathname)) {
+    return NextResponse.next();
+  }
+
   let cookie = request.headers.get("cookie");
+
+  if (!cookie && pathname === "/sign-in") {
+    return NextResponse.next();
+  }
+
+  if (!cookie && pathname !== "/sign-in") {
+    return NextResponse.redirect(new URL("/sign-in", env.NEXTAUTH_URL));
+  }
 
   if (!cookie) {
     return NextResponse.redirect(new URL("/sign-in", env.NEXTAUTH_URL));
@@ -47,6 +64,10 @@ export const middleware: NextMiddleware = async (request) => {
     user = await getAuth(cookie);
   } catch (err) {
     if (err instanceof ApiError) {
+      if (err.status === 401) {
+        cookies().delete("auth-session");
+      }
+
       let url = new URL("/500", env.NEXTAUTH_URL);
       url.searchParams.set("message", err.message);
       return NextResponse.redirect(url);

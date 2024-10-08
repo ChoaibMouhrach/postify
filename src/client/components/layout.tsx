@@ -1,6 +1,5 @@
 import React from "react";
 import { Logo } from "./logo";
-import { rscAuth } from "@/server/lib/action";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -16,6 +15,9 @@ import { and, eq, sql } from "drizzle-orm";
 import { businessesTable, notificationsTable } from "@/server/db/schema";
 import { BusinessesSwitchCMP } from "./layout-client";
 import { capitalize } from "@/common/utils";
+import { validateRequest } from "@/server/lib/auth";
+import { redirect } from "next/navigation";
+import { RoleRepo } from "@/server/repositories/role";
 
 interface LayoutSidebarWrapperProps {
   children: React.ReactNode;
@@ -32,7 +34,13 @@ export const LayoutSidebarWrapper: React.FC<LayoutSidebarWrapperProps> = ({
 };
 
 const Profile = async () => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const role = await RoleRepo.findOrThrow(user.roleId);
 
   const notificationsCount = await db
     .select({
@@ -58,7 +66,7 @@ const Profile = async () => {
       <DropdownMenuContent>
         <DropdownMenuLabel className="flex flex-col">
           {user.name ? capitalize(user.name) : "My Account"} (
-          {capitalize(user.role.name)})
+          {capitalize(role.data.name)})
           <span className="text-muted-foreground">{user.email}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -88,7 +96,11 @@ interface BusinessesSwitchProps {
 const BusinessesSwitch: React.FC<BusinessesSwitchProps> = async ({
   businessId,
 }) => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
 
   const data = await db.query.businessesTable.findMany({
     where: eq(businessesTable.userId, user.id),

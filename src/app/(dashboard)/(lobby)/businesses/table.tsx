@@ -6,6 +6,7 @@ import Link from "next/link";
 import React from "react";
 import { columns } from "./columns";
 import { getBusinessesAction } from "@/server/controllers/business";
+import { redirect } from "next/navigation";
 
 interface BusinessesProps {
   searchParams: SearchParams;
@@ -14,21 +15,28 @@ interface BusinessesProps {
 export const Businesses: React.FC<BusinessesProps> = async ({
   searchParams,
 }) => {
-  const { data, query, trash, from, to, page, lastPage } =
-    await getBusinessesAction(searchParams);
+  const response = await getBusinessesAction(searchParams);
+
+  if (response?.serverError) {
+    redirect(`/500?message=${response.serverError}`);
+  }
+
+  if (!response?.data) {
+    redirect(`/500?message=Something went wrong`);
+  }
 
   return (
     <DataTable<TBusiness>
-      data={data}
+      data={response.data.data}
       columns={columns}
       // meta
-      query={query}
-      trash={trash}
-      from={from}
-      to={to}
+      query={response.data.query}
+      trash={response.data.trash}
+      from={response.data.from}
+      to={response.data.to}
       // pagination
-      lastPage={lastPage}
-      page={page}
+      lastPage={response.data.lastPage}
+      page={response.data.page}
     >
       <Button asChild>
         <Link href="/businesses/create">New business</Link>

@@ -10,11 +10,11 @@ import { db } from "@/server/db";
 import { eq } from "drizzle-orm";
 import { ordersItems } from "@/server/db/schema";
 import { Edit } from "./edit";
-import { rscAuth } from "@/server/lib/action";
 import { BusinessesRepo } from "@/server/repositories/business";
 import { OrderRepo } from "@/server/repositories/order";
 import { redirect } from "next/navigation";
 import React from "react";
+import { validateRequest } from "@/server/lib/auth";
 
 interface PageProps {
   params: {
@@ -24,7 +24,11 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ params }) => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
 
   const business = await BusinessesRepo.find({
     id: params.businessId,

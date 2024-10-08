@@ -34,9 +34,10 @@ const Orders: React.FC<OrdersProps> = async ({ businesses }) => {
     data = await db
       .select({
         count: sql`COUNT(*)`.mapWith(Number),
-        month: sql` strftime('%m', ${ordersTable.createdAt}) AS month`.mapWith(
-          Number,
-        ),
+        month:
+          sql` EXTRACT(MONTH FROM ${ordersTable.createdAt}) AS month`.mapWith(
+            Number,
+          ),
       })
       .from(ordersTable)
       .where(inArray(ordersTable.businessId, businesses))
@@ -87,7 +88,7 @@ const Purchases: React.FC<PurchasesProps> = async ({ businesses }) => {
       .select({
         count: sql`COUNT(*)`.mapWith(Number),
         month:
-          sql` strftime('%m', ${purchasesTable.createdAt}) AS month`.mapWith(
+          sql` EXTRACT(MONTH FROM ${purchasesTable.createdAt}) AS month`.mapWith(
             Number,
           ),
       })
@@ -142,7 +143,7 @@ const Customers: React.FC<CustomersProps> = async ({ businesses }) => {
       .select({
         count: sql`COUNT(*)`.mapWith(Number),
         month:
-          sql` strftime('%m', ${customersTable.createdAt}) AS month`.mapWith(
+          sql` EXTRACT(MONTH FROM ${customersTable.createdAt}) AS month`.mapWith(
             Number,
           ),
       })
@@ -198,7 +199,7 @@ const Suppliers: React.FC<SuppliersProps> = async ({ businesses }) => {
       .select({
         count: sql`COUNT(*)`.mapWith(Number),
         month:
-          sql` strftime('%m', ${suppliersTable.createdAt}) AS month`.mapWith(
+          sql` EXTRACT(MONTH FROM ${suppliersTable.createdAt}) AS month`.mapWith(
             Number,
           ),
       })

@@ -1,8 +1,8 @@
 import { customersTable, TCustomer, TCustomerInsert } from "../db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { NotfoundError } from "../lib/action";
-import { Repo } from "./business";
 import { db } from "../db";
+import { Repo } from "./repo";
 
 export class CustomerRepo extends Repo<TCustomer> {
   public static async findByEmail(where: {

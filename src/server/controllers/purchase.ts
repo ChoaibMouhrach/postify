@@ -99,7 +99,7 @@ export const getPurchasesActiopn = protectedAction
       from: parsedInput.from,
       to: parsedInput.to,
       // pagination
-      page: parsedInput.to,
+      page: parsedInput.page,
       lastPage,
     };
   });

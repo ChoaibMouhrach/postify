@@ -5,9 +5,9 @@ import { and, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import React from "react";
 import { Skeleton } from "@/client/components/ui/skeleton";
-import { rscAuth } from "@/server/lib/action";
 import { PrintOrder } from "./print-order";
 import { BusinessesRepo } from "@/server/repositories/business";
+import { validateRequest } from "@/server/lib/auth";
 
 interface OrderProps {
   id: string;
@@ -15,7 +15,11 @@ interface OrderProps {
 }
 
 export const Order: React.FC<OrderProps> = async ({ businessId, id }) => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
 
   const business = await BusinessesRepo.find({
     id: businessId,

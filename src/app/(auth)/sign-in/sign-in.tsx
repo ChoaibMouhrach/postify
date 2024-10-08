@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/client/components/ui/button";
 import {
   Form,
   FormControl,
@@ -10,10 +9,12 @@ import {
 } from "@/client/components/ui/form";
 import { Input } from "@/client/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useAction } from "next-safe-action/hooks";
+import { signInAction } from "@/server/controllers/auth";
+import { Button } from "@/client/components/ui/button";
 
 const schema = z.object({
   email: z.string().email(),
@@ -22,8 +23,6 @@ const schema = z.object({
 type Payload = z.infer<typeof schema>;
 
 export const SignIn = () => {
-  const [pending, setPending] = useState(false);
-
   const form = useForm<Payload>({
     resolver: zodResolver(schema),
     values: {
@@ -31,26 +30,22 @@ export const SignIn = () => {
     },
   });
 
-  const onSubmit = async (/* payload: Payload */) => {
-    setPending(true);
-    try {
-      //await signIn("email", {
-      //  email: payload.email,
-      //  redirect: false,
-      //  callbackUrl: "/",
-      //});
+  const { execute: signIn, isExecuting: isSigningIn } = useAction(
+    signInAction,
+    {
+      onSuccess: () => {
+        toast.success(
+          "We've emailed you a link for authentication. Please use it to log in.",
+        );
+      },
+      onError: ({ error }) => {
+        toast.error(error.serverError || "Something went wrong");
+      },
+    },
+  );
 
-      toast.success(
-        "We've emailed you a link for authentication. Please use it to log in.",
-      );
-
-      form.reset();
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      }
-    }
-    setPending(false);
+  const onSubmit = async (payload: Payload) => {
+    signIn(payload);
   };
 
   return (
@@ -71,7 +66,7 @@ export const SignIn = () => {
           )}
         />
 
-        <Button pending={pending}>Sign in</Button>
+        <Button pending={isSigningIn}>Sign in</Button>
       </form>
     </Form>
   );

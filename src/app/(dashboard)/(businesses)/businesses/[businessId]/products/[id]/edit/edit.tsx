@@ -22,7 +22,7 @@ import { useAction } from "next-safe-action/hooks";
 import { updateProductAction } from "@/server/controllers/product";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import { CategoriesInput } from "./categories-input";
+import { CategoriesInput } from "@/client/components/categories-input";
 
 interface EditProps {
   product: TProduct;

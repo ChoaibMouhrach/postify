@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const pageSchema = z.union([
+export const pageSchema = z.union([
   z.string().transform((page) => parseInt(page) || 1),
   z.array(z.string()).transform((pages) => parseInt(pages[0]) || 1),
   z.undefined().transform(() => 1),

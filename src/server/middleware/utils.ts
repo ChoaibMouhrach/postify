@@ -1,4 +1,4 @@
-import { env } from "@/common/env.mjs";
+import { env } from "@/common/env";
 import { User } from "lucia";
 import { TRole } from "../db/schema";
 
@@ -17,6 +17,7 @@ export const isGuestRoute = (pathname: string): boolean => {
 export const protectedRoutes = [
   "/dashboard",
   "/businesses",
+  "/businesses/create",
   "/notifications",
   "/settings",
   "/businesses/[]/dashboard",
@@ -31,7 +32,7 @@ export const protectedRoutes = [
 ];
 
 export const isProtectedRoute = (pathname: string): boolean => {
-  return !!guestRoutes.find((route) => {
+  return !!protectedRoutes.find((route) => {
     const pathnameSegments = pathname
       .replaceAll(/\/+/g, "/")
       .split("/")
@@ -52,13 +53,20 @@ export const isProtectedRoute = (pathname: string): boolean => {
         );
       });
 
+    console.log({
+      pathnameSegments,
+      routeSegments,
+    });
+
     if (routeSegments.length !== pathnameSegments.length) {
       return false;
     }
 
-    return routeSegments.every((routeSegment, index) => {
+    const result = routeSegments.every((routeSegment, index) => {
       return routeSegment === "[]" || pathnameSegments[index] === routeSegment;
     });
+
+    return result;
   });
 };
 
@@ -110,7 +118,7 @@ export class ApiError extends Error {
   public data?: unknown;
 
   public constructor(status: number, message: string, data?: unknown) {
-    super();
+    super(message);
     this.status = status;
     this.data = data;
   }

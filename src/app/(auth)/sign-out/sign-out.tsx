@@ -1,39 +1,40 @@
 "use client";
 
 import { Button } from "@/client/components/ui/button";
+import { signOutAction } from "@/server/controllers/auth";
+import { useAction } from "next-safe-action/hooks";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { toast } from "sonner";
 
 export const SignOut = () => {
-  const [pending, setPending] = useState(false);
   const router = useRouter();
+
+  const { execute: signOut, isExecuting: isSigningOut } = useAction(
+    signOutAction,
+    {
+      onSuccess: () => {
+        toast.success("See you later!");
+      },
+      onError: ({ error }) => {
+        toast.error(error.serverError || "Something went wrong");
+      },
+    },
+  );
 
   const onBack = () => {
     router.back();
   };
 
   const onSignOut = async () => {
-    setPending(true);
-    try {
-      //await signOut({
-      //  callbackUrl: "/sign-in",
-      //});
-
-      toast.success("See you soon!");
-    } catch (err) {
-      if (err instanceof Error) {
-        toast.error(err.message);
-      }
-
-      setPending(false);
-    }
+    signOut();
   };
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      <Button onClick={onBack}>Back</Button>
-      <Button onClick={onSignOut} pending={pending} variant="outline">
+      <Button disabled={isSigningOut} onClick={onBack}>
+        Back
+      </Button>
+      <Button onClick={onSignOut} pending={isSigningOut} variant="outline">
         Sign Out
       </Button>
     </div>

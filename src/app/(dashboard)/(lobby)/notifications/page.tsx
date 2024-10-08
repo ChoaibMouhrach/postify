@@ -5,16 +5,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/client/components/ui/card";
-import { db } from "@/server/db";
-import { notificationsTable } from "@/server/db/schema";
-import { rscAuth } from "@/server/lib/action";
-import { desc, eq, sql } from "drizzle-orm";
 import { NotificationSkeleton, Notifications } from "./table";
-import { z } from "zod";
-import { pageSchema } from "@/common/schemas";
 import { SearchParams } from "@/types/nav";
 import React, { Suspense } from "react";
-import { RECORDS_LIMIT } from "@/common/constants";
+import { getNotificationsAction } from "@/server/controllers/notification";
+import { redirect } from "next/navigation";
 
 interface NotificationsWrapperProps {
   searchParams: SearchParams;
@@ -23,32 +18,24 @@ interface NotificationsWrapperProps {
 const NotificationsWrapper: React.FC<NotificationsWrapperProps> = async ({
   searchParams,
 }) => {
-  const { page } = indexSchema.parse(searchParams);
+  const response = await getNotificationsAction(searchParams);
 
-  const user = await rscAuth();
+  if (response?.serverError) {
+    redirect(`/500?message=${response.serverError}`);
+  }
 
-  const data = await db.query.notificationsTable.findMany({
-    where: eq(notificationsTable.userId, user.id),
-    orderBy: desc(notificationsTable.createdAt),
-    offset: (page - 1) * RECORDS_LIMIT,
-    limit: RECORDS_LIMIT,
-  });
+  if (!response?.data) {
+    redirect("/500?message=Something went wrong");
+  }
 
-  const count = await db
-    .select({
-      count: sql`COUNT(*)`.mapWith(Number),
-    })
-    .from(notificationsTable)
-    .then((notifications) => notifications[0].count);
-
-  const lastPage = Math.ceil(count / RECORDS_LIMIT);
-
-  return <Notifications page={page} lastPage={lastPage} data={data} />;
+  return (
+    <Notifications
+      page={response.data.page}
+      lastPage={response.data.lastPage}
+      data={response.data.data}
+    />
+  );
 };
-
-const indexSchema = z.object({
-  page: pageSchema,
-});
 
 interface PageProps {
   searchParams: SearchParams;

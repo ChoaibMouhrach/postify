@@ -2,14 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { NotfoundError } from "../lib/action";
 import { TBusiness, TBusinessInsert, businessesTable } from "../db/schema";
-
-export class Repo<T> {
-  public data: T;
-
-  public constructor(data: T) {
-    this.data = data;
-  }
-}
+import { Repo } from "./repo";
 
 export class BusinessesRepo extends Repo<TBusiness> {
   public static async findByEmail(where: {

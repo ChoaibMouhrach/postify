@@ -8,16 +8,20 @@ import {
 import { BusinessEdit } from "./business-edit";
 import { BusinessDelete } from "./business-delete";
 import React from "react";
-import { rscAuth } from "@/server/lib/action";
 import { BusinessesRepo } from "@/server/repositories/business";
 import { redirect } from "next/navigation";
+import { validateRequest } from "@/server/lib/auth";
 
 interface BusinessProps {
   businessId: string;
 }
 
 export const Business: React.FC<BusinessProps> = async ({ businessId }) => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
 
   const business = await BusinessesRepo.find({
     id: businessId,

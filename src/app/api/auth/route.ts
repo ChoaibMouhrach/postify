@@ -20,7 +20,7 @@ export const GET = async (request: NextRequest) => {
   }
 
   // check token expired
-  if (magicToken.expiresAt > new Date()) {
+  if (magicToken.expiresAt < new Date()) {
     redirect("/403?message=token expired");
   }
 

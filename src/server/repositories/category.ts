@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { NotfoundError } from "../lib/action";
 import { categoriesTable, TCategory, TCategoryInsert } from "../db/schema";
-import { Repo } from "./business";
+import { Repo } from "./repo";
 
 export class CategoryRepo extends Repo<TCategory> {
   public static async findByName(where: {

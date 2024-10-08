@@ -6,7 +6,7 @@ import {
   notificationsTable,
 } from "../db/schema";
 import { NotfoundError } from "../lib/action";
-import { Repo } from "./business";
+import { Repo } from "./repo";
 
 export class NotificationRepo extends Repo<TNotification> {
   public static async find(where: {

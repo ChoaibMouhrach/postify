@@ -8,10 +8,10 @@ import {
 import { Delete } from "./delete";
 import { Edit } from "./edit";
 import { BusinessesRepo } from "@/server/repositories/business";
-import { rscAuth } from "@/server/lib/action";
 import { CustomerRepo } from "@/server/repositories/customer";
 import { redirect } from "next/navigation";
 import React from "react";
+import { validateRequest } from "@/server/lib/auth";
 
 interface PageProps {
   params: {
@@ -21,7 +21,11 @@ interface PageProps {
 }
 
 const Page: React.FC<PageProps> = async ({ params }) => {
-  const user = await rscAuth();
+  const { user } = await validateRequest();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
 
   const business = await BusinessesRepo.find({
     id: params.businessId,

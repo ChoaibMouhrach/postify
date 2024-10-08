@@ -10,6 +10,7 @@ import { Products } from "./products";
 import { SearchParams } from "@/types/nav";
 import { DataTableSkeleton } from "@/client/components/data-table";
 import { getProductsAction } from "@/server/controllers/product";
+import { redirect } from "next/navigation";
 
 interface ProductsWrapperProps {
   searchParams: SearchParams;
@@ -20,26 +21,32 @@ const ProductsWrapper: React.FC<ProductsWrapperProps> = async ({
   searchParams,
   businessId,
 }) => {
-  const { data, lastPage, page, trash, query, from, to, business } =
-    await getProductsAction({
-      ...searchParams,
-      businessId: businessId,
-      category: true,
-    });
+  const response = await getProductsAction({
+    ...searchParams,
+    businessId: businessId,
+  });
+
+  if (response?.serverError) {
+    redirect(`/500?message=${response.serverError}`);
+  }
+
+  if (!response?.data) {
+    redirect(`/500?message=Something went wrong`);
+  }
 
   return (
     <Products
       // data
-      data={data}
-      business={business.data}
+      data={response.data.data}
+      business={response.data.business.data}
       // meta
-      query={query}
-      trash={trash}
-      from={from}
-      to={to}
+      query={response.data.query}
+      trash={response.data.trash}
+      from={response.data.from}
+      to={response.data.to}
       // pagination
-      page={page}
-      lastPage={lastPage}
+      page={response.data.page}
+      lastPage={response.data.lastPage}
     />
   );
 };
